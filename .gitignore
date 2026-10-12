@@ -1,0 +1,95 @@
+# Root .gitignore
+# Sub-projects have their own:
+#   - frontend/.gitignore  (Next.js, node_modules, .next, Vercel, etc.)
+#   - backend/.venv/.gitignore (venv internals, auto-written by uv)
+# This file covers things that span the whole repo or that the sub-ignores don't.
+
+# ─── Python / uv (backend/) ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+.installed.cfg
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# Test / lint / type caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Build / dist
+build/
+dist/
+*.whl
+
+# NOTE: uv.lock is intentionally NOT ignored — commit it for reproducible installs.
+
+# ─── Node / defense-in-depth (frontend/ has its own, but belt-and-braces) ──
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Environment & secrets ────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+secrets/
+.secrets/
+
+# ─── OS cruft ─────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Editors / IDEs ───────────────────────────────────────────────────────
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.history/
+.cursor/
+
+# ─── Logs & temp ──────────────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+.tmp/
+.cache/
+
+# ─── Docker / local infra ─────────────────────────────────────────────────
+docker-compose.override.yml
+.docker/
+
+# ─── Ad-hoc scratch space ─────────────────────────────────────────────────
+scratch/
+notes.local.md
+TODO.local.md
