@@ -7,7 +7,11 @@ authors = [
     { name = "Joseph Clark", email = "weirdlookingjay@live.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fastapi[standard]>=0.143.0",
+    "pydantic-settings>=2.15.0",
+    "structlog>=26.1.0",
+]
 
 [project.scripts]
 backend = "backend:main"
@@ -70,4 +74,15 @@ filterwarnings = [
     # pydantic v2 emits a few deprecation warnings in fastapi 0.1x; keep an eye
     # on these and remove the ignore once upstream is clean.
     "ignore::DeprecationWarning:pydantic.*",
+    # Starlette's testclient module unconditionally emits a deprecation warning
+    # at import time telling us to install httpx2. That migration isn't viable
+    # until fastapi[standard] pins httpx2 itself; remove this filter when that
+    # happens.
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
 ]

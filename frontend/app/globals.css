@@ -180,6 +180,10 @@
    Baseline
    ──────────────────────────────────────────────────────────────────────────── */
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   background: var(--canvas);
@@ -242,4 +246,48 @@ samp {
   background: var(--fg-subtle);
   background-clip: padding-box;
   border: 2px solid transparent;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Article prose — styles for HTML rendered from article blocks.
+   Scoped under .article-prose so they don't leak.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.article-prose ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+  margin-top: 0.25em;
+}
+.article-prose ol li {
+  padding-left: 0.25em;
+  margin-bottom: 0.35em;
+}
+.article-prose ul {
+  list-style: disc;
+  padding-left: 1.5em;
+  margin-top: 0.25em;
+}
+.article-prose ul li {
+  padding-left: 0.25em;
+  margin-bottom: 0.35em;
+}
+.article-prose strong {
+  font-weight: 600;
+  color: var(--fg);
+}
+.article-prose code {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: 13px;
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-xs);
+  background: var(--surface-muted);
+  color: var(--fg);
+}
+.article-prose a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.article-prose a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
