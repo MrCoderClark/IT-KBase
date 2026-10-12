@@ -48,6 +48,8 @@ We use git with a **feature-branch-per-change** workflow. For every new feature,
 
 Never commit directly to `main`. If you notice we're on `main` when a change is about to start, stop and ask the user to branch first.
 
+**Don't spin a dedicated branch for one-line / trivial fixes.** If a tiny issue (a typo, a warning filter, a renamed import, an off-by-one in a config value) surfaces outside of a feature branch, roll it into the next feature branch's commit rather than making a `fix/<thing>` branch for a single edit. Dedicated `fix/` branches are for real bugs with scope — not housekeeping. When in doubt about scope, ask.
+
 ### 0.3 Never hand-write shadcn primitives
 
 shadcn/ui components (`button`, `input`, `dialog`, `dropdown-menu`, `tooltip`, `command`, `sheet`, …) are **installed by the user via the shadcn CLI**, not hand-authored.

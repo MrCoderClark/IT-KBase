@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-12 (feat/app-shell)
+Last updated: 2026-10-12 (feat/article-detail-view)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -13,7 +13,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡     |
+| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done, keyboard shortcuts remain) |
 | M2 | Create / edit article (manual)     | Week 4        | ⬜     |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -67,15 +67,17 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ⬜ Notifications panel
 
 ### Article detail view
-- ⬜ Breadcrumbs
-- ⬜ Title block (category chip, title, summary, metadata row)
-- ⬜ Hero image slot (right-aligned, aspect-ratio locked)
-- ⬜ Edit / Share / overflow actions
-- ⬜ In-article table of contents (sticky)
-- ⬜ Section renderers: Overview, Prerequisites (checklist), Steps (numbered), Verification, Troubleshooting, Related
-- ⬜ Callout component (Info, Important, Warning, Success)
-- ⬜ Code block with copy affordance
-- ⬜ Right rail: Article Details, Related Articles, Quick Actions, Was-this-helpful
+- ✅ Breadcrumbs (`Knowledge Base > Articles`)
+- ✅ Title block (category chip, h1 title, summary, metadata row with dot separators)
+- ✅ Hero image slot (right-aligned, 16/10 aspect ratio, gradient placeholder)
+- ✅ Edit / Share / overflow action buttons
+- ✅ In-article table of contents (sticky left rail, 210px, IntersectionObserver active tracking)
+- ✅ Section renderers: Overview, Prerequisites (checklist), Steps (numbered badges), Verification, Troubleshooting, Related
+- ✅ Callout component (Info, Important, Warning, Success) — 4 variants, left-border tinted panels
+- ✅ Code block with copy affordance (dark `#0B1220`, monospace, language label)
+- ✅ Right rail: Article Details, Related Articles, Quick Actions, Was-this-helpful (sticky, 300px)
+- ✅ Article types (`lib/types/article.ts`) and seed data (`lib/seed/articles.ts`)
+- ✅ Minimal All Articles page (`/kb`) linking to seed article
 - ⬜ Keyboard shortcuts (`e` edit, `s` share, `?` help, `g a` go to articles)
 
 ### Browse / list
@@ -169,6 +171,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | 2026-10-12 | `lucide-react@1.x` for icons                 | Design-system standard; `Home` is now `House`  |
 | 2026-10-12 | shadcn primitives installed by user, restyled by agent (claude.md §0.3) | Avoid hand-authored drift from shadcn source   |
 | 2026-10-12 | Shell commands run by user, PowerShell syntax (claude.md §0.1) | Windows dev environment, agent proposes only   |
+| 2026-10-12 | Next.js 16 Suspense wrappers for `usePathname()` and `await params` | Required for instant navigation; client hooks and URL data must be inside `<Suspense>` |
+| 2026-10-12 | Layouts use explicit `{ children: React.ReactNode }` instead of generated `LayoutProps` | `LayoutProps` only exists while `next dev` runs; explicit type lets `tsc` work standalone |
 
 ---
 
