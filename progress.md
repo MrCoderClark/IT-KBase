@@ -42,7 +42,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Scaffold `frontend/` (Next.js 16, React 19, Tailwind v4, Turbopack, TS strict)
 - ✅ Scaffold `backend/` (Python 3.12, uv) — package only; FastAPI entry not wired yet
 - ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
-- ⬜ `backend/` → FastAPI skeleton with `/healthz`
+- ✅ `backend/` → FastAPI skeleton (`/healthz`, `/readyz`, `/docs`, structlog JSON, Pydantic Settings, pytest + ruff config, 4 smoke tests)
 - ⬜ `infra/compose/docker-compose.yml` — Postgres, Redis, MinIO
 - ⬜ CI: lint + typecheck + test on PR (web + python)
 - ⬜ Generate TS client from Python OpenAPI
