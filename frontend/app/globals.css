@@ -1,26 +1,245 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────────────────────────────────
+   TechBase design tokens
+   Source of truth: Docs/specs/02-design-system.md
+   Light is default. .dark is opt-in via class on <html>.
+   Sidebar is always dark in both themes (intentional, signature).
+   ──────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* surface */
+  --canvas:              #F6F8FB;
+  --surface:             #FFFFFF;
+  --surface-muted:       #F1F4F9;
+  --surface-sunken:      #ECEFF4;
+  --border:              #E4E8EF;
+  --border-strong:       #D4DAE4;
+
+  /* text */
+  --fg:                  #0B1220;
+  --fg-muted:            #475569;
+  --fg-subtle:           #64748B;
+  --fg-on-accent:        #FFFFFF;
+
+  /* brand / accent */
+  --accent:              #1E6BFF;
+  --accent-hover:        #1A5EE0;
+  --accent-soft:         #E7EFFF;
+  --accent-ring:         #93B4FF;
+
+  /* status */
+  --success:             #10B981;
+  --success-soft:        #E6F7F1;
+  --warning:             #F59E0B;
+  --warning-soft:        #FEF3E2;
+  --danger:              #EF4444;
+  --danger-soft:         #FDECEC;
+  --info:                #3B82F6;
+  --info-soft:           #E8F0FE;
+
+  /* sidebar — identical in both themes */
+  --sidebar-bg-top:      #0F172A;
+  --sidebar-bg-bot:      #0B1220;
+  --sidebar-fg:          #CBD5E1;
+  --sidebar-fg-active:   #FFFFFF;
+  --sidebar-active:      rgba(30, 107, 255, 0.14);
+  --sidebar-active-border: #1E6BFF;
+  --sidebar-divider:     rgba(226, 232, 240, 0.08);
+
+  /* radii */
+  --radius-xs:  6px;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --radius-pill: 999px;
+
+  /* shadows — layered, low-opacity only */
+  --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md:    0 1px 2px rgba(15, 23, 42, 0.06), 0 6px 16px rgba(15, 23, 42, 0.06);
+  --shadow-lg:    0 2px 4px rgba(15, 23, 42, 0.06), 0 16px 32px rgba(15, 23, 42, 0.08);
+  --shadow-focus: 0 0 0 3px var(--accent-ring);
 }
+
+.dark {
+  --canvas:              #0A0F1C;
+  --surface:             #0F172A;
+  --surface-muted:       #111A2E;
+  --surface-sunken:      #0B1220;
+  --border:              #1E293B;
+  --border-strong:       #273449;
+
+  --fg:                  #E6EDF7;
+  --fg-muted:            #94A3B8;
+  --fg-subtle:           #64748B;
+
+  --accent-soft:         rgba(30, 107, 255, 0.14);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Expose tokens to Tailwind v4 utilities.
+   e.g. bg-canvas, text-fg, text-fg-muted, border-border, rounded-lg, shadow-md.
+   ──────────────────────────────────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* colors */
+  --color-canvas:               var(--canvas);
+  --color-surface:              var(--surface);
+  --color-surface-muted:        var(--surface-muted);
+  --color-surface-sunken:       var(--surface-sunken);
+  --color-border:               var(--border);
+  --color-border-strong:        var(--border-strong);
+
+  --color-fg:                   var(--fg);
+  --color-fg-muted:             var(--fg-muted);
+  --color-fg-subtle:            var(--fg-subtle);
+  --color-fg-on-accent:         var(--fg-on-accent);
+
+  --color-accent:               var(--accent);
+  --color-accent-hover:         var(--accent-hover);
+  --color-accent-soft:          var(--accent-soft);
+  --color-accent-ring:          var(--accent-ring);
+
+  --color-success:              var(--success);
+  --color-success-soft:         var(--success-soft);
+  --color-warning:              var(--warning);
+  --color-warning-soft:         var(--warning-soft);
+  --color-danger:               var(--danger);
+  --color-danger-soft:          var(--danger-soft);
+  --color-info:                 var(--info);
+  --color-info-soft:            var(--info-soft);
+
+  --color-sidebar-bg-top:       var(--sidebar-bg-top);
+  --color-sidebar-bg-bot:       var(--sidebar-bg-bot);
+  --color-sidebar-fg:           var(--sidebar-fg);
+  --color-sidebar-fg-active:    var(--sidebar-fg-active);
+  --color-sidebar-active:       var(--sidebar-active);
+  --color-sidebar-active-border: var(--sidebar-active-border);
+  --color-sidebar-divider:      var(--sidebar-divider);
+
+  /* radii — overrides Tailwind's default scale with our values */
+  --radius-xs:   var(--radius-xs);
+  --radius-sm:   var(--radius-sm);
+  --radius-md:   var(--radius-md);
+  --radius-lg:   var(--radius-lg);
+  --radius-xl:   var(--radius-xl);
+
+  /* shadows */
+  --shadow-sm:   var(--shadow-sm);
+  --shadow-md:   var(--shadow-md);
+  --shadow-lg:   var(--shadow-lg);
+
+  /* fonts — Geist is wired via next/font in app/layout.tsx */
+  --font-sans:   var(--font-geist-sans);
+  --font-mono:   var(--font-geist-mono);
+
+  /* type scale from the design system */
+  --text-display:   36px;
+  --text-display--line-height:  44px;
+  --text-display--font-weight:  700;
+
+  --text-h1:        28px;
+  --text-h1--line-height:       36px;
+  --text-h1--font-weight:       700;
+
+  --text-h2:        20px;
+  --text-h2--line-height:       28px;
+  --text-h2--font-weight:       600;
+
+  --text-h3:        16px;
+  --text-h3--line-height:       24px;
+  --text-h3--font-weight:       600;
+
+  --text-body:      15px;
+  --text-body--line-height:     24px;
+
+  --text-ui:        14px;
+  --text-ui--line-height:       20px;
+  --text-ui--font-weight:       500;
+
+  --text-caption:   12px;
+  --text-caption--line-height:  16px;
+  --text-caption--font-weight:  500;
+
+  --text-micro:     11px;
+  --text-micro--line-height:    14px;
+  --text-micro--font-weight:    600;
+  --text-micro--letter-spacing: 0.06em;
+
+  --text-code:      13px;
+  --text-code--line-height:     20px;
+  --text-code--font-weight:     500;
+
+  --text-codeblock: 13.5px;
+  --text-codeblock--line-height: 22px;
+  --text-codeblock--font-weight: 500;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ────────────────────────────────────────────────────────────────────────────
+   Baseline
+   ──────────────────────────────────────────────────────────────────────────── */
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Tabular numerals for IDs, versions, counts (per design system) */
+.tabular-nums,
+[data-tabular] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus — never native outline; always our token-driven ring */
+:where(a, button, [role="button"], input, select, textarea, [tabindex]) {
+  outline: none;
+}
+:where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Honor prefers-reduced-motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbar — subtle on canvas */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-subtle);
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }

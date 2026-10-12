@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-12
+Last updated: 2026-10-12 (feat/app-shell)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -13,7 +13,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | ⬜     |
+| M1 | Article detail view matches mock   | Week 3        | 🟡     |
 | M2 | Create / edit article (manual)     | Week 4        | ⬜     |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -39,8 +39,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `Docs/specs/07-security.md` — authn/z, data handling, compliance
 - ✅ `Docs/specs/08-roadmap.md` — milestone detail and risks
 - ⬜ `Docs/specs/adr/0001-stack-choices.md` — record locked stack decisions
-- ⬜ Scaffold `apps/web` (Next.js 15, Tailwind v4, shadcn, TS strict)
-- ⬜ Scaffold `services/ingestion` (FastAPI, uv, ruff, pytest)
+- ✅ Scaffold `frontend/` (Next.js 16, React 19, Tailwind v4, Turbopack, TS strict)
+- ✅ Scaffold `backend/` (Python 3.12, uv) — package only; FastAPI entry not wired yet
+- ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
+- ⬜ `backend/` → FastAPI skeleton with `/healthz`
 - ⬜ `infra/compose/docker-compose.yml` — Postgres, Redis, MinIO
 - ⬜ CI: lint + typecheck + test on PR (web + python)
 - ⬜ Generate TS client from Python OpenAPI
@@ -51,13 +53,18 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 ## 2. Web app (M1 → M2)
 
 ### Shell & navigation
-- ⬜ Dark sidebar + light canvas layout (per mock)
-- ⬜ Brand mark (isometric cobalt polyhedron) + wordmark
-- ⬜ Primary nav (Home, Knowledge Base w/ children, Create, Categories, Tags, AI Assistant, Import, Analytics)
-- ⬜ Admin sub-nav (Users, Settings, Integrations)
-- ⬜ Upload CTA card (bottom of sidebar) with gradient treatment
-- ⬜ Top bar: search w/ `Ctrl+K`, notifications, theme toggle, profile
+- ✅ Design tokens wired to Tailwind v4 (`@theme inline` in `globals.css`)
+- ✅ Dark sidebar + light canvas layout (per mock)
+- ✅ Brand mark (isometric cobalt polyhedron) + wordmark
+- ✅ Primary nav (Home, Knowledge Base w/ children, Create, Categories, Tags, AI Assistant, Import, Analytics)
+- ✅ Admin sub-nav (Users, Settings, Integrations)
+- ✅ Upload CTA card (bottom of sidebar) with gradient treatment
+- 🟡 Top bar: layout + bell + theme toggle + profile stub done; search is a non-functional disclosure
+- ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
 - ⬜ Command palette (`cmdk`) with scoped scopes: articles, actions, nav
+- ⬜ Wire search disclosure to open the palette
+- ⬜ User menu dropdown (profile, keyboard shortcuts, sign out)
+- ⬜ Notifications panel
 
 ### Article detail view
 - ⬜ Breadcrumbs
@@ -158,6 +165,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | 2026-10-12 | Redis for cache, sessions, queue (BullMQ)    | One operational dependency for three jobs      |
 | 2026-10-12 | Postgres (Prisma) as primary store           | Relational model fits versioned articles       |
 | 2026-10-12 | Pydantic as source-of-truth schema           | Generate TS types to prevent drift             |
+| 2026-10-12 | Next 16 + React 19 + Tailwind v4 + Turbopack | Matches installed scaffold; `cacheComponents` + `partialPrefetching` on |
+| 2026-10-12 | `lucide-react@1.x` for icons                 | Design-system standard; `Home` is now `House`  |
+| 2026-10-12 | shadcn primitives installed by user, restyled by agent (claude.md §0.3) | Avoid hand-authored drift from shadcn source   |
+| 2026-10-12 | Shell commands run by user, PowerShell syntax (claude.md §0.1) | Windows dev environment, agent proposes only   |
 
 ---
 
