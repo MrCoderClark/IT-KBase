@@ -8,12 +8,22 @@
 
 These override anything below if they conflict.
 
-### 0.1 The user runs commands
+### 0.1 The user runs commands (on Windows PowerShell)
 
 **Do not execute shell commands unless the user explicitly asks you to.** This includes `pnpm`, `uv`, `git`, `docker`, migrations, installs, dev servers, tests — everything.
 
-Instead:
-- Write the exact command(s) in a fenced block for the user to copy/run.
+The user's shell is **Windows PowerShell**. Write every command block in PowerShell syntax, not bash:
+
+- Separate steps with newlines (one command per line) or `;`. **Do not use `&&` or `||`** — those are PowerShell 7-only and silently fail or misparse in older versions.
+- Change directory with `Set-Location frontend` or the shorter `cd frontend`. Don't assume POSIX subshells like `(cd frontend && …)`.
+- Redirect to null with `2>$null`, not `2>/dev/null`.
+- Paths use `\` or forward slashes (both work); don't use `~` for home — use `$HOME` or `$env:USERPROFILE`.
+- Env vars in commands: `$env:FOO = "bar"` (not `FOO=bar prefix`).
+- When a command must only run on success of the previous one, split into two blocks or write it as `if ($LASTEXITCODE -eq 0) { … }`.
+- Fenced blocks should be tagged ```powershell for clarity.
+
+Instead of running commands, you:
+- Write the exact command(s) in a ```powershell block for the user to copy/run.
 - Say briefly what each command does and in which directory.
 - Wait for the user to report the result before continuing.
 
@@ -37,6 +47,28 @@ We use git with a **feature-branch-per-change** workflow. For every new feature,
 5. Do not merge, rebase, or push without explicit instruction.
 
 Never commit directly to `main`. If you notice we're on `main` when a change is about to start, stop and ask the user to branch first.
+
+### 0.3 Never hand-write shadcn primitives
+
+shadcn/ui components (`button`, `input`, `dialog`, `dropdown-menu`, `tooltip`, `command`, `sheet`, …) are **installed by the user via the shadcn CLI**, not hand-authored.
+
+When a feature needs a new primitive:
+
+1. Say which component is needed and why.
+2. Give the user the exact install command, e.g.:
+   ```bash
+   # from frontend/
+   pnpm dlx shadcn@latest add button dialog
+   ```
+3. Wait for the user to run it. The CLI generates files under `frontend/components/ui/` with the current project config.
+4. Only then — restyle those generated files to match `Docs/specs/02-design-system.md` (tokens, radii, padding, focus ring). Restyling is required; stock shadcn is a starting point, not the finish line.
+
+Do **not**:
+- Create files in `frontend/components/ui/` from scratch for primitives that shadcn provides.
+- Copy-paste shadcn source off the web into the repo.
+- Install the shadcn CLI itself or run `shadcn init` (user owns that too).
+
+Custom composite components built *on top of* the primitives (e.g. `SectionHeader`, `StepBadge`, `Callout`, `CodeBlock`) are hand-authored and live outside `components/ui/` — those are fair game.
 
 ---
 
@@ -160,14 +192,22 @@ Notes:
 
 ### Before you ask the user to open a PR
 
-Hand them this command block (per rule 0.1, you don't run it):
+Hand them this command block (per rule 0.1, you don't run it). PowerShell syntax — one command per line:
 
-```bash
+```powershell
 # from frontend/
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+cd frontend
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm test
+pnpm build
+cd ..
 
 # from backend/
-uv run ruff check . && uv run pytest
+cd backend
+uv run ruff check .
+uv run pytest
+cd ..
 ```
 
 Also:
