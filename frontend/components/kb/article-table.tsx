@@ -158,6 +158,8 @@ function formatViews(n: number): string {
 
 interface ArticleTableProps {
   articles: Article[];
+  emptyTitle?: string;
+  emptyHint?: string;
 }
 
 function deriveCategories(articles: Article[]): ArticleCategory[] {
@@ -170,7 +172,11 @@ function deriveCategories(articles: Article[]): ArticleCategory[] {
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export default function ArticleTable({ articles }: ArticleTableProps) {
+export default function ArticleTable({
+  articles,
+  emptyTitle = "No articles match your filters",
+  emptyHint = "Try broadening your search or removing a filter.",
+}: ArticleTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [density, setDensity] = useState<Density>("comfortable");
@@ -312,10 +318,12 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
                     aria-hidden
                   />
                   <p className="text-[13px] font-medium text-fg-muted">
-                    No articles match your filters
+                    {articles.length === 0 ? emptyTitle : "No articles match your filters"}
                   </p>
                   <p className="mt-0.5 text-[12px] text-fg-subtle">
-                    Try broadening your search or removing a filter.
+                    {articles.length === 0
+                      ? emptyHint
+                      : "Try broadening your search or removing a filter."}
                   </p>
                 </td>
               </tr>

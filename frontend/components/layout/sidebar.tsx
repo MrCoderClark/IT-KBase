@@ -21,6 +21,13 @@ import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { SidebarUploadCta } from "@/components/layout/sidebar-upload-cta";
 
+export type KbNavCounts = {
+  all: number;
+  drafts: number;
+  shared: number;
+  recent: number;
+};
+
 type NavChild = {
   href: string;
   label: string;
@@ -35,17 +42,22 @@ type NavItem = {
   children?: NavChild[];
 };
 
+const KB_LIST_ROUTES = new Set(["/kb/drafts", "/kb/shared", "/kb/recent"]);
+
+function kbChildren(counts?: KbNavCounts): NavChild[] {
+  return [
+    { href: "/kb", label: "All Articles", count: counts?.all },
+    { href: "/kb/drafts", label: "My Drafts", count: counts?.drafts },
+    { href: "/kb/shared", label: "Shared With Me", count: counts?.shared },
+    { href: "/kb/recent", label: "Recently Updated", count: counts?.recent },
+  ];
+}
+
 const PRIMARY: NavItem[] = [
   { href: "/", label: "Home", icon: House },
   {
     label: "Knowledge Base",
     icon: BookOpen,
-    children: [
-      { href: "/kb", label: "All Articles", count: 248 },
-      { href: "/kb/drafts", label: "My Drafts", count: 12 },
-      { href: "/kb/shared", label: "Shared With Me", count: 8 },
-      { href: "/kb/recent", label: "Recently Updated", count: 24 },
-    ],
   },
   { href: "/create", label: "Create Article", icon: Plus },
   { href: "/categories", label: "Categories", icon: FolderClosed },
@@ -64,11 +76,19 @@ const ADMIN: NavItem[] = [
 function isActive(pathname: string, href?: string) {
   if (!href) return false;
   if (href === "/") return pathname === "/";
+  if (href === "/kb") {
+    if (pathname === "/kb") return true;
+    if (KB_LIST_ROUTES.has(pathname)) return false;
+    return pathname.startsWith("/kb/");
+  }
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar() {
+export function Sidebar({ counts }: { counts?: KbNavCounts }) {
   const pathname = usePathname();
+  const items = PRIMARY.map((item) =>
+    item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item,
+  );
 
   return (
     <aside
@@ -94,7 +114,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="min-h-0 flex-1 overflow-y-auto px-3">
         <ul className="flex flex-col gap-0.5">
-          {PRIMARY.map((item) => (
+          {items.map((item) => (
             <NavRow key={item.label} item={item} pathname={pathname} />
           ))}
         </ul>
