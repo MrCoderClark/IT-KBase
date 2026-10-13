@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/prisma-schema)
+Last updated: 2026-10-13 (feat/article-editor)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -91,12 +91,12 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ## 3. Authoring (M2)
 
-- ⬜ Create Article wizard (manual path)
+- 🟡 Draft editor at `/create` and `/kb/[slug]/edit` — template sections, labeled command fields, callout preview and validation, metadata rail, save writes a new `ArticleVersion`
 - ⬜ TipTap editor with custom nodes (Prerequisite, Step, Verification, Callout, CodeBlock)
-- ⬜ Side-by-side preview matching read view
+- ⬜ Side-by-side preview matching read view (the field editor is the first stand-in)
 - ⬜ Autosave to Redis every 10s, debounced persist to Postgres
 - ⬜ Publish flow with checklist (title, category, 1+ tag, summary, ≥1 step)
-- ⬜ Version bump UX (minor/major)
+- 🟡 Version string bumps the patch on each save (`1.2` → `1.3`); minor/major choice still todo
 
 ---
 

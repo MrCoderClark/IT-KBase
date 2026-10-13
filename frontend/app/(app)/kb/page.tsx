@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getAllArticles } from "@/lib/queries/articles";
 import ArticleTable from "@/components/kb/article-table";
@@ -22,8 +23,8 @@ export default function AllArticlesPage() {
             Browse and manage knowledge base articles.
           </p>
         </div>
-        <button
-          type="button"
+        <Link
+          href="/create"
           className="
             inline-flex items-center gap-1.5 rounded-lg
             bg-accent px-3.5 py-2
@@ -35,7 +36,7 @@ export default function AllArticlesPage() {
         >
           <Plus size={15} aria-hidden />
           New Article
-        </button>
+        </Link>
       </div>
 
       <Suspense

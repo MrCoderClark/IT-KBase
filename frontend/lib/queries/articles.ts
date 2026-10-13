@@ -234,6 +234,14 @@ export async function getAllCategories() {
   });
 }
 
+/** All tags, for the editor picker. */
+export async function getAllTags() {
+  return prisma.tag.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true, slug: true },
+  });
+}
+
 /** All article slugs (for generateStaticParams). */
 export async function getAllArticleSlugs(): Promise<string[]> {
   const rows = await prisma.article.findMany({
