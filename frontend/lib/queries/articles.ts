@@ -263,6 +263,52 @@ export async function getArticleBySlug(
   };
 }
 
+export async function getCategoryIndex() {
+  const rows = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true, slug: true, _count: { select: { articles: true } } },
+  });
+  return rows.map((row) => ({
+    name: row.name,
+    slug: row.slug,
+    count: row._count.articles,
+  }));
+}
+
+export async function getTagIndex() {
+  const rows = await prisma.tag.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true, slug: true, _count: { select: { articles: true } } },
+  });
+  return rows.map((row) => ({
+    name: row.name,
+    slug: row.slug,
+    count: row._count.articles,
+  }));
+}
+
+/** Articles in one category. Null when the category slug does not exist. */
+export async function getArticlesInCategory(slug: string) {
+  const category = await prisma.category.findUnique({
+    where: { slug },
+    select: { name: true },
+  });
+  if (!category) return null;
+  const articles = await listArticles({ category: { slug } });
+  return { name: category.name, articles };
+}
+
+/** Articles with one tag. Null when the tag slug does not exist. */
+export async function getArticlesWithTag(slug: string) {
+  const tag = await prisma.tag.findUnique({
+    where: { slug },
+    select: { name: true },
+  });
+  if (!tag) return null;
+  const articles = await listArticles({ tags: { some: { tag: { slug } } } });
+  return { name: tag.name, articles };
+}
+
 /** All unique categories (for filter dropdowns). */
 export async function getAllCategories() {
   return prisma.category.findMany({

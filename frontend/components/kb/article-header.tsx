@@ -29,7 +29,11 @@ export function ArticleHeader({ article }: { article: Article }) {
       <div className="min-w-0 flex-1">
         {/* Category chip */}
         {article.category && (
-          <CategoryChip name={article.category.name} className="mb-3" />
+          <CategoryChip
+            name={article.category.name}
+            slug={article.category.slug}
+            className="mb-3"
+          />
         )}
 
         {/* Title */}
