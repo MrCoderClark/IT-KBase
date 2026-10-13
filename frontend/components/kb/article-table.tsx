@@ -8,6 +8,7 @@ import {
   ArrowDown,
   Eye,
   FileText,
+  Pencil,
   Search,
 } from "lucide-react";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
@@ -258,12 +259,13 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
       <div className="rounded-xl border border-border bg-surface shadow-[0_1px_2px_rgba(15,23,42,.06),0_4px_12px_rgba(15,23,42,.04)]">
         <table className="w-full table-fixed text-left">
           <colgroup>
-            <col className="w-[42%]" />
+            <col className="w-[36%]" />
             <col className="w-[12%]" />
-            <col className="w-[16%]" />
+            <col className="w-[14%]" />
             <col className="w-[10%]" />
-            <col className="w-[12%]" />
+            <col className="w-[11%]" />
             <col className="w-[8%]" />
+            <col className="w-[9%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border">
@@ -275,6 +277,7 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
                   { key: "status", label: "Status", align: "left" },
                   { key: "updatedAt", label: "Updated", align: "left" },
                   { key: "views", label: "Views", align: "right" },
+                  { key: null, label: "", align: "right" },
                 ] as { key: SortKey | null; label: string; align: "left" | "right" }[]
               ).map((col, i) => (
                 <th
@@ -302,7 +305,7 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
           <tbody className="divide-y divide-border/60">
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-16 text-center">
+                <td colSpan={7} className="px-4 py-16 text-center">
                   <FileText
                     size={28}
                     className="mx-auto mb-2 text-fg-subtle/30"
@@ -385,6 +388,16 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
                     <Eye size={11} aria-hidden />
                     {formatViews(article.views)}
                   </span>
+                </td>
+
+                <td className={`px-3 text-right ${isCompact ? "py-1.5" : "py-2.5"}`}>
+                  <Link
+                    href={`/kb/${article.slug}/edit`}
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent hover:text-accent-hover"
+                  >
+                    <Pencil size={12} aria-hidden />
+                    Edit
+                  </Link>
                 </td>
               </tr>
             ))}

@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/article-editor)
+Last updated: 2026-10-13 (feat/publish-checklist)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -95,8 +95,9 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ⬜ TipTap editor with custom nodes (Prerequisite, Step, Verification, Callout, CodeBlock)
 - ⬜ Side-by-side preview matching read view (the field editor is the first stand-in)
 - ⬜ Autosave to Redis every 10s, debounced persist to Postgres
-- ⬜ Publish flow with checklist (title, category, 1+ tag, summary, ≥1 step)
-- 🟡 Version string bumps the patch on each save (`1.2` → `1.3`); minor/major choice still todo
+- ✅ Publish checklist (title, category, 1+ tag, summary, ≥1 step) with minor or major bump; status dropdown cannot publish on its own
+- ✅ Edit entry points: article header, Quick Actions, and an Edit link on each All Articles row
+- ✅ Save bumps the minor number (`1.2` → `1.3`); Publish offers minor (same bump) or major (`1.2` → `2.0`)
 
 ---
 
@@ -177,6 +178,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | 2026-10-12 | Layouts use explicit `{ children: React.ReactNode }` instead of generated `LayoutProps` | `LayoutProps` only exists while `next dev` runs; explicit type lets `tsc` work standalone |
 | 2026-10-13 | Pin Prisma to v6 (`prisma@6`, `@prisma/client@6`) | Prisma 8 RC replaced `migrate` with a platform CLI; v6 keeps `migrate dev` + `db seed` |
 | 2026-10-13 | DB reads sit inside `<Suspense>`; no `dynamic` / `generateStaticParams` | `cacheComponents` rejects those route configs; Suspense is the dynamic hole |
+| 2026-10-13 | shadcn `dialog` + `button` (Base UI). Init must not own `--accent` | shadcn's accent is a hover wash; TechBase accent stays cobalt `#1E6BFF` |
 
 ---
 
