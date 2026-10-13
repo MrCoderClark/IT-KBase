@@ -14,7 +14,7 @@ export function TagChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-xs bg-accent-soft px-2 py-0.5 text-[11px] font-semibold leading-4 text-accent",
+        "inline-flex items-center whitespace-nowrap rounded-xs bg-accent-soft px-2 py-0.5 text-[11px] font-semibold leading-4 text-accent",
         className,
       )}
     >

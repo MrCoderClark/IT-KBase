@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-12 (feat/article-detail-view)
+Last updated: 2026-10-13 (feat/article-list-view)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -43,10 +43,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Scaffold `backend/` (Python 3.12, uv) — package only; FastAPI entry not wired yet
 - ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
 - ✅ `backend/` → FastAPI skeleton (`/healthz`, `/readyz`, `/docs`, structlog JSON, Pydantic Settings, pytest + ruff config, 4 smoke tests)
-- ⬜ `infra/compose/docker-compose.yml` — Postgres, Redis, MinIO
+- ✅ Docker, Redis, SeaweedFS (S3-compat) already running externally — no compose file needed in-repo yet
 - ⬜ CI: lint + typecheck + test on PR (web + python)
 - ⬜ Generate TS client from Python OpenAPI
-- ⬜ Seed data: 20 realistic IT articles across Windows, Linux, M365, Networking, Security
+- 🟡 Seed data: 11 of ~20 articles across Windows, Linux, M365, Networking, Security, AD, Integrations
 
 ---
 
@@ -81,9 +81,9 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ⬜ Keyboard shortcuts (`e` edit, `s` share, `?` help, `g a` go to articles)
 
 ### Browse / list
-- ⬜ All Articles table (compact density, sortable, filter chips)
-- ⬜ My Drafts, Shared With Me, Recently Updated views
-- ⬜ Category and Tag index pages
+- ✅ All Articles table (compact density, sortable columns, dropdown filters, search, 11 seed articles)
+- ⬜ My Drafts, Shared With Me, Recently Updated views (deferred — same table shape, needs real DB)
+- ⬜ Category and Tag index pages (deferred — needs real DB)
 
 ---
 
