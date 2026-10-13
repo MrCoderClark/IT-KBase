@@ -1,59 +1,42 @@
-import Link from "next/link";
-import { FileText } from "lucide-react";
-import { SEED_ARTICLES } from "@/lib/seed/articles";
+import { Plus } from "lucide-react";
+import { ALL_ARTICLES } from "@/lib/seed/articles";
+import ArticleTable from "@/components/kb/article-table";
 
 /**
- * All Articles — temporary list view that links to the seed article.
- * Gets replaced by a full table view in a later pass (M1 → M4).
+ * All Articles — compact sortable table with filter dropdowns and search.
+ * Spec: F4 (Docs/specs/04-features.md)
  */
 export default function AllArticlesPage() {
-  const articles = Object.values(SEED_ARTICLES);
-
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-8 py-10">
-      <div className="text-[11px] leading-4 font-semibold tracking-[0.08em] uppercase text-fg-subtle">
-        Knowledge Base
+    <div className="mx-auto w-full max-w-[1200px] px-6 py-5">
+      {/* Header */}
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] leading-7 font-bold tracking-tight text-fg">
+            All Articles
+          </h1>
+          <p className="mt-0.5 text-[13px] text-fg-subtle">
+            Browse and manage knowledge base articles.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="
+            inline-flex items-center gap-1.5 rounded-lg
+            bg-accent px-3.5 py-2
+            text-[13px] font-semibold text-white
+            shadow-sm transition-all
+            hover:bg-accent/90 hover:shadow-md
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2
+          "
+        >
+          <Plus size={15} aria-hidden />
+          New Article
+        </button>
       </div>
-      <h1 className="mt-1 text-[28px] leading-9 font-bold tracking-tight text-fg">
-        All Articles
-      </h1>
-      <p className="mt-2 text-[15px] leading-6 text-fg-muted">
-        {articles.length} article{articles.length === 1 ? "" : "s"} in the
-        knowledge base.
-      </p>
 
-      <ul className="mt-6 divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
-        {articles.map((article) => (
-          <li key={article.slug}>
-            <Link
-              href={`/kb/${article.slug}`}
-              className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-surface-muted"
-            >
-              <FileText
-                size={18}
-                className="shrink-0 text-fg-subtle"
-                aria-hidden
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[14px] leading-5 font-medium text-fg">
-                  {article.title}
-                </div>
-                <div className="mt-0.5 truncate text-[12px] leading-4 text-fg-subtle">
-                  {article.category?.name} · {article.readingTimeMinutes} min
-                  read · v{article.version}
-                </div>
-              </div>
-              <span className="shrink-0 rounded-xs border border-accent-soft bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent">
-                {article.status === "published"
-                  ? "Published"
-                  : article.status === "in_review"
-                    ? "In Review"
-                    : "Draft"}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Table */}
+      <ArticleTable articles={ALL_ARTICLES} />
     </div>
   );
 }
