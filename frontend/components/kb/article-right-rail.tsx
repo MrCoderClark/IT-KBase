@@ -73,13 +73,15 @@ function ArticleDetailsCard({ article }: { article: Article }) {
         </DetailRow>
 
         <DetailRow label="Category">
-          {article.category && <CategoryChip name={article.category.name} />}
+          {article.category && (
+            <CategoryChip name={article.category.name} slug={article.category.slug} />
+          )}
         </DetailRow>
 
         <DetailRow label="Tags">
           <div className="flex flex-wrap gap-1.5">
             {article.tags.map((tag) => (
-              <TagChip key={tag.slug} name={tag.name} />
+              <TagChip key={tag.slug} name={tag.name} slug={tag.slug} />
             ))}
           </div>
         </DetailRow>

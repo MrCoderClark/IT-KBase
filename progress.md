@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/kb-list-views)
+Last updated: 2026-10-13 (feat/category-tag-pages)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -87,7 +87,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ My Drafts (`/kb/drafts`, Joe Clark's drafts) and Recently Updated (`/kb/recent`, not archived)
 - 🟡 Shared With Me (`/kb/shared`) is an empty state until review requests exist
 - ✅ Sidebar counts for All Articles, My Drafts, Shared, and Recent come from Postgres
-- ⬜ Category and Tag index pages
+- ✅ Category and tag indexes (`/categories`, `/tags`) and filtered article lists (`/categories/[slug]`, `/tags/[slug]`); chips link through
 
 ---
 
@@ -125,7 +125,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ⬜ Postgres FTS with `tsvector` + ranking
 - ⬜ `Ctrl+K` palette hits articles, actions, and nav
 - ⬜ Facets: category, tag, status, updated-within
-- ⬜ Category CRUD (admin)
+- ✅ Public category and tag browse pages (index + filtered article list)
+- ⬜ Category CRUD (admin): create, rename, merge; cannot delete a category that still has articles
 - ⬜ Tag CRUD + merge
 - ⬜ Related articles: lexical + embedding similarity (nice-to-have in M4)
 

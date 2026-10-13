@@ -335,20 +335,21 @@ export default function ArticleTable({
               >
                 {/* Title */}
                 <td className={`px-3 ${isCompact ? "py-1.5" : "py-2.5"}`}>
-                  <Link
-                    href={`/kb/${article.slug}`}
-                    className="flex items-center gap-2 min-w-0"
-                  >
+                  <div className="flex min-w-0 items-center gap-2">
                     {article.category && (
                       <CategoryChip
                         name={article.category.name}
-                        className="shrink-0 text-[10px] px-1.5 py-px"
+                        slug={article.category.slug}
+                        className="shrink-0 px-1.5 py-px text-[10px]"
                       />
                     )}
-                    <span className="truncate text-[13px] font-medium text-fg group-hover:text-accent transition-colors">
+                    <Link
+                      href={`/kb/${article.slug}`}
+                      className="truncate text-[13px] font-medium text-fg transition-colors group-hover:text-accent"
+                    >
                       {article.title}
-                    </span>
-                  </Link>
+                    </Link>
+                  </div>
                 </td>
 
                 {/* Author */}
@@ -365,7 +366,8 @@ export default function ArticleTable({
                       <TagChip
                         key={tag.slug}
                         name={tag.name}
-                        className="text-[10px] px-1.5 py-px"
+                        slug={tag.slug}
+                        className="px-1.5 py-px text-[10px]"
                       />
                     ))}
                     {article.tags.length > 2 && (
