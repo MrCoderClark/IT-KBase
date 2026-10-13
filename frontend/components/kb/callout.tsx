@@ -1,4 +1,4 @@
-import { TriangleAlert, Info, CircleCheck } from "lucide-react";
+import { TriangleAlert, Info, CircleCheck, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CalloutVariant } from "@/lib/types/article";
 
@@ -20,11 +20,11 @@ const VARIANT_STYLES: Record<
     icon: Info,
   },
   important: {
-    bg: "bg-info-soft",
-    border: "border-info/40",
-    iconBg: "bg-info/10",
-    iconColor: "text-info",
-    icon: Info,
+    bg: "bg-accent-soft",
+    border: "border-accent/40",
+    iconBg: "bg-accent/10",
+    iconColor: "text-accent",
+    icon: CircleAlert,
   },
   warning: {
     bg: "bg-warning-soft",
@@ -84,7 +84,7 @@ export function Callout({
         <div className="text-[16px] leading-6 font-semibold text-fg">
           {title}
         </div>
-        <div className="mt-1 text-[15px] leading-6 text-fg-muted">
+        <div className="mt-1 text-[15px] leading-6 break-words text-fg-muted">
           {children}
         </div>
       </div>
