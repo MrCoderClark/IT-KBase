@@ -63,6 +63,8 @@ export type EditorSection =
 export interface EditorDraft {
   /** Null when creating. Stable on edit so the URL does not change. */
   slug: string | null;
+  /** Current stored version. Null until the first save. Display only. */
+  version: string | null;
   title: string;
   summary: string;
   categorySlug: string | null;
@@ -70,6 +72,8 @@ export interface EditorDraft {
   status: ArticleStatus;
   sections: EditorSection[];
 }
+
+export type VersionBump = "patch" | "minor" | "major";
 
 const DEFAULT_TITLES: Record<EditableKind, string> = {
   overview: "Overview",
@@ -115,6 +119,7 @@ export function defaultSection(kind: EditableKind): EditorSection {
 export function blankDraft(): EditorDraft {
   return {
     slug: null,
+    version: null,
     title: "",
     summary: "",
     categorySlug: null,
@@ -132,6 +137,7 @@ export function articleToDraft(article: Article): EditorDraft {
 
   return {
     slug: article.slug,
+    version: article.version,
     title: article.title,
     summary: article.summary ?? "",
     categorySlug: article.category?.slug ?? null,
@@ -290,6 +296,45 @@ export function calloutIssues(draft: EditorDraft): DraftIssue[] {
   });
 
   return issues;
+}
+
+export interface PublishCheck {
+  id: "title" | "category" | "tag" | "summary" | "step";
+  label: string;
+  ok: boolean;
+}
+
+/** Gates the Publish action. Save does not use this list. */
+export function publishChecks(draft: EditorDraft): PublishCheck[] {
+  const steps = draft.sections.find((section) => section.kind === "steps");
+  const hasStep =
+    steps?.kind === "steps" &&
+    steps.steps.some((step) => step.title.trim() || step.body.trim() || step.code.trim());
+
+  return [
+    { id: "title", label: "Title", ok: Boolean(draft.title.trim()) },
+    { id: "category", label: "Category", ok: Boolean(draft.categorySlug) },
+    { id: "tag", label: "At least one tag", ok: draft.tagSlugs.length > 0 },
+    { id: "summary", label: "Summary", ok: Boolean(draft.summary.trim()) },
+    { id: "step", label: "At least one step", ok: hasStep },
+  ];
+}
+
+export function publishBlockReason(draft: EditorDraft): string | null {
+  const missing = publishChecks(draft).filter((check) => !check.ok);
+  if (missing.length === 0) return null;
+  return `Publish needs ${missing.map((check) => check.label.toLowerCase()).join(", ")}.`;
+}
+
+/** First save is 1.0. Later saves increment the minor number. Major resets it. */
+export function nextArticleVersion(current: string | null, bump: VersionBump): string {
+  if (!current) return "1.0";
+  const match = /^(\d+)\.(\d+)$/.exec(current);
+  if (!match) return bump === "major" ? "2.0" : "1.1";
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  if (bump === "major") return `${major + 1}.0`;
+  return `${major}.${minor + 1}`;
 }
 
 export function slugifyTitle(title: string): string {

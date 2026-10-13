@@ -15,7 +15,10 @@ import {
   slugifyTitle,
 } from "@/lib/editor/draft";
 import { saveArticle } from "@/lib/actions/save-article";
+import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
+import { Button } from "@/components/ui/button";
+import type { VersionBump } from "@/lib/editor/draft";
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] leading-5 text-fg focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30";
@@ -23,7 +26,6 @@ const fieldClass =
 const STATUS_OPTIONS: { value: ArticleStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "in_review", label: "In Review" },
-  { value: "published", label: "Published" },
   { value: "archived", label: "Archived" },
 ];
 
@@ -40,6 +42,8 @@ export function ArticleEditor({
   const [draft, setDraft] = useState(initial);
   const [savedJson] = useState(() => JSON.stringify(initial));
   const [error, setError] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
   const dirty = JSON.stringify(draft) !== savedJson;
@@ -56,25 +60,51 @@ export function ArticleEditor({
     });
   }
 
-  function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
+  function validateCallouts(): boolean {
     const nextIssues = calloutIssues(draft);
     setIssues(nextIssues);
     if (!draft.title.trim()) {
       setError("Title is required.");
-      return;
+      return false;
     }
     if (nextIssues.length > 0) {
       setError("Fill in each callout title and body, or remove the callout.");
-      return;
+      return false;
     }
+    return true;
+  }
+
+  function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (!validateCallouts()) return;
     startTransition(async () => {
       const result = await saveArticle(draft);
       if (!result.ok) {
         setError(result.error);
         return;
       }
+      router.push(`/kb/${result.slug}`);
+      router.refresh();
+    });
+  }
+
+  function openPublish() {
+    setError(null);
+    setPublishError(null);
+    if (!validateCallouts()) return;
+    setPublishOpen(true);
+  }
+
+  function onPublish(bump: Exclude<VersionBump, "patch">) {
+    setPublishError(null);
+    startTransition(async () => {
+      const result = await saveArticle({ ...draft, status: "published" }, bump);
+      if (!result.ok) {
+        setPublishError(result.error);
+        return;
+      }
+      setPublishOpen(false);
       router.push(`/kb/${result.slug}`);
       router.refresh();
     });
@@ -100,15 +130,23 @@ export function ArticleEditor({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={pending}
-            className="inline-flex h-9 items-center rounded-lg bg-accent px-3.5 text-[13px] font-semibold text-white shadow-sm hover:bg-accent/90 disabled:opacity-60"
-          >
-            {pending ? "Saving…" : "Save draft"}
-          </button>
+          <Button type="submit" variant="outline" disabled={pending}>
+            {pending && !publishOpen ? "Saving…" : "Save"}
+          </Button>
+          <Button type="button" disabled={pending} onClick={openPublish}>
+            Publish
+          </Button>
         </div>
       </div>
+
+      <PublishDialog
+        draft={draft}
+        open={publishOpen}
+        pending={pending && publishOpen}
+        error={publishError}
+        onOpenChange={setPublishOpen}
+        onPublish={onPublish}
+      />
 
       <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1 space-y-4">
@@ -255,6 +293,7 @@ export function ArticleEditor({
               }
               className={fieldClass}
             >
+              {draft.status === "published" && <option value="published">Published</option>}
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}

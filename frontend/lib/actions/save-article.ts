@@ -15,7 +15,10 @@ import {
   type EditorSection,
   type EditorStep,
   calloutIssues,
+  nextArticleVersion,
+  publishBlockReason,
   slugifyTitle,
+  type VersionBump,
 } from "@/lib/editor/draft";
 
 const AUTHOR_EMAIL = "joe.clark@techbase.local";
@@ -43,13 +46,22 @@ type SectionWrite = {
   blocks: BlockWrite[];
 };
 
-export async function saveArticle(input: EditorDraft): Promise<SaveResult> {
+export async function saveArticle(
+  input: EditorDraft,
+  bump: VersionBump = "patch",
+): Promise<SaveResult> {
+  const publishing = bump === "minor" || bump === "major";
+  const status: ArticleStatus = publishing ? "published" : input.status;
   const title = input.title.trim();
   if (!title) return { ok: false, error: "Title is required." };
   const calloutError = calloutIssues(input)[0]?.message;
   if (calloutError) return { ok: false, error: calloutError };
-  if (!(STATUSES as string[]).includes(input.status)) {
+  if (!(STATUSES as string[]).includes(status)) {
     return { ok: false, error: "Unknown status." };
+  }
+  if (publishing) {
+    const reason = publishBlockReason(input);
+    if (reason) return { ok: false, error: reason };
   }
 
   const author = await prisma.user.findUnique({
@@ -105,8 +117,12 @@ export async function saveArticle(input: EditorDraft): Promise<SaveResult> {
     return { ok: false, error: "Article not found." };
   }
 
+  if (!publishing && status === "published" && existing?.status !== "published") {
+    return { ok: false, error: "Use Publish to release this article." };
+  }
+
   const slug = existing ? existing.slug : await uniqueSlug(slugifyTitle(title));
-  const version = nextVersion(existing?.version ?? null);
+  const version = nextArticleVersion(existing?.version ?? null, bump);
   const sections = [
     ...draftSections(input.sections),
     ...preservedSections(existing),
@@ -119,12 +135,12 @@ export async function saveArticle(input: EditorDraft): Promise<SaveResult> {
           data: {
             title,
             summary: input.summary.trim() || null,
-            status: input.status,
+            status,
             categoryId: category?.id ?? null,
             version,
             readingTimeMinutes: readingMinutes(input.sections),
             publishedAt:
-              input.status === "published"
+              status === "published"
                 ? (existing.publishedAt ?? new Date())
                 : existing.publishedAt,
           },
@@ -134,12 +150,12 @@ export async function saveArticle(input: EditorDraft): Promise<SaveResult> {
             slug,
             title,
             summary: input.summary.trim() || null,
-            status: input.status,
+            status,
             categoryId: category?.id ?? null,
             authorId: author.id,
             version,
             readingTimeMinutes: readingMinutes(input.sections),
-            publishedAt: input.status === "published" ? new Date() : null,
+            publishedAt: status === "published" ? new Date() : null,
           },
         });
 
@@ -157,7 +173,7 @@ export async function saveArticle(input: EditorDraft): Promise<SaveResult> {
         version,
         title,
         summary: input.summary.trim() || null,
-        notes: "Saved from the editor",
+        notes: publishing ? "Published from the editor" : "Saved from the editor",
         sections: {
           create: sections.map((section) => ({
             kind: section.kind,
@@ -341,13 +357,6 @@ function hasStep(step: EditorStep): boolean {
 function readingMinutes(sections: EditorSection[]): number {
   const words = JSON.stringify(sections).split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
-}
-
-function nextVersion(current: string | null): string {
-  if (!current) return "1.0";
-  const match = /^(\d+)\.(\d+)$/.exec(current);
-  if (!match) return "1.1";
-  return `${match[1]}.${Number(match[2]) + 1}`;
 }
 
 async function uniqueSlug(base: string): Promise<string> {
