@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/publish-checklist)
+Last updated: 2026-10-13 (feat/kb-list-views)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -14,7 +14,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done, keyboard shortcuts remain) |
-| M2 | Create / edit article (manual)     | Week 4        | ⬜     |
+| M2 | Create / edit article (manual)     | Week 4        | 🟡 (field editor + publish done; TipTap and autosave remain) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | ⬜     |
@@ -84,8 +84,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ### Browse / list
 - ✅ All Articles table (compact density, sortable columns, dropdown filters, search, 11 seed articles)
-- ⬜ My Drafts, Shared With Me, Recently Updated views (deferred — same table shape, needs real DB)
-- ⬜ Category and Tag index pages (deferred — needs real DB)
+- ✅ My Drafts (`/kb/drafts`, Joe Clark's drafts) and Recently Updated (`/kb/recent`, not archived)
+- 🟡 Shared With Me (`/kb/shared`) is an empty state until review requests exist
+- ✅ Sidebar counts for All Articles, My Drafts, Shared, and Recent come from Postgres
+- ⬜ Category and Tag index pages
 
 ---
 

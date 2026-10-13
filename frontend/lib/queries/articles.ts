@@ -4,6 +4,7 @@
  * These run in Server Components only. Never import from client components.
  */
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type {
   Article,
@@ -179,13 +180,49 @@ function mapSection(s: any): Section {
 // Public query functions
 // ---------------------------------------------------------------------------
 
-/** All articles for the list view (no sections/blocks loaded). */
-export async function getAllArticles(): Promise<Article[]> {
+/** Stand-in author until sign-in exists. Matches the editor save path. */
+const CURRENT_AUTHOR_EMAIL = "joe.clark@techbase.local";
+
+async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]> {
   const rows = await prisma.article.findMany({
+    where,
     select: articleListSelect,
     orderBy: { updatedAt: "desc" },
   });
   return rows.map(mapListArticle);
+}
+
+/** All articles for the list view (no sections/blocks loaded). */
+export async function getAllArticles(): Promise<Article[]> {
+  return listArticles();
+}
+
+/** Drafts owned by the stand-in author. */
+export async function getMyDrafts(): Promise<Article[]> {
+  return listArticles({
+    status: "draft",
+    author: { email: CURRENT_AUTHOR_EMAIL },
+  });
+}
+
+/** Every article that is still in the library, newest first. */
+export async function getRecentlyUpdated(): Promise<Article[]> {
+  return listArticles({ status: { not: "archived" } });
+}
+
+export async function getKbNavCounts(): Promise<{
+  all: number;
+  drafts: number;
+  shared: number;
+  recent: number;
+}> {
+  const mine = { email: CURRENT_AUTHOR_EMAIL };
+  const [all, drafts, recent] = await Promise.all([
+    prisma.article.count(),
+    prisma.article.count({ where: { status: "draft", author: mine } }),
+    prisma.article.count({ where: { status: { not: "archived" } } }),
+  ]);
+  return { all, drafts, shared: 0, recent };
 }
 
 /** Single article by slug with full section + block tree. */

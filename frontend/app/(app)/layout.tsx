@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { getKbNavCounts } from "@/lib/queries/articles";
 
 /**
  * Authenticated app shell: dark sidebar (left, full-height sticky) + dark
@@ -17,8 +18,8 @@ export default function AppLayout({
 }) {
   return (
     <div className="relative flex min-h-screen bg-canvas text-fg">
-      <Suspense>
-        <Sidebar />
+      <Suspense fallback={<Sidebar />}>
+        <SidebarWithCounts />
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
@@ -26,4 +27,9 @@ export default function AppLayout({
       </div>
     </div>
   );
+}
+
+async function SidebarWithCounts() {
+  const counts = await getKbNavCounts();
+  return <Sidebar counts={counts} />;
 }
