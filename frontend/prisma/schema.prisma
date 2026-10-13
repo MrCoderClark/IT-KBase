@@ -1,0 +1,242 @@
+// Prisma schema for TechBase — IT Knowledge Base
+// Source of truth: Docs/specs/03-data-model.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  reader
+  author
+  reviewer
+  admin
+}
+
+enum ArticleStatus {
+  draft
+  in_review
+  published
+  archived
+}
+
+enum SectionKind {
+  overview
+  prerequisites
+  steps
+  verification
+  troubleshooting
+  related
+  custom
+}
+
+enum BlockKind {
+  prose
+  step
+  callout
+  code
+  image
+  checklist
+}
+
+enum CalloutVariant {
+  info
+  important
+  warning
+  success
+}
+
+enum SourceKind {
+  docx
+  pdf
+  manual
+  url
+}
+
+enum JobStatus {
+  queued
+  parsing
+  extracting
+  structuring
+  validating
+  succeeded
+  failed
+  cancelled
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(author)
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles Article[]        @relation("ArticleAuthor")
+  versions ArticleVersion[] @relation("VersionAuthor")
+  feedback Feedback[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  color    String?
+  articles Article[]
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  slug     String       @unique
+  articles ArticleTag[]
+}
+
+model Article {
+  id                 String        @id @default(cuid())
+  slug               String        @unique
+  title              String
+  summary            String?
+  heroImageUrl       String?
+  status             ArticleStatus @default(draft)
+  readingTimeMinutes Int           @default(0)
+  version            String        @default("1.0")
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  authorId String
+  author   User   @relation("ArticleAuthor", fields: [authorId], references: [id])
+
+  currentVersionId String?         @unique
+  currentVersion   ArticleVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+
+  draftVersionId String?         @unique
+  draftVersion   ArticleVersion? @relation("DraftVersion", fields: [draftVersionId], references: [id])
+
+  versions ArticleVersion[] @relation("ArticleVersions")
+
+  tags         ArticleTag[]
+  feedback     Feedback[]
+  ingestionJob IngestionJob?
+
+  views      Int @default(0)
+  helpful    Int @default(0)
+  notHelpful Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  searchVector Unsupported("tsvector")?
+
+  @@index([status, updatedAt])
+  @@index([categoryId])
+}
+
+model ArticleVersion {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation("ArticleVersions", fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("VersionAuthor", fields: [authorId], references: [id])
+
+  version  String
+  title    String
+  summary  String?
+  sections Section[]
+  notes    String?
+
+  createdAt DateTime @default(now())
+
+  currentFor Article? @relation("CurrentVersion")
+  draftFor   Article? @relation("DraftVersion")
+
+  @@unique([articleId, version])
+  @@index([articleId, createdAt])
+}
+
+model Section {
+  id        String         @id @default(cuid())
+  versionId String
+  version   ArticleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  kind      SectionKind
+  title     String
+  order     Int
+  blocks    Block[]
+
+  @@index([versionId, order])
+}
+
+model Block {
+  id        String  @id @default(cuid())
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  kind      BlockKind
+  order     Int
+
+  content Json?
+
+  stepNumber     Int?
+  calloutVariant CalloutVariant?
+  language       String?
+  code           String?
+  imageUrl       String?
+  imageAlt       String?
+
+  @@index([sectionId, order])
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  helpful   Boolean
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@index([articleId, createdAt])
+}
+
+model IngestionJob {
+  id             String     @id @default(cuid())
+  articleId      String?    @unique
+  article        Article?   @relation(fields: [articleId], references: [id])
+  sourceKind     SourceKind
+  sourceFileKey  String
+  sourceFileName String
+  sizeBytes      Int
+  status         JobStatus  @default(queued)
+  errorMessage   String?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdById    String
+  createdAt      DateTime   @default(now())
+
+  @@index([status, createdAt])
+}

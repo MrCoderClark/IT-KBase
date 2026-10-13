@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/article-list-view)
+Last updated: 2026-10-13 (feat/prisma-schema)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -46,6 +46,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Docker, Redis, SeaweedFS (S3-compat) already running externally — no compose file needed in-repo yet
 - ⬜ CI: lint + typecheck + test on PR (web + python)
 - ⬜ Generate TS client from Python OpenAPI
+- ✅ Prisma schema (`frontend/prisma/schema.prisma`) matching `03-data-model.md`; pinned to Prisma 6 (v8 RC CLI dropped `migrate`)
+- ✅ `/kb` and `/kb/[slug]` read from Postgres; seed loads 4 users, 7 categories, tags, and 11 articles
 - 🟡 Seed data: 11 of ~20 articles across Windows, Linux, M365, Networking, Security, AD, Integrations
 
 ---
@@ -173,6 +175,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | 2026-10-12 | Shell commands run by user, PowerShell syntax (claude.md §0.1) | Windows dev environment, agent proposes only   |
 | 2026-10-12 | Next.js 16 Suspense wrappers for `usePathname()` and `await params` | Required for instant navigation; client hooks and URL data must be inside `<Suspense>` |
 | 2026-10-12 | Layouts use explicit `{ children: React.ReactNode }` instead of generated `LayoutProps` | `LayoutProps` only exists while `next dev` runs; explicit type lets `tsc` work standalone |
+| 2026-10-13 | Pin Prisma to v6 (`prisma@6`, `@prisma/client@6`) | Prisma 8 RC replaced `migrate` with a platform CLI; v6 keeps `migrate dev` + `db seed` |
+| 2026-10-13 | DB reads sit inside `<Suspense>`; no `dynamic` / `generateStaticParams` | `cacheComponents` rejects those route configs; Suspense is the dynamic hole |
 
 ---
 

@@ -10,8 +10,7 @@ import {
   FileText,
   Search,
 } from "lucide-react";
-import type { Article, ArticleStatus } from "@/lib/types/article";
-import { ALL_CATEGORIES } from "@/lib/seed/articles";
+import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { StatusChip } from "@/components/kb/status-chip";
 import { TagChip } from "@/components/kb/tag-chip";
@@ -160,6 +159,16 @@ interface ArticleTableProps {
   articles: Article[];
 }
 
+function deriveCategories(articles: Article[]): ArticleCategory[] {
+  const map = new Map<string, ArticleCategory>();
+  for (const a of articles) {
+    if (a.category && !map.has(a.category.slug)) {
+      map.set(a.category.slug, a.category);
+    }
+  }
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export default function ArticleTable({ articles }: ArticleTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -227,7 +236,7 @@ export default function ArticleTable({ articles }: ArticleTableProps) {
 
         {/* Filter dropdowns */}
         <ArticleFilters
-          categories={ALL_CATEGORIES}
+          categories={deriveCategories(articles)}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           selectedStatus={selectedStatus}

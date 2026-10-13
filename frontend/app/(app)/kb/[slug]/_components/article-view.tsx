@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getArticleBySlug } from "@/lib/seed/articles";
+import { getArticleBySlug } from "@/lib/queries/articles";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
@@ -10,6 +10,8 @@ import { ArticleRightRail } from "@/components/kb/article-right-rail";
  * Inner async component that awaits params inside Suspense.
  * Next.js 16 requires URL data (params) to be resolved inside a
  * Suspense boundary so navigation stays instant.
+ *
+ * Data is fetched from Postgres via Prisma.
  */
 export async function ArticleView({
   params,
@@ -17,7 +19,7 @@ export async function ArticleView({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug);
 
   if (!article) notFound();
 
