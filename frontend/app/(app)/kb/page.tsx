@@ -1,15 +1,18 @@
+import { Suspense } from "react";
 import { Plus } from "lucide-react";
-import { ALL_ARTICLES } from "@/lib/seed/articles";
+import { getAllArticles } from "@/lib/queries/articles";
 import ArticleTable from "@/components/kb/article-table";
 
 /**
  * All Articles — compact sortable table with filter dropdowns and search.
  * Spec: F4 (Docs/specs/04-features.md)
+ *
+ * The Prisma query lives inside Suspense so Next.js 16 Cache Components
+ * can prerender the static shell and stream the table.
  */
 export default function AllArticlesPage() {
   return (
     <div className="mx-auto w-full max-w-[1200px] px-6 py-5">
-      {/* Header */}
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[22px] leading-7 font-bold tracking-tight text-fg">
@@ -35,8 +38,20 @@ export default function AllArticlesPage() {
         </button>
       </div>
 
-      {/* Table */}
-      <ArticleTable articles={ALL_ARTICLES} />
+      <Suspense
+        fallback={
+          <div className="rounded-xl border border-border bg-surface px-4 py-10 text-center text-[13px] text-fg-subtle">
+            Loading articles…
+          </div>
+        }
+      >
+        <ArticleTableLoader />
+      </Suspense>
     </div>
   );
+}
+
+async function ArticleTableLoader() {
+  const articles = await getAllArticles();
+  return <ArticleTable articles={articles} />;
 }
