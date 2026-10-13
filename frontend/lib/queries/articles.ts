@@ -210,6 +210,33 @@ export async function getRecentlyUpdated(): Promise<Article[]> {
   return listArticles({ status: { not: "archived" } });
 }
 
+/** Counts and the newest articles for the home brief. */
+export async function getHomeBrief(): Promise<{
+  published: number;
+  drafts: number;
+  inReview: number;
+  recent: Article[];
+}> {
+  const mine = { email: CURRENT_AUTHOR_EMAIL };
+  const [published, drafts, inReview, recentRows] = await Promise.all([
+    prisma.article.count({ where: { status: "published" } }),
+    prisma.article.count({ where: { status: "draft", author: mine } }),
+    prisma.article.count({ where: { status: "in_review" } }),
+    prisma.article.findMany({
+      where: { status: { not: "archived" } },
+      select: articleListSelect,
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+    }),
+  ]);
+  return {
+    published,
+    drafts,
+    inReview,
+    recent: recentRows.map(mapListArticle),
+  };
+}
+
 export async function getKbNavCounts(): Promise<{
   all: number;
   drafts: number;

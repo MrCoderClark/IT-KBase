@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/category-tag-pages)
+Last updated: 2026-10-13 (feat/home-live-brief)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -61,6 +61,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Primary nav (Home, Knowledge Base w/ children, Create, Categories, Tags, AI Assistant, Import, Analytics)
 - ✅ Admin sub-nav (Users, Settings, Integrations)
 - ✅ Upload CTA card (bottom of sidebar) with gradient treatment
+- ✅ Home brief: published count, your drafts (links to `/kb/drafts`), in-review count, and the five newest articles
 - 🟡 Top bar: layout + bell + theme toggle + profile stub done; search is a non-functional disclosure
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
 - ⬜ Command palette (`cmdk`) with scoped scopes: articles, actions, nav
