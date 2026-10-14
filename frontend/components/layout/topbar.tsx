@@ -1,12 +1,12 @@
-import { Bell, ChevronDown, Search } from "lucide-react";
+import { Bell, ChevronDown } from "lucide-react";
+import { SearchTrigger } from "@/components/layout/command-palette";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 /**
  * Dark top bar spanning the main area, visually seamless with the sidebar
  * (same gradient top value). Height 64px, sticky.
  *
- * Pass B is visual-only:
- *   - Search is a non-functional disclosure (opens the command palette later).
+ *   - Search opens the command palette. Ctrl+K does the same from any screen.
  *   - Bell has a static unread count badge.
  *   - Theme toggle is wired.
  *   - User menu is static (opens a dropdown in a later pass).
@@ -22,7 +22,7 @@ export function Topbar() {
     >
       {/* Search */}
       <div className="flex min-w-0 flex-1 justify-center">
-        <SearchDisclosure />
+        <SearchTrigger />
       </div>
 
       {/* Right cluster */}
@@ -32,32 +32,6 @@ export function Topbar() {
         <UserMenu />
       </div>
     </header>
-  );
-}
-
-function SearchDisclosure() {
-  return (
-    <button
-      type="button"
-      aria-label="Search articles, keywords, or solutions"
-      className="group flex h-10 w-full max-w-[640px] items-center gap-3 rounded-sm border border-white/[0.08] bg-white/[0.04] px-3.5 text-left text-[14px] leading-5 text-sidebar-fg/70 transition-colors hover:bg-white/[0.06] hover:text-sidebar-fg"
-    >
-      <Search size={16} className="shrink-0 text-sidebar-fg/60" aria-hidden />
-      <span className="flex-1 truncate">
-        Search for articles, keywords, or solutions…
-      </span>
-      <KbdChip>Ctrl</KbdChip>
-      <span className="text-sidebar-fg/40">+</span>
-      <KbdChip>K</KbdChip>
-    </button>
-  );
-}
-
-function KbdChip({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-xs border border-white/[0.10] bg-white/[0.06] px-1 font-sans text-[11px] font-semibold text-sidebar-fg/80">
-      {children}
-    </kbd>
   );
 }
 
