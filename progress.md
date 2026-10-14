@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/related-articles)
+Last updated: 2026-10-14 (feat/command-palette)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -62,10 +62,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Admin sub-nav (Users, Settings, Integrations)
 - ✅ Upload CTA card (bottom of sidebar) with gradient treatment
 - ✅ Home brief: published count, your drafts (links to `/kb/drafts`), in-review count, and the five newest articles
-- 🟡 Top bar: layout + bell + theme toggle + profile stub done; search is a non-functional disclosure
+- 🟡 Top bar: layout + bell + theme toggle + profile stub done; search opens the command palette
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
-- ⬜ Command palette (`cmdk`) with scoped scopes: articles, actions, nav
-- ⬜ Wire search disclosure to open the palette
+- ✅ Command palette (`cmdk`): `Ctrl+K` and the top-bar search find articles by title, category, and tag, and jump to Home, Knowledge Base, Create, Categories, and Tags
+- ⬜ Command palette scopes for actions and recently viewed
 - ⬜ User menu dropdown (profile, keyboard shortcuts, sign out)
 - ⬜ Notifications panel
 
@@ -124,7 +124,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 ## 5. Search & taxonomy (M4)
 
 - ⬜ Postgres FTS with `tsvector` + ranking
-- ⬜ `Ctrl+K` palette hits articles, actions, and nav
+- 🟡 `Ctrl+K` palette hits articles and nav; actions and recently viewed remain
 - ⬜ Facets: category, tag, status, updated-within
 - ✅ Public category and tag browse pages (index + filtered article list)
 - ⬜ Category CRUD (admin): create, rename, merge; cannot delete a category that still has articles

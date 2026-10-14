@@ -237,6 +237,36 @@ export async function getHomeBrief(): Promise<{
   };
 }
 
+/** Lightweight rows for the command palette. Archived articles are omitted. */
+export async function getPaletteArticles(): Promise<
+  {
+    title: string;
+    slug: string;
+    status: ArticleStatus;
+    category: string | null;
+    tags: string[];
+  }[]
+> {
+  const rows = await prisma.article.findMany({
+    where: { status: { not: "archived" } },
+    select: {
+      title: true,
+      slug: true,
+      status: true,
+      category: { select: { name: true } },
+      tags: { select: { tag: { select: { name: true } } } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  return rows.map((row) => ({
+    title: row.title,
+    slug: row.slug,
+    status: row.status as ArticleStatus,
+    category: row.category?.name ?? null,
+    tags: row.tags.map((entry) => entry.tag.name),
+  }));
+}
+
 export async function getKbNavCounts(): Promise<{
   all: number;
   drafts: number;

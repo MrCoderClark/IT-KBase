@@ -1,7 +1,8 @@
 import { Suspense } from "react";
+import { PaletteArticleSync, PaletteProvider } from "@/components/layout/command-palette";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { getKbNavCounts } from "@/lib/queries/articles";
+import { getKbNavCounts, getPaletteArticles } from "@/lib/queries/articles";
 
 /**
  * Authenticated app shell: dark sidebar (left, full-height sticky) + dark
@@ -17,16 +18,26 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen bg-canvas text-fg">
-      <Suspense fallback={<Sidebar />}>
-        <SidebarWithCounts />
-      </Suspense>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar />
-        <main className="min-w-0 flex-1">{children}</main>
+    <PaletteProvider>
+      <div className="relative flex min-h-screen bg-canvas text-fg">
+        <Suspense fallback={<Sidebar />}>
+          <SidebarWithCounts />
+        </Suspense>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar />
+          <Suspense fallback={null}>
+            <PaletteArticleSource />
+          </Suspense>
+          <main className="min-w-0 flex-1">{children}</main>
+        </div>
       </div>
-    </div>
+    </PaletteProvider>
   );
+}
+
+async function PaletteArticleSource() {
+  const articles = await getPaletteArticles();
+  return <PaletteArticleSync articles={articles} />;
 }
 
 async function SidebarWithCounts() {
