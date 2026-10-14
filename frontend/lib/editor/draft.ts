@@ -150,10 +150,11 @@ export function articleToDraft(article: Article): EditorDraft {
 function sectionToEditor(section: Section): EditorSection {
   switch (section.kind) {
     case "overview": {
-      const prose = section.blocks
-        .filter((block): block is Extract<Block, { kind: "prose" }> => block.kind === "prose")
-        .map((block) => htmlToEditorText(block.content))
-        .join("\n\n");
+      const prose = combineProse(
+        section.blocks
+          .filter((block): block is Extract<Block, { kind: "prose" }> => block.kind === "prose")
+          .map((block) => block.content),
+      );
       const calloutBlock = section.blocks.find(
         (block): block is Extract<Block, { kind: "callout" }> => block.kind === "callout",
       );
@@ -207,7 +208,21 @@ function sectionToEditor(section: Section): EditorSection {
   }
 }
 
-/** Undo the simple paragraphs the editor writes, so the form shows text instead of tags. */
+/** Keep stored paragraphs and marks together. Plain leftovers stay as text. */
+function combineProse(parts: string[]): string {
+  const present = parts.map((part) => part.trim()).filter(Boolean);
+  if (present.length === 0) return "";
+  if (present.every(looksLikeHtml)) return present.join("");
+  return present
+    .map((part) => (looksLikeHtml(part) ? htmlToEditorText(part) : part))
+    .join("\n\n");
+}
+
+function looksLikeHtml(value: string): boolean {
+  return /<\/?(p|br|strong|em|ul|ol|li)\b/i.test(value);
+}
+
+/** Undo the simple paragraphs the editor writes, so a textarea shows text instead of tags. */
 function htmlToEditorText(value: string): string {
   const trimmed = value.trim();
   if (!trimmed || /<(ol|ul|li|h[1-6])\b/i.test(trimmed)) return value;
@@ -234,7 +249,7 @@ function stepsFromBlocks(blocks: Block[]): EditorStep[] {
     if (block.kind === "step") {
       steps.push({
         title: block.title,
-        body: htmlToEditorText(block.content),
+        body: block.content,
         code: "",
         language: "powershell",
       });
@@ -246,8 +261,7 @@ function stepsFromBlocks(blocks: Block[]): EditorStep[] {
       last.code = block.code;
       last.language = block.language ?? "powershell";
     } else if (block.kind === "prose") {
-      const text = htmlToEditorText(block.content);
-      last.body = last.body ? `${last.body}\n${text}` : text;
+      last.body = combineProse([last.body, block.content]);
     }
   }
   return steps.length > 0
