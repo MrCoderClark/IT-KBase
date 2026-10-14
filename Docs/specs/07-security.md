@@ -18,7 +18,8 @@
 Accepted in [ADR 0001](adr/0001-server-managed-sessions.md). Summary:
 
 - **Phase A:** email and password, checked by the Next.js server. The browser holds an opaque session cookie only.
-- **Later:** OIDC (Entra ID, Google Workspace), SAML 2.0, MFA, recovery codes, and passkeys. Those issue the same cookie. They are not part of Phase A.
+- **MFA (optional):** a confirmed authenticator adds a second step before the session cookie is set. Enrollment shows a QR code; the setup key is available when a camera cannot scan it. The pending login lasts 5 minutes. Recovery codes are single-use and stored as SHA-256 hashes. The TOTP secret is encrypted with `AUTH_MFA_KEY`. Turning MFA on or off, and replacing recovery codes, revokes every other session.
+- **Later:** OIDC (Entra ID, Google Workspace), SAML 2.0, and passkeys. Those issue the same cookie.
 - Password rules (credentials): min 12 chars, must include 3 of {upper, lower, digit, symbol}, zxcvbn score ≥ 3. Breach check against HIBP range API. Hash: Argon2id, memory 19 MiB, iterations 2, parallelism 1.
 - Sessions live in Postgres `auth.session`. Redis is not the session store.
   - Cookie `__Host-tb_session`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`.

@@ -24,6 +24,15 @@ export {
   verifyAssertion,
 } from "./assertion";
 export type { AssertionClaims, AssertionKeys } from "./assertion";
+export { decryptTotpSecret, encryptTotpSecret } from "./mfa-secret";
+export { qrSvg } from "./qr";
+export {
+  RECOVERY_CODE_COUNT,
+  hashRecoveryCode,
+  newRecoveryCodes,
+  recoveryCodeMatches,
+} from "./recovery-codes";
+export { matchTotpStep, newTotpSecret, otpauthUri } from "./totp";
 export { loginWithPassword } from "./login";
 export { resolveSession, revokePresentedSession } from "./read-session";
 export type {
@@ -33,6 +42,7 @@ export type {
   AuthStore,
   IdentityRecord,
   LoginFailure,
+  LoginMfaRequired,
   LoginResult,
   LoginSuccess,
   PasswordHasher,

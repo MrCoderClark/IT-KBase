@@ -79,7 +79,7 @@ Phase A — core, in this order:
 
 Phase B — after Phase A is verified:
 
-- MFA, recovery codes, and passkeys.
+- MFA and recovery codes, then passkeys.
 - Permissions finer than the four roles. Organizations.
 - OIDC (Entra ID, Google Workspace) and SAML 2.0 where required.
 - Users admin, settings, and the integrations shell.

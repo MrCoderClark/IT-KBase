@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
 import { logout } from "@/lib/auth/actions";
 
 export function UserMenu({ name, role }: { name: string; role: string }) {
+  const router = useRouter();
   const initials = name
     .split(" ")
     .slice(0, 2)
@@ -41,6 +43,9 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8}>
+        <DropdownMenuItem onClick={() => router.push("/account/security")}>
+          Security
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

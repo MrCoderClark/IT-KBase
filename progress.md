@@ -142,7 +142,7 @@ Decision: `Docs/specs/adr/0001-server-managed-sessions.md`. The app requires a l
 
 Phase A:
 
-- 🟡 `auth/web` password, session, recovery, and assertion helpers (no TechBase imports). `auth/py` verifies the same 60-second HMAC token. Second-app note is not written
+- ✅ `auth/web` password, session, recovery, and assertion helpers (no TechBase imports). `auth/py` verifies the same 60-second HMAC token. Second-app install steps are in `auth/web/README.md`
 - ✅ Postgres `auth` schema (`identity`, `session`, `email_token`, `login_attempt`, `audit_event`) and `User.identityId` — migration `20261014173850_auth_schema` applied and the Prisma client regenerated
 - ✅ Password login, `__Host-tb_session` cookie, logout, and revocation. Signed in as Joe Clark on `:3001`, then signed out; `/` returns to `/login`. Session clock uses `connection()` so prerender does not call `new Date()`
 - 🟡 Password reset and email verification. One-time links. Resend accepted a reset for `joe.clark@techbase.local` (2026-10-14, server log `[auth] sent`). That address is not a real inbox. Next reads `RESEND_API_KEY` and `EMAIL_FROM` from `frontend/.env`, not the backend env file. zxcvbn and the breach check remain
@@ -153,9 +153,9 @@ Phase A:
 - ✅ Auth audit events and login rate limit (5 / 10 min, per IP and per email). Failures, successes, and lockouts append to `auth.audit_event`. The login page says to wait when the limit is hit. No admin screen lists those rows yet
 - ✅ Tests (2026-10-14): `pnpm exec tsx --test` for session, recovery, login, and assertion from `frontend/` — 14 passed. Backend `uv run pytest`: 11 passed. Second-app install steps are in `auth/web/README.md`
 
-Phase B (not started):
+Phase B:
 
-- ⬜ MFA, recovery codes, passkeys
+- ✅ MFA and recovery codes. Optional authenticator. Setup shows a QR code the authenticator app scans; the setup key is behind “Can't scan?”. A correct password with MFA on goes to `/login/mfa` and the session cookie is set only after a 6-digit code or a recovery code. Ten one-time codes are shown once; the page clears them when the user confirms they are saved. Checked on `:3001` as Joe Clark: enroll, second step, then turn it off with a recovery code so the seed login is password-only again. The QR image for a normal account decodes back to the authenticator link. Migration `20261014211000_auth_mfa` is applied. `AUTH_MFA_KEY` lives in `frontend/.env` and is not committed. Passkeys not started
 - ⬜ Finer permissions, organizations, OIDC (Entra ID, Google Workspace), SAML
 - ⬜ Users admin page
 - ⬜ Settings (branding, retention, allowed domains)

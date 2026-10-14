@@ -71,6 +71,22 @@ describe("login", () => {
     assert.equal(store.sessions.length, 0);
     assert.equal(store.audits.at(-1)?.action, "login_rate_limited");
   });
+
+  it("does not create a session when an authenticator is confirmed", async () => {
+    const store = memoryStore([verified], new Set(["id1"]));
+    const result = await loginWithPassword({
+      store,
+      hasher: hasherFor("hash-ok"),
+      email: "joe@example.com",
+      password: "correct-password",
+      now: NOW,
+      ip: "10.0.0.8",
+      userAgent: "test",
+    });
+    assert.deepEqual(result, { ok: true, mfaRequired: true, identityId: "id1" });
+    assert.equal(store.sessions.length, 0);
+    assert.equal(store.audits.at(-1)?.action, "login_mfa_required");
+  });
 });
 
 function hasherFor(encoded: string) {
@@ -84,7 +100,7 @@ function hasherFor(encoded: string) {
   };
 }
 
-function memoryStore(seed: IdentityRecord[]): AuthStore & {
+function memoryStore(seed: IdentityRecord[], mfa: Set<string> = new Set()): AuthStore & {
   sessions: Array<{ identityId: string }>;
   audits: Array<{ action: string; identityId: string | null }>;
 } {
@@ -95,6 +111,9 @@ function memoryStore(seed: IdentityRecord[]): AuthStore & {
   return {
     sessions,
     audits,
+    async hasConfirmedMfa(identityId) {
+      return mfa.has(identityId);
+    },
     async countAttempts(key, since) {
       return attempts.filter((item) => item.key === key && item.at >= since).length;
     },

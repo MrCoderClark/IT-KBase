@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { authStore } from "./store";
 
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "__Host-tb_session";
+const MFA_COOKIE = "__Host-tb_mfa";
+const RECOVERY_COOKIE = "__Host-tb_recovery";
 
 export type AppSession = {
   sessionId: string;
@@ -87,4 +89,58 @@ export async function clearSessionCookie(): Promise<void> {
 
 export async function currentRequestMeta(): Promise<{ ip: string | null; userAgent: string | null }> {
   return requestMeta(await headers());
+}
+
+export async function setMfaCookie(secret: string): Promise<void> {
+  const jar = await cookies();
+  jar.set(MFA_COOKIE, secret, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 5 * 60,
+  });
+}
+
+export async function readMfaCookie(): Promise<string | undefined> {
+  const jar = await cookies();
+  return jar.get(MFA_COOKIE)?.value;
+}
+
+export async function clearMfaCookie(): Promise<void> {
+  const jar = await cookies();
+  jar.set(MFA_COOKIE, "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}
+
+export async function setRecoveryCookie(payload: string): Promise<void> {
+  const jar = await cookies();
+  jar.set(RECOVERY_COOKIE, payload, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 120,
+  });
+}
+
+export async function readRecoveryCookie(): Promise<string | undefined> {
+  const jar = await cookies();
+  return jar.get(RECOVERY_COOKIE)?.value;
+}
+
+export async function clearRecoveryCookie(): Promise<void> {
+  const jar = await cookies();
+  jar.set(RECOVERY_COOKIE, "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
 }

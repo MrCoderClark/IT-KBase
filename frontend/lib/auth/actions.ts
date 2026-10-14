@@ -7,16 +7,19 @@ import {
   completePasswordReset,
   hashSessionSecret,
   loginWithPassword,
+  newSessionSecret,
   requestPasswordReset,
   safeNextPath,
 } from "../../../auth/web/src";
 import { sendAuthEmail } from "./mail";
 import { passwordHasher } from "./password";
+import { saveMfaChallenge } from "./mfa-store";
 import {
   appOrigin,
   clearSessionCookie,
   currentRequestMeta,
   requestTime,
+  setMfaCookie,
   setSessionCookie,
 } from "./session";
 import { authStore } from "./store";
@@ -48,9 +51,23 @@ export async function login(formData: FormData): Promise<void> {
     select: { id: true },
   });
   if (!user) {
-    const created = await authStore.findSessionBySecretHash(hashSessionSecret(result.secret));
-    if (created) await authStore.revokeSession(created.id, await requestTime());
+    if (!result.mfaRequired) {
+      const created = await authStore.findSessionBySecretHash(hashSessionSecret(result.secret));
+      if (created) await authStore.revokeSession(created.id, await requestTime());
+    }
     redirect(`/login?e=1&next=${encodeURIComponent(nextPath)}`);
+  }
+
+  if (result.mfaRequired) {
+    const now = await requestTime();
+    const challenge = newSessionSecret();
+    await saveMfaChallenge({
+      identityId: result.identityId,
+      secretHash: challenge.secretHash,
+      expiresAt: new Date(now.getTime() + 5 * 60 * 1000),
+    });
+    await setMfaCookie(challenge.secret);
+    redirect(`/login/mfa?next=${encodeURIComponent(nextPath)}`);
   }
 
   await setSessionCookie(result.secret);
