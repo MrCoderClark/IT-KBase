@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Calendar, Clock, MoreHorizontal, Pencil, Share2 } from "lucide-react";
+import { Calendar, Clock, MoreHorizontal, Pencil } from "lucide-react";
 import type { Article } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
+import { ShareLinkButton } from "@/components/kb/share-link-button";
 import { StatusChip } from "@/components/kb/status-chip";
 
 /**
@@ -95,13 +96,7 @@ export function ArticleHeader({ article }: { article: Article }) {
             <Pencil size={14} aria-hidden />
             Edit
           </Link>
-          <button
-            type="button"
-            className="inline-flex h-9 items-center gap-2 rounded-sm border border-border-strong bg-surface px-3.5 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-muted"
-          >
-            <Share2 size={14} aria-hidden />
-            Share
-          </button>
+          <ShareLinkButton />
           <button
             type="button"
             aria-label="More actions"
