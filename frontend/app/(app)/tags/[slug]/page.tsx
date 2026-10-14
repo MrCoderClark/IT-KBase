@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
-import ArticleTable from "@/components/kb/article-table";
+import { SessionArticleTable } from "@/components/kb/session-article-table";
 import { getArticlesWithTag } from "@/lib/queries/articles";
 
 export default function TagPage({
@@ -29,7 +29,7 @@ async function TagArticles({ params }: { params: Promise<{ slug: string }> }) {
       description={`${result.articles.length} ${result.articles.length === 1 ? "article" : "articles"} with this tag.`}
       showCreate={false}
     >
-      <ArticleTable
+      <SessionArticleTable
         articles={result.articles}
         emptyTitle="No articles with this tag"
         emptyHint="Add this tag from the article editor."

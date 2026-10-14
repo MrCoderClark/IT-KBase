@@ -1,7 +1,9 @@
 import { Suspense } from "react";
-import { getAllArticles } from "@/lib/queries/articles";
-import ArticleTable from "@/components/kb/article-table";
+import { SessionArticleTable } from "@/components/kb/session-article-table";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
+import { getAllArticles } from "@/lib/queries/articles";
 
 /**
  * All Articles — compact sortable table with filter dropdowns and search.
@@ -12,20 +14,23 @@ import { ArticleListShell } from "@/components/kb/article-list-shell";
  */
 export default function AllArticlesPage() {
   return (
-    <ArticleListShell
-      title="All Articles"
-      description="Browse and manage knowledge base articles."
-    >
-      <Suspense fallback={<TableFallback />}>
-        <ArticleTableLoader />
-      </Suspense>
-    </ArticleListShell>
+    <Suspense fallback={<TableFallback />}>
+      <ArticleTableLoader />
+    </Suspense>
   );
 }
 
 async function ArticleTableLoader() {
-  const articles = await getAllArticles();
-  return <ArticleTable articles={articles} />;
+  const [articles, session] = await Promise.all([getAllArticles(), getSession()]);
+  return (
+    <ArticleListShell
+      title="All Articles"
+      description="Browse and manage knowledge base articles."
+      showCreate={Boolean(session && can(session.role, "article.create"))}
+    >
+      <SessionArticleTable articles={articles} />
+    </ArticleListShell>
+  );
 }
 
 function TableFallback() {

@@ -175,7 +175,8 @@ The service is reachable only from Next.js (private network / allowlist).
 
 ```
 POST /ingest
-  headers: Authorization: Bearer sv_...
+  headers: Authorization: Bearer v1...   # user-triggered; 60s assertion
+           Authorization: Bearer sv_...   # worker; service credential
   body:    { jobId, s3Key, fileName, sourceKind, sizeBytes, hints?: { category?, tags? } }
   effect:  enqueues the job inside the service; returns 202
 
@@ -188,7 +189,7 @@ In Vercel-hosted mode, Next.js *does not* call `/ingest` synchronously; it write
 
 ## 5. Rate limiting
 
-Per-IP and per-user, enforced in Next.js edge middleware with Redis:
+Per-IP and per-user. Login attempts are counted in Postgres (`auth.login_attempt`) until Redis is wired. Other limits stay as specified and land with the feature that needs them:
 
 | Scope                 | Window | Limit |
 |-----------------------|--------|-------|
@@ -201,8 +202,9 @@ Exceeding returns `429` with `Retry-After`.
 
 ## 6. CSRF, cookies, and sessions
 
-- Session cookie: `__Host-tb_sess`, `Secure`, `HttpOnly`, `SameSite=Lax`, path `/`.
+- Session cookie: `__Host-tb_session`, `Secure`, `HttpOnly`, `SameSite=Lax`, path `/`. The value is an opaque id. Postgres stores its hash. See [ADR 0001](adr/0001-server-managed-sessions.md).
 - CSRF token: double-submit cookie `tb_csrf` + `x-csrf-token` header on mutating requests. SameSite=Strict for the CSRF cookie.
+- Next.js calls FastAPI with `Authorization: Bearer v1.<payload>.<signature>`, a 60-second HMAC assertion minted after the session is valid. FastAPI rejects a missing, expired, or badly signed assertion. Background jobs use `Authorization: Bearer sv_...` and do not use the user session.
 
 ## 7. Versioning
 

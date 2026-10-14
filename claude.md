@@ -126,7 +126,7 @@ These are the rules that distinguish this app from a vibe-coded prototype. Enfor
 | Document parsing        | `python-docx`, `pypdf` / `pdfplumber`, `unstructured` for fallback     |
 | LLM orchestration       | Pluggable: OpenAI / Anthropic / local via a `KBExtractor` interface    |
 | Object storage          | S3-compatible (MinIO in dev)                                           |
-| Auth                    | Auth.js (NextAuth) with credentials + SSO (OIDC) for enterprise        |
+| Auth                    | Opaque Postgres sessions, Next.js BFF, 60s HMAC assertion to FastAPI. [ADR 0001](Docs/specs/adr/0001-server-managed-sessions.md). OIDC is a later phase. |
 | Observability           | OpenTelemetry → Grafana/Tempo; structured JSON logs                    |
 | Testing                 | Vitest + Playwright (web), pytest (Python)                             |
 | Package manager (web)   | pnpm                                                                   |
@@ -159,6 +159,9 @@ it-kbase/
 │  ├─ tests/                                                              [to be added]
 │  ├─ pyproject.toml
 │  └─ README.md
+├─ auth/                       # Reusable auth module (no TechBase imports)
+│  ├─ web/                     # Next.js session, cookies, CSRF, assertion minting
+│  └─ py/                      # FastAPI assertion verification
 ├─ Docs/
 │  ├─ mocks/                   # PNGs, Figma exports
 │  └─ specs/                   # Numbered specs (source of truth)

@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     # API surface
     docs_enabled: bool = True  # /docs + /redoc exposure
 
+    # Auth assertions minted by Next.js. `kid:secret,kid2:secret`. Empty disables user calls.
+    assertion_keys: str = ""
+    # Comma-separated `sv_...` credentials for background jobs.
+    service_tokens: str = ""
+
     @property
     def is_local(self) -> bool:
         return self.env == "local"

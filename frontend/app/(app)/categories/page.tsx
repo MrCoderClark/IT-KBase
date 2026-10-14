@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { CategoryAdmin } from "@/components/kb/category-admin";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
 import { getCategoryIndex } from "@/lib/queries/articles";
 
 export default function CategoriesPage() {
@@ -22,8 +24,13 @@ export default function CategoriesPage() {
 }
 
 async function CategoryIndex() {
-  const categories = await getCategoryIndex();
-  return <CategoryAdmin categories={categories} />;
+  const [categories, session] = await Promise.all([getCategoryIndex(), getSession()]);
+  return (
+    <CategoryAdmin
+      categories={categories}
+      canManage={Boolean(session && can(session.role, "admin.manage"))}
+    />
+  );
 }
 
 function ListFallback() {

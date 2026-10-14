@@ -1,6 +1,7 @@
-import { Bell, ChevronDown } from "lucide-react";
+import { Bell } from "lucide-react";
 import { SearchTrigger } from "@/components/layout/command-palette";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
 
 /**
  * Dark top bar spanning the main area, visually seamless with the sidebar
@@ -9,9 +10,9 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
  *   - Search opens the command palette. Ctrl+K does the same from any screen.
  *   - Bell has a static unread count badge.
  *   - Theme toggle is wired.
- *   - User menu is static (opens a dropdown in a later pass).
+ *   - Avatar opens a menu. Sign out lives there.
  */
-export function Topbar() {
+export function Topbar({ name, role }: { name: string; role: string }) {
   return (
     <header
       className="sticky top-0 z-10 flex h-16 items-center gap-4 px-6"
@@ -29,7 +30,7 @@ export function Topbar() {
       <div className="flex items-center gap-1.5">
         <NotificationsBell count={3} />
         <ThemeToggle />
-        <UserMenu />
+        <UserMenu name={name} role={role} />
       </div>
     </header>
   );
@@ -56,29 +57,3 @@ function NotificationsBell({ count }: { count: number }) {
   );
 }
 
-function UserMenu() {
-  return (
-    <button
-      type="button"
-      aria-label="Account menu for Joe Clark"
-      className="ml-1 inline-flex h-10 items-center gap-2.5 rounded-sm pl-1 pr-2 text-left transition-colors hover:bg-white/[0.06]"
-    >
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-white">
-        JC
-      </span>
-      <span className="hidden min-w-0 sm:block">
-        <span className="block truncate text-[13px] leading-4 font-semibold text-white">
-          Joe Clark
-        </span>
-        <span className="block truncate text-[11px] leading-4 text-sidebar-fg/70">
-          IT Administrator
-        </span>
-      </span>
-      <ChevronDown
-        size={16}
-        className="hidden shrink-0 text-sidebar-fg/60 sm:block"
-        aria-hidden
-      />
-    </button>
-  );
-}

@@ -177,7 +177,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 - **Categories**: list with article count, create/rename/merge, optional color override. Cannot delete a category with articles — must merge first.
 - **Tags**: list with article count, create/rename/merge/delete. Tags are flat (no hierarchy).
 
-**Public views**:
+**Browse views** (session required):
 - `/categories/[slug]` and `/tags/[slug]` show an article list filtered to that taxonomy term.
 
 ---
@@ -252,3 +252,21 @@ Each integration page shows: enable toggle, config form, connection test, last-s
 | `t`        | Toggle theme                |
 
 Discoverable through `?` and the command palette.
+
+---
+
+## F15 — Sign in and public articles
+
+**What**: A session is required for the whole app. One published article can be opened without a session when an editor marks it public.
+
+**Screens**: `/login`, `/forgot-password`, `/reset-password`, `/verify-email`, and the article read view.
+
+**Behavior**:
+- Unauthenticated requests to any other page redirect to `/login` and return there after a successful sign-in.
+- Login accepts email and password. Failure uses the same message for an unknown email and a wrong password.
+- Sign out deletes the server session and clears the cookie.
+- Forgot-password always responds the same way, whether or not the email exists. The reset link expires in one hour and works once.
+- A public article is `published` and `visibility=public`. Its page shows the read view only: no sidebar, no edit or share controls, and no links to other articles.
+- Drafts, in-review articles, and archived articles stay private. Reviewer and admin may change visibility.
+
+**Non-goals (Phase A)**: SSO, MFA, a user admin screen, and a public catalog or search.

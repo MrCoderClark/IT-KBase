@@ -11,7 +11,13 @@ import { StatusChip } from "@/components/kb/status-chip";
  *
  * Matches the top section of the north-star mock.
  */
-export function ArticleHeader({ article }: { article: Article }) {
+export function ArticleHeader({
+  article,
+  canEdit = false,
+}: {
+  article: Article;
+  canEdit?: boolean;
+}) {
   const formattedDate = new Date(article.createdAt).toLocaleDateString(
     "en-US",
     { month: "short", day: "numeric", year: "numeric" },
@@ -89,13 +95,15 @@ export function ArticleHeader({ article }: { article: Article }) {
       <div className="flex shrink-0 flex-col items-end gap-4">
         {/* Action buttons */}
         <div className="flex items-center gap-2">
-          <Link
-            href={`/kb/${article.slug}/edit`}
-            className="inline-flex h-9 items-center gap-2 rounded-sm bg-accent px-3.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
-          >
-            <Pencil size={14} aria-hidden />
-            Edit
-          </Link>
+          {canEdit ? (
+            <Link
+              href={`/kb/${article.slug}/edit`}
+              className="inline-flex h-9 items-center gap-2 rounded-sm bg-accent px-3.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
+            >
+              <Pencil size={14} aria-hidden />
+              Edit
+            </Link>
+          ) : null}
           <ShareLinkButton />
           <button
             type="button"

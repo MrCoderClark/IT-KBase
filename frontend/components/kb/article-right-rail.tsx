@@ -23,15 +23,17 @@ import { CategoryChip } from "@/components/kb/category-chip";
 export function ArticleRightRail({
   article,
   related,
+  canEdit = false,
 }: {
   article: Article;
   related: { title: string; slug: string }[];
+  canEdit?: boolean;
 }) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
       <ArticleDetailsCard article={article} />
       <RelatedArticlesCard article={article} related={related} />
-      <QuickActionsCard slug={article.slug} />
+      <QuickActionsCard slug={article.slug} canEdit={canEdit} />
       <FeedbackCard article={article} />
     </aside>
   );
@@ -183,7 +185,7 @@ function RelatedArticlesCard({
 
 /* ──────────────────────────────────────────────────────────────────────── */
 
-function QuickActionsCard({ slug }: { slug: string }) {
+function QuickActionsCard({ slug, canEdit }: { slug: string; canEdit: boolean }) {
   const actions = [
     { label: "Download as PDF", icon: Download },
     { label: "Copy Link", icon: Copy },
@@ -196,16 +198,18 @@ function QuickActionsCard({ slug }: { slug: string }) {
         Quick Actions
       </h3>
       <ul className="mt-3 flex flex-col gap-0.5">
-        <li>
-          <Link
-            href={`/kb/${slug}/edit`}
-            className="flex w-full items-center gap-3 rounded-sm px-1 py-2 text-[13px] leading-5 font-medium text-fg transition-colors hover:bg-surface-muted"
-          >
-            <Pencil size={16} className="shrink-0 text-accent" aria-hidden />
-            <span className="flex-1 text-left">Edit article</span>
-            <ChevronRight size={14} className="shrink-0 text-fg-subtle/60" aria-hidden />
-          </Link>
-        </li>
+        {canEdit ? (
+          <li>
+            <Link
+              href={`/kb/${slug}/edit`}
+              className="flex w-full items-center gap-3 rounded-sm px-1 py-2 text-[13px] leading-5 font-medium text-fg transition-colors hover:bg-surface-muted"
+            >
+              <Pencil size={16} className="shrink-0 text-accent" aria-hidden />
+              <span className="flex-1 text-left">Edit article</span>
+              <ChevronRight size={14} className="shrink-0 text-fg-subtle/60" aria-hidden />
+            </Link>
+          </li>
+        ) : null}
         {actions.map(({ label, icon: Icon }) => (
           <li key={label}>
             <button

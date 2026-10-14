@@ -1,29 +1,32 @@
 import { Suspense } from "react";
-import { getRecentlyUpdated } from "@/lib/queries/articles";
-import ArticleTable from "@/components/kb/article-table";
+import { SessionArticleTable } from "@/components/kb/session-article-table";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
+import { getRecentlyUpdated } from "@/lib/queries/articles";
 
 export default function RecentlyUpdatedPage() {
   return (
-    <ArticleListShell
-      title="Recently Updated"
-      description="Articles still in the library, newest first."
-    >
-      <Suspense fallback={<TableFallback />}>
-        <RecentLoader />
-      </Suspense>
-    </ArticleListShell>
+    <Suspense fallback={<TableFallback />}>
+      <RecentLoader />
+    </Suspense>
   );
 }
 
 async function RecentLoader() {
-  const articles = await getRecentlyUpdated();
+  const [articles, session] = await Promise.all([getRecentlyUpdated(), getSession()]);
   return (
-    <ArticleTable
-      articles={articles}
-      emptyTitle="No articles yet"
-      emptyHint="Create an article and it will show up here."
-    />
+    <ArticleListShell
+      title="Recently Updated"
+      description="Articles still in the library, newest first."
+      showCreate={Boolean(session && can(session.role, "article.create"))}
+    >
+      <SessionArticleTable
+        articles={articles}
+        emptyTitle="No articles yet"
+        emptyHint="Create an article and it will show up here."
+      />
+    </ArticleListShell>
   );
 }
 

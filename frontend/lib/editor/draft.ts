@@ -70,6 +70,7 @@ export interface EditorDraft {
   categorySlug: string | null;
   tagSlugs: string[];
   status: ArticleStatus;
+  visibility: "private" | "public";
   sections: EditorSection[];
 }
 
@@ -125,6 +126,7 @@ export function blankDraft(): EditorDraft {
     categorySlug: null,
     tagSlugs: [],
     status: "draft",
+    visibility: "private",
     sections: EDITABLE_KINDS.map(defaultSection),
   };
 }
@@ -143,6 +145,7 @@ export function articleToDraft(article: Article): EditorDraft {
     categorySlug: article.category?.slug ?? null,
     tagSlugs: article.tags.map((tag) => tag.slug),
     status: article.status,
+    visibility: article.visibility === "public" ? "public" : "private",
     sections,
   };
 }

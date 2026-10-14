@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 import {
   EDITABLE_KINDS,
@@ -26,17 +27,36 @@ const fieldClass =
 const STATUS_OPTIONS: { value: ArticleStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "in_review", label: "In Review" },
+  { value: "published", label: "Published" },
   { value: "archived", label: "Archived" },
 ];
+
+function statusChoices(role: Role, current: ArticleStatus) {
+  return STATUS_OPTIONS.filter((option) => {
+    if (option.value === "published" && current !== "published") return false;
+    if (option.value === current) return true;
+    return (
+      articleSaveError({
+        role,
+        userId: "editor",
+        existing: { authorId: "editor", status: current },
+        nextStatus: option.value,
+        publishing: false,
+      }) === null
+    );
+  });
+}
 
 export function ArticleEditor({
   draft: initial,
   categories,
   tags,
+  role,
 }: {
   draft: EditorDraft;
   categories: { name: string; slug: string }[];
   tags: { name: string; slug: string }[];
+  role: Role;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
@@ -133,9 +153,11 @@ export function ArticleEditor({
           <Button type="submit" variant="outline" disabled={pending}>
             {pending && !publishOpen ? "Saving…" : "Save"}
           </Button>
-          <Button type="button" disabled={pending} onClick={openPublish}>
-            Publish
-          </Button>
+          {can(role, "article.publish") ? (
+            <Button type="button" disabled={pending} onClick={openPublish}>
+              Publish
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -293,14 +315,35 @@ export function ArticleEditor({
               }
               className={fieldClass}
             >
-              {draft.status === "published" && <option value="published">Published</option>}
-              {STATUS_OPTIONS.map((option) => (
+              {statusChoices(role, draft.status).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
           </label>
+
+          {can(role, "article.makePublic") ? (
+            <label className="flex items-start gap-2 text-[13px] leading-5 text-fg">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={draft.visibility === "public"}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    visibility: event.target.checked ? "public" : "private",
+                  }))
+                }
+              />
+              <span>
+                <span className="font-medium">Public link</span>
+                <span className="mt-0.5 block text-[12px] leading-4 text-fg-subtle">
+                  After this article is published, anyone with the link can read it without signing in.
+                </span>
+              </span>
+            </label>
+          ) : null}
 
           {error && (
             <p className="text-[12px] font-medium text-warning" role="alert">

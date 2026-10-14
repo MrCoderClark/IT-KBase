@@ -1,29 +1,33 @@
 import { Suspense } from "react";
-import { getMyDrafts } from "@/lib/queries/articles";
-import ArticleTable from "@/components/kb/article-table";
+import { SessionArticleTable } from "@/components/kb/session-article-table";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
+import { getMyDrafts } from "@/lib/queries/articles";
 
 export default function MyDraftsPage() {
   return (
-    <ArticleListShell
-      title="My Drafts"
-      description="Drafts you have not published yet."
-    >
-      <Suspense fallback={<TableFallback />}>
-        <DraftsLoader />
-      </Suspense>
-    </ArticleListShell>
+    <Suspense fallback={<TableFallback />}>
+      <DraftsLoader />
+    </Suspense>
   );
 }
 
 async function DraftsLoader() {
-  const articles = await getMyDrafts();
+  const session = await getSession();
+  const articles = session ? await getMyDrafts(session.userId) : [];
   return (
-    <ArticleTable
-      articles={articles}
-      emptyTitle="No drafts yet"
-      emptyHint="Save an article and it will show up here."
-    />
+    <ArticleListShell
+      title="My Drafts"
+      description="Drafts you have not published yet."
+      showCreate={Boolean(session && can(session.role, "article.create"))}
+    >
+      <SessionArticleTable
+        articles={articles}
+        emptyTitle="No drafts yet"
+        emptyHint="Save an article and it will show up here."
+      />
+    </ArticleListShell>
   );
 }
 

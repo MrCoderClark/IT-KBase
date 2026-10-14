@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { slugifyTitle } from "@/lib/editor/draft";
 
@@ -9,6 +11,9 @@ export type CategoryResult = { ok: true } | { ok: false; error: string };
 const NAME_LIMIT = 80;
 
 export async function createCategory(rawName: string): Promise<CategoryResult> {
+  const allowed = await requireCategoryAdmin();
+  if (!allowed.ok) return allowed;
+
   const name = cleanName(rawName);
   if (!name.ok) return name;
 
@@ -25,6 +30,9 @@ export async function createCategory(rawName: string): Promise<CategoryResult> {
 }
 
 export async function renameCategory(slug: string, rawName: string): Promise<CategoryResult> {
+  const allowed = await requireCategoryAdmin();
+  if (!allowed.ok) return allowed;
+
   const name = cleanName(rawName);
   if (!name.ok) return name;
 
@@ -50,6 +58,9 @@ export async function renameCategory(slug: string, rawName: string): Promise<Cat
 }
 
 export async function deleteCategory(slug: string): Promise<CategoryResult> {
+  const allowed = await requireCategoryAdmin();
+  if (!allowed.ok) return allowed;
+
   const current = await prisma.category.findUnique({
     where: { slug },
     select: { id: true, _count: { select: { articles: true } } },
@@ -61,6 +72,14 @@ export async function deleteCategory(slug: string): Promise<CategoryResult> {
 
   await prisma.category.delete({ where: { id: current.id } });
   refreshCategories(slug);
+  return { ok: true };
+}
+
+async function requireCategoryAdmin(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session || !can(session.role, "admin.manage")) {
+    return { ok: false, error: "You do not have permission to manage categories." };
+  }
   return { ok: true };
 }
 

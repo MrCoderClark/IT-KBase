@@ -17,7 +17,7 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 Supporting:
 
 - `../mocks/` — PNG mocks and Figma exports. North-star visual target.
-- `adr/` — Architecture Decision Records for any divergence from the locked stack.
+- `adr/` — Architecture Decision Records. [0001](adr/0001-server-managed-sessions.md) replaces Auth.js and Redis sessions.
 
 ## How to change a spec
 
