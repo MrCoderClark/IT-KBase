@@ -400,6 +400,9 @@ samp {
   font-weight: 600;
   color: var(--fg);
 }
+.article-prose em {
+  font-style: italic;
+}
 .article-prose code {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
   font-size: 13px;

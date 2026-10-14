@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/tiptap-prose)
+Last updated: 2026-10-14 (feat/tiptap-marks)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -14,7 +14,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; `e`, `g a`, `g h`, and `?` done; share and the rest remain) |
-| M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap plain text; marks, custom nodes, and autosave remain) |
+| M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | ⬜     |
@@ -96,7 +96,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 ## 3. Authoring (M2)
 
 - 🟡 Draft editor at `/create` and `/kb/[slug]/edit` — template sections, labeled command fields, callout preview and validation, metadata rail, save writes a new `ArticleVersion`
-- 🟡 TipTap for overview body and step body, stored as the same plain text. Custom nodes, marks, and lists remain
+- 🟡 TipTap for overview body and step body, with bold, italic, and lists saved as HTML. Custom nodes and autosave remain
 - ⬜ TipTap custom nodes (Prerequisite, Step, Verification, Callout, CodeBlock)
 - ⬜ Side-by-side preview matching read view (the field editor is the first stand-in)
 - ⬜ Autosave to Redis every 10s, debounced persist to Postgres
