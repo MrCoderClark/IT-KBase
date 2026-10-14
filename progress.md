@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/command-palette)
+Last updated: 2026-10-14 (feat/keyboard-shortcuts)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -13,7 +13,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done, keyboard shortcuts remain) |
+| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; `e`, `g a`, `g h`, and `?` done; share and the rest remain) |
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (field editor + publish done; TipTap and autosave remain) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -81,7 +81,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Right rail: Article Details, Related Articles (same category, then other published articles), Quick Actions, Was-this-helpful (sticky, 300px)
 - ✅ Article types (`lib/types/article.ts`) and seed data (`lib/seed/articles.ts`)
 - ✅ Minimal All Articles page (`/kb`) linking to seed article
-- ⬜ Keyboard shortcuts (`e` edit, `s` share, `?` help, `g a` go to articles)
+- ✅ Keyboard shortcuts: `e` edits the open article, `g` then `a` opens all articles, `g` then `h` goes home, `?` lists them. Ignored while typing or a dialog is open
+- ⬜ Remaining shortcuts (`s` share, `p` print, `g i`, `g n`, `j`/`k`)
 
 ### Browse / list
 - ✅ All Articles table (compact density, sortable columns, dropdown filters, search, 11 seed articles)
