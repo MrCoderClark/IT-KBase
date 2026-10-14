@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/tiptap-marks)
+Last updated: 2026-10-14 (feat/category-admin)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -129,7 +129,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 `Ctrl+K` palette hits articles and nav; actions and recently viewed remain
 - ⬜ Facets: category, tag, status, updated-within
 - ✅ Public category and tag browse pages (index + filtered article list)
-- ⬜ Category CRUD (admin): create, rename, merge; cannot delete a category that still has articles
+- 🟡 Category admin: create, rename, and delete when the category has no articles. Merge and the color override remain
 - ⬜ Tag CRUD + merge
 - 🟡 Related articles: right rail lists other published articles in the same category (backfilled from the rest of the library). Lexical and embedding similarity still to do
 
