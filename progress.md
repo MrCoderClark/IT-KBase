@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-13 (feat/home-live-brief)
+Last updated: 2026-10-13 (feat/related-articles)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -78,7 +78,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Section renderers: Overview, Prerequisites (checklist), Steps (numbered badges), Verification, Troubleshooting, Related
 - ✅ Callout component (Info, Important, Warning, Success) — 4 variants, left-border tinted panels
 - ✅ Code block with copy affordance (dark `#0B1220`, monospace, language label)
-- ✅ Right rail: Article Details, Related Articles, Quick Actions, Was-this-helpful (sticky, 300px)
+- ✅ Right rail: Article Details, Related Articles (same category, then other published articles), Quick Actions, Was-this-helpful (sticky, 300px)
 - ✅ Article types (`lib/types/article.ts`) and seed data (`lib/seed/articles.ts`)
 - ✅ Minimal All Articles page (`/kb`) linking to seed article
 - ⬜ Keyboard shortcuts (`e` edit, `s` share, `?` help, `g a` go to articles)
@@ -129,7 +129,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Public category and tag browse pages (index + filtered article list)
 - ⬜ Category CRUD (admin): create, rename, merge; cannot delete a category that still has articles
 - ⬜ Tag CRUD + merge
-- ⬜ Related articles: lexical + embedding similarity (nice-to-have in M4)
+- 🟡 Related articles: right rail lists other published articles in the same category (backfilled from the rest of the library). Lexical and embedding similarity still to do
 
 ---
 

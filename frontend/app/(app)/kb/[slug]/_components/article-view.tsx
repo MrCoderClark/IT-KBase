@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getArticleBySlug } from "@/lib/queries/articles";
+import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
@@ -23,6 +23,8 @@ export async function ArticleView({
 
   if (!article) notFound();
 
+  const related = await getRelatedArticles(article);
+
   return (
     <div className="w-full px-6 py-6">
       <Breadcrumbs
@@ -39,7 +41,7 @@ export async function ArticleView({
       <div className="mt-8 flex items-start gap-6">
         <ArticleToc sections={article.sections} />
         <ArticleContent article={article} />
-        <ArticleRightRail article={article} />
+        <ArticleRightRail article={article} related={related} />
       </div>
     </div>
   );

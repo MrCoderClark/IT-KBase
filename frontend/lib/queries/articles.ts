@@ -252,6 +252,45 @@ export async function getKbNavCounts(): Promise<{
   return { all, drafts, shared: 0, recent };
 }
 
+const RELATED_LIMIT = 4;
+
+/**
+ * Up to four published articles for the right rail.
+ * Same category first, then other published articles.
+ */
+export async function getRelatedArticles(article: {
+  slug: string;
+  category: { slug: string } | null;
+}): Promise<{ title: string; slug: string }[]> {
+  const select = { title: true, slug: true } as const;
+  const sameCategory = article.category
+    ? await prisma.article.findMany({
+        where: {
+          status: "published",
+          slug: { not: article.slug },
+          category: { slug: article.category.slug },
+        },
+        select,
+        orderBy: { updatedAt: "desc" },
+        take: RELATED_LIMIT,
+      })
+    : [];
+
+  if (sameCategory.length >= RELATED_LIMIT) return sameCategory;
+
+  const filler = await prisma.article.findMany({
+    where: {
+      status: "published",
+      slug: { notIn: [article.slug, ...sameCategory.map((row) => row.slug)] },
+    },
+    select,
+    orderBy: { updatedAt: "desc" },
+    take: RELATED_LIMIT - sameCategory.length,
+  });
+
+  return [...sameCategory, ...filler];
+}
+
 /** Single article by slug with full section + block tree. */
 export async function getArticleBySlug(
   slug: string,
