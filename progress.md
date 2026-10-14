@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/category-admin)
+Last updated: 2026-10-14 (feat/share-link)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -13,7 +13,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; `e`, `g a`, `g h`, and `?` done; share and the rest remain) |
+| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -73,7 +73,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Breadcrumbs (`Knowledge Base > Articles`)
 - ✅ Title block (category chip, h1 title, summary, metadata row with dot separators)
 - ✅ Hero image slot (right-aligned, 16/10 aspect ratio, gradient placeholder)
-- ✅ Edit / Share / overflow action buttons
+- ✅ Edit and Share (copies the article link). Overflow stays a stub
 - ✅ In-article table of contents (sticky left rail, 210px, IntersectionObserver active tracking)
 - ✅ Section renderers: Overview, Prerequisites (checklist), Steps (numbered badges), Verification, Troubleshooting, Related
 - ✅ Callout component (Info, Important, Warning, Success) — 4 variants, left-border tinted panels
