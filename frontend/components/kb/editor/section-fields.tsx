@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import { Callout } from "@/components/kb/callout";
+import { ProseField } from "@/components/kb/editor/prose-field";
 import { SectionIcon } from "@/components/kb/section-icon";
 import { StepBadge } from "@/components/kb/step-badge";
 import {
@@ -74,12 +75,12 @@ function SectionBody({
       return (
         <div className="space-y-4">
           <Field label="Body">
-            <textarea
+            <ProseField
               value={section.prose}
-              onChange={(event) => onChange({ ...section, prose: event.target.value })}
-              rows={6}
-              className={fieldClass}
+              onChange={(prose) => onChange({ ...section, prose })}
               placeholder="What this article covers."
+              ariaLabel="Section body"
+              minHeight="9rem"
             />
           </Field>
           {section.callout ? (
@@ -269,14 +270,15 @@ function StepFields({
           <X size={14} aria-hidden />
         </button>
       </div>
-      <textarea
-        value={step.body}
-        onChange={(event) => onChange({ ...step, body: event.target.value })}
-        rows={3}
-        className={`${fieldClass} mb-2`}
-        placeholder="What to do."
-        aria-label={`Step ${number} body`}
-      />
+      <div className="mb-2">
+        <ProseField
+          value={step.body}
+          onChange={(body) => onChange({ ...step, body })}
+          placeholder="What to do."
+          ariaLabel={`Step ${number} body`}
+          minHeight="4.5rem"
+        />
+      </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Language">
           <input
