@@ -71,6 +71,9 @@ function memoryStore(): AuthStore & {
   }> = [];
   const store: AuthStore & { tokens: typeof tokens } = {
     tokens,
+    async hasConfirmedMfa() {
+      return false;
+    },
     async countAttempts() {
       return 0;
     },

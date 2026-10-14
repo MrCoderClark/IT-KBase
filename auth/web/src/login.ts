@@ -76,6 +76,16 @@ export async function loginWithPassword(input: {
     return { ok: false, error: "invalid" };
   }
 
+  if (await input.store.hasConfirmedMfa(identity.id)) {
+    await input.store.audit({
+      identityId: identity.id,
+      action: "login_mfa_required",
+      ip: input.ip,
+      userAgent: input.userAgent,
+    });
+    return { ok: true, mfaRequired: true, identityId: identity.id };
+  }
+
   const { secret, secretHash } = newSessionSecret();
   const { expiresAt, idleAt } = sessionDeadlines(input.now);
   await input.store.createSession({
@@ -92,5 +102,5 @@ export async function loginWithPassword(input: {
     userAgent: input.userAgent,
   });
 
-  return { ok: true, secret, identityId: identity.id };
+  return { ok: true, mfaRequired: false, secret, identityId: identity.id };
 }

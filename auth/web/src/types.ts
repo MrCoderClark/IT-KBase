@@ -20,6 +20,8 @@ export interface PasswordHasher {
 }
 
 export interface AuthStore {
+  /** True when this identity has confirmed an authenticator. */
+  hasConfirmedMfa(identityId: string): Promise<boolean>;
   countAttempts(key: string, since: Date): Promise<number>;
   recordAttempt(key: string, at: Date): Promise<void>;
   findIdentityByEmail(email: string): Promise<IdentityRecord | null>;
@@ -59,7 +61,14 @@ export interface AuthStore {
 
 export type LoginSuccess = {
   ok: true;
+  mfaRequired: false;
   secret: string;
+  identityId: string;
+};
+
+export type LoginMfaRequired = {
+  ok: true;
+  mfaRequired: true;
   identityId: string;
 };
 
@@ -68,4 +77,4 @@ export type LoginFailure = {
   error: "invalid" | "rate_limited";
 };
 
-export type LoginResult = LoginSuccess | LoginFailure;
+export type LoginResult = LoginSuccess | LoginMfaRequired | LoginFailure;

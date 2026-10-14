@@ -2,6 +2,12 @@ import type { AuthStore } from "../../../auth/web/src/types";
 import { prisma } from "@/lib/db";
 
 export const authStore: AuthStore = {
+  hasConfirmedMfa(identityId) {
+    return prisma.totpCredential
+      .findUnique({ where: { identityId }, select: { confirmedAt: true } })
+      .then((row) => row?.confirmedAt != null);
+  },
+
   countAttempts(key, since) {
     return prisma.loginAttempt.count({
       where: { key, attempted: { gte: since } },

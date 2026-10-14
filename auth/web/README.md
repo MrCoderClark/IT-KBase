@@ -34,4 +34,4 @@ Environment the host keeps:
 | `TB_ASSERTION_KEYS` | FastAPI | The same `kid:secret` string. |
 | `TB_SERVICE_TOKENS` | FastAPI | Optional comma-separated `sv_...` credentials for background jobs. |
 
-Mail, roles, and which routes stay public are the host's. Password reset uses `requestPasswordReset` and `completePasswordReset`; the host sends the link. FastAPI calls `require_principal(keys, service_tokens)` on routes that need a caller and leaves health checks outside that dependency.
+Mail, roles, and which routes stay public are the host's. Authenticator enrollment is also the host's: `newTotpSecret`, `matchTotpStep`, `encryptTotpSecret`, and `newRecoveryCodes` stay here, and the host stores the ciphertext. `hasConfirmedMfa` tells `loginWithPassword` to return without creating a session. Password reset uses `requestPasswordReset` and `completePasswordReset`; the host sends the link. FastAPI calls `require_principal(keys, service_tokens)` on routes that need a caller and leaves health checks outside that dependency.

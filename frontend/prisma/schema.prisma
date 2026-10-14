@@ -295,6 +295,9 @@ model Identity {
 
   sessions IdentitySession[]
   tokens   EmailToken[]
+  totp     TotpCredential?
+  recovery RecoveryCode[]
+  challenges MfaChallenge[]
 
   @@map("identity")
   @@schema("auth")
@@ -338,6 +341,45 @@ model LoginAttempt {
 
   @@index([key, attempted])
   @@map("login_attempt")
+  @@schema("auth")
+}
+
+model TotpCredential {
+  id           String    @id @default(cuid())
+  identityId   String    @unique
+  identity     Identity  @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  secretCipher String
+  confirmedAt  DateTime?
+  lastStep     Int?
+  createdAt    DateTime  @default(now())
+
+  @@map("totp")
+  @@schema("auth")
+}
+
+model RecoveryCode {
+  id         String    @id @default(cuid())
+  identityId String
+  identity   Identity  @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  codeHash   String    @unique
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([identityId])
+  @@map("recovery_code")
+  @@schema("auth")
+}
+
+model MfaChallenge {
+  id         String   @id @default(cuid())
+  identityId String
+  identity   Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  secretHash String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([identityId])
+  @@map("mfa_challenge")
   @@schema("auth")
 }
 
