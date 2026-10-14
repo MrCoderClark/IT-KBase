@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { PaletteArticleSync, PaletteProvider } from "@/components/layout/command-palette";
+import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { getKbNavCounts, getPaletteArticles } from "@/lib/queries/articles";
@@ -29,6 +30,9 @@ export default function AppLayout({
             <PaletteArticleSource />
           </Suspense>
           <main className="min-w-0 flex-1">{children}</main>
+          <Suspense fallback={null}>
+            <KeyboardShortcuts />
+          </Suspense>
         </div>
       </div>
     </PaletteProvider>
