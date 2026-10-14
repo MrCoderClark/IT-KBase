@@ -12,7 +12,7 @@
 ┌──────────────────────────────────────────────────────────────┐
 │                    Next.js server (Vercel / Node)            │
 │  ├─ RSC + Server Actions                                     │
-│  ├─ Auth.js (OIDC / credentials)                             │
+│  ├─ Opaque session cookie (ADR 0001)                        │
 │  ├─ API routes: /api/articles, /api/upload, /api/search      │
 │  ├─ Edge: static article HTML cache                          │
 │  └─ Clients: Prisma (Postgres), ioredis, S3, Ingestion API   │
@@ -75,7 +75,7 @@ app/
     upload/route.ts            # presigned S3 + /ingest kickoff
     search/route.ts
     jobs/[id]/stream/route.ts  # SSE proxy to Redis
-    auth/[...nextauth]/route.ts
+    auth/                      # login, logout, reset (auth/web)
 ```
 
 ### 2.2 `services/ingestion` — Python 3.12 + FastAPI
@@ -91,8 +91,8 @@ Rationale for Python (vs Node): the DOCX/PDF ecosystem — `python-docx`, `pdfpl
 
 ### 2.3 Postgres
 
-- Primary store. Access via Prisma from Next.js only.
-- Python service does **not** touch Postgres directly — it calls back to Next.js API with a signed service token.
+- Primary store. Access via Prisma from Next.js only. Auth tables live in the `auth` schema; article tables stay in the app schema.
+- Python service does **not** touch Postgres directly. User-triggered calls carry a 60-second HMAC assertion minted by Next.js. Background jobs call back with a scoped service token. See [ADR 0001](adr/0001-server-managed-sessions.md).
 
 Rationale: keeps schema ownership in one place and avoids two-sided migrations.
 
@@ -103,7 +103,7 @@ Three roles, one dependency:
 | Role      | Keys / channels                          | Notes                            |
 |-----------|------------------------------------------|----------------------------------|
 | Cache     | `article:{id}` (JSON), `search:{hash}`   | TTL 5m for article, 1m for search |
-| Sessions  | `sess:{id}`                              | Auth.js adapter                   |
+| Sessions  | —                                        | Postgres `auth.session`, not Redis |
 | Queue     | BullMQ queue `ingest`                    | Jobs enqueued by Next.js         |
 | Streams   | `jobs:{id}:events`                       | Progress events for SSE          |
 | HLL       | `views:{articleId}:{yyyymmdd}`           | Unique view counting             |
@@ -139,10 +139,11 @@ Three roles, one dependency:
 
 | Route                      | Strategy                                       |
 |----------------------------|------------------------------------------------|
-| `/kb/[slug]` (published)   | SSG w/ `revalidateTag('article:{id}')`          |
-| `/kb/[slug]/edit`          | SSR (private, personalized)                     |
-| `/kb` (list)               | SSR with cached count queries                   |
-| Search results             | Server Action, streamed                         |
+| `/kb/[slug]` (published, private) | SSR, session required                    |
+| `/kb/[slug]` (published, public)  | SSR, readable without a session          |
+| `/kb/[slug]/edit`          | SSR, session and role required                  |
+| `/kb` (list)               | SSR, session required                           |
+| Search results             | Server Action, session required                 |
 | Admin pages                | SSR, role-gated                                 |
 
 ## 6. Caching

@@ -61,8 +61,9 @@ TechBase addresses all three: **centralize** (one app), **restructure** (AI-assi
 - Search, categories, tags, related articles
 - Versioning and rollback
 - Roles: reader, author, reviewer, admin
+- Login required. A published article may be marked public and read without a session
 - Analytics: views, helpful ratio, staleness
-- SSO (OIDC) for enterprise
+- SSO (OIDC) for enterprise (after the password-session core)
 - Integrations surface: ServiceNow / Jira / Teams webhook (M+)
 
 ## Scope — out (for v1)

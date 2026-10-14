@@ -13,6 +13,8 @@ import {
   BlockKind,
   CalloutVariant,
 } from "@prisma/client";
+import { DEV_ACCOUNT_PASSWORD } from "../lib/auth/dev-password";
+import { passwordHasher } from "../lib/auth/password";
 
 const prisma = new PrismaClient();
 
@@ -513,6 +515,22 @@ async function main() {
       create: u,
     });
     userMap.set(u.email, user.id);
+
+    const identity = await prisma.identity.upsert({
+      where: { email: u.email },
+      update: {},
+      create: {
+        email: u.email,
+        passwordHash: await passwordHasher.hash(DEV_ACCOUNT_PASSWORD),
+        emailVerified: new Date(),
+      },
+    });
+    if (user.identityId !== identity.id) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { identityId: identity.id },
+      });
+    }
   }
   console.log(`  ✅ ${USERS.length} users`);
 

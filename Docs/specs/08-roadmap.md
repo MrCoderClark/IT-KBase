@@ -65,14 +65,25 @@ Deliverable-oriented. Dates are relative to kickoff (Week 1). Each milestone has
 
 ## M5 — Auth & admin (Week 8)
 
-**Outcome**: SSO works end-to-end; roles are enforced.
+**Outcome**: the app requires a login; roles are enforced on the server. Decision: [ADR 0001](adr/0001-server-managed-sessions.md).
 
-- Auth.js with credentials + OIDC.
-- Role model enforced server-side (policy module + unit tests).
-- Users admin page.
-- Settings page (branding, retention, allowed domains).
-- Integrations shell (ServiceNow / Jira / Teams with config forms and connection test).
-- CSRF, CSP, HSTS, cookie flags.
+Phase A — core, in this order:
+
+- Auth tables in the `auth` Postgres schema, linked from `User.identityId`.
+- Password login, opaque session cookie, logout, and revocation.
+- Password reset and email verification.
+- Next.js gate on every page. Published articles may be marked public.
+- FastAPI rejects calls that lack a valid 60-second assertion.
+- Role checks from `07-security.md`, auth audit events, login rate limit.
+- Tests, and a written example of installing the module in a second app.
+
+Phase B — after Phase A is verified:
+
+- MFA, recovery codes, and passkeys.
+- Permissions finer than the four roles. Organizations.
+- OIDC (Entra ID, Google Workspace) and SAML 2.0 where required.
+- Users admin, settings, and the integrations shell.
+- CSP, HSTS, and the remaining security headers.
 
 ## M6 — Feedback, analytics, versioning (Week 9–10)
 

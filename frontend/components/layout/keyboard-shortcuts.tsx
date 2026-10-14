@@ -47,7 +47,8 @@ export function KeyboardShortcuts() {
 
       const key = event.key.toLowerCase();
       const dialogOpen = document.querySelector("[data-slot=dialog-content]");
-      if (dialogOpen) {
+      const menuOpen = document.querySelector("[data-slot=dropdown-menu-content]");
+      if (dialogOpen || menuOpen) {
         if (key === "?" && helpOpen) {
           event.preventDefault();
           setHelpOpen(false);

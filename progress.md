@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/share-link)
+Last updated: 2026-10-14 (feat/auth-phase-a)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | ⬜     |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
-| M5 | Auth, roles, admin console         | Week 8        | ⬜     |
+| M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
 | M7 | Hardening, a11y audit, perf        | Week 11       | ⬜     |
 | M8 | Pilot release to internal IT       | Week 12       | ⬜     |
@@ -38,7 +38,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `Docs/specs/06-api.md` — HTTP contracts between Next.js and Python
 - ✅ `Docs/specs/07-security.md` — authn/z, data handling, compliance
 - ✅ `Docs/specs/08-roadmap.md` — milestone detail and risks
-- ⬜ `Docs/specs/adr/0001-stack-choices.md` — record locked stack decisions
+- ✅ `Docs/specs/adr/0001-server-managed-sessions.md` — opaque Postgres sessions, Next.js BFF, 60s assertion to FastAPI, login wall with a per-article public flag
+- ⬜ `Docs/specs/adr/0002-stack-choices.md` — record the remaining locked stack decisions
 - ✅ Scaffold `frontend/` (Next.js 16, React 19, Tailwind v4, Turbopack, TS strict)
 - ✅ Scaffold `backend/` (Python 3.12, uv) — package only; FastAPI entry not wired yet
 - ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
@@ -62,11 +63,11 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Admin sub-nav (Users, Settings, Integrations)
 - ✅ Upload CTA card (bottom of sidebar) with gradient treatment
 - ✅ Home brief: published count, your drafts (links to `/kb/drafts`), in-review count, and the five newest articles
-- 🟡 Top bar: layout + bell + theme toggle + profile stub done; search opens the command palette
+- 🟡 Top bar: layout + bell + theme toggle done; search opens the command palette. Avatar menu has Sign out. Profile and shortcut entries remain
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
 - ✅ Command palette (`cmdk`): `Ctrl+K` and the top-bar search find articles by title, category, and tag, and jump to Home, Knowledge Base, Create, Categories, and Tags
 - ⬜ Command palette scopes for actions and recently viewed
-- ⬜ User menu dropdown (profile, keyboard shortcuts, sign out)
+- 🟡 User menu: avatar opens a dropdown with Sign out (checked in the browser). Profile and keyboard-shortcut entries remain
 - ⬜ Notifications panel
 
 ### Article detail view
@@ -137,12 +138,29 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ## 6. Auth & admin (M5)
 
-- ⬜ Auth.js with credentials (dev) and OIDC (prod)
-- ⬜ Roles: `reader`, `author`, `reviewer`, `admin`
-- ⬜ Row-level permissions on drafts
+Decision: `Docs/specs/adr/0001-server-managed-sessions.md`. The app requires a login. A published article may be marked public and read without a session. Login, logout, password reset, the public read view, and the FastAPI assertion check are in.
+
+Phase A:
+
+- 🟡 `auth/web` password, session, recovery, and assertion helpers (no TechBase imports). `auth/py` verifies the same 60-second HMAC token. Second-app note is not written
+- ✅ Postgres `auth` schema (`identity`, `session`, `email_token`, `login_attempt`, `audit_event`) and `User.identityId` — migration `20261014173850_auth_schema` applied and the Prisma client regenerated
+- ✅ Password login, `__Host-tb_session` cookie, logout, and revocation. Signed in as Joe Clark on `:3001`, then signed out; `/` returns to `/login`. Session clock uses `connection()` so prerender does not call `new Date()`
+- 🟡 Password reset and email verification. One-time links. Resend accepted a reset for `joe.clark@techbase.local` (2026-10-14, server log `[auth] sent`). That address is not a real inbox. Next reads `RESEND_API_KEY` and `EMAIL_FROM` from `frontend/.env`, not the backend env file. zxcvbn and the breach check remain
+- ✅ Next.js gate redirects unsigned visitors to `/login`. Forgot, reset, and verify sit outside that gate. A published public article is the exception
+- ✅ `Article.visibility` (`private` default). Joe Clark (admin) checked Public link on the BitLocker article and saved. Signed out, `/kb/windows-11-bitlocker-recovery-process` showed the public view (no sidebar, no edit, no related links). `/kb/servicenow-incident-integration` redirected to `/login?next=...`. Signed Joe back in
+- ✅ FastAPI `GET /v1/principal` requires the 60-second HMAC assertion or an `sv_` service credential. Health stays open. Pytest 11 passed, including a token minted by `auth/web`
+- ✅ Role checks from `07-security.md` on save, category admin, and the editor. Signed in as Sarah Kim (author) on `:3000`: no Admin nav, no Publish button, status is Draft or In Review, and her published article refused the editor. FastAPI still does not check roles
+- ✅ Auth audit events and login rate limit (5 / 10 min, per IP and per email). Failures, successes, and lockouts append to `auth.audit_event`. The login page says to wait when the limit is hit. No admin screen lists those rows yet
+- ✅ Tests (2026-10-14): `pnpm exec tsx --test` for session, recovery, login, and assertion from `frontend/` — 14 passed. Backend `uv run pytest`: 11 passed. Second-app install steps are in `auth/web/README.md`
+
+Phase B (not started):
+
+- ⬜ MFA, recovery codes, passkeys
+- ⬜ Finer permissions, organizations, OIDC (Entra ID, Google Workspace), SAML
 - ⬜ Users admin page
 - ⬜ Settings (branding, retention, allowed domains)
 - ⬜ Integrations placeholder (ServiceNow, Jira, Teams webhook)
+- ⬜ Row-level permissions on drafts beyond the role matrix
 
 ---
 
@@ -185,6 +203,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | 2026-10-13 | Pin Prisma to v6 (`prisma@6`, `@prisma/client@6`) | Prisma 8 RC replaced `migrate` with a platform CLI; v6 keeps `migrate dev` + `db seed` |
 | 2026-10-13 | DB reads sit inside `<Suspense>`; no `dynamic` / `generateStaticParams` | `cacheComponents` rejects those route configs; Suspense is the dynamic hole |
 | 2026-10-13 | shadcn `dialog` + `button` (Base UI). Init must not own `--accent` | shadcn's accent is a hover wash; TechBase accent stays cobalt `#1E6BFF` |
+| 2026-10-14 | Opaque server sessions in Postgres, not a browser JWT or Auth.js | Logout and role change must revoke access. FastAPI checks a 60s HMAC assertion and does not open the auth tables. [ADR 0001](Docs/specs/adr/0001-server-managed-sessions.md) |
+| 2026-10-14 | Login required, with a per-article public flag | Published + `visibility=public` is the only anonymous read. The rest of the app stays behind the session |
 
 ---
 

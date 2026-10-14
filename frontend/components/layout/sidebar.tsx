@@ -17,6 +17,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import { can, type Role } from "@/lib/auth/policy";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { SidebarUploadCta } from "@/components/layout/sidebar-upload-cta";
@@ -84,11 +85,12 @@ function isActive(pathname: string, href?: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar({ counts }: { counts?: KbNavCounts }) {
+export function Sidebar({ counts, role }: { counts?: KbNavCounts; role?: Role }) {
   const pathname = usePathname();
-  const items = PRIMARY.map((item) =>
-    item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item,
+  const items = PRIMARY.filter((item) => item.href !== "/create" || (role && can(role, "article.create"))).map(
+    (item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item),
   );
+  const showAdmin = role ? can(role, "admin.manage") : false;
 
   return (
     <aside
@@ -119,14 +121,18 @@ export function Sidebar({ counts }: { counts?: KbNavCounts }) {
           ))}
         </ul>
 
-        <div className="mt-6 px-3 pb-2 text-[11px] font-semibold tracking-[0.08em] uppercase text-sidebar-fg/50">
-          Admin
-        </div>
-        <ul className="flex flex-col gap-0.5">
-          {ADMIN.map((item) => (
-            <NavRow key={item.label} item={item} pathname={pathname} />
-          ))}
-        </ul>
+        {showAdmin ? (
+          <>
+            <div className="mt-6 px-3 pb-2 text-[11px] font-semibold tracking-[0.08em] uppercase text-sidebar-fg/50">
+              Admin
+            </div>
+            <ul className="flex flex-col gap-0.5">
+              {ADMIN.map((item) => (
+                <NavRow key={item.label} item={item} pathname={pathname} />
+              ))}
+            </ul>
+          </>
+        ) : null}
       </nav>
 
       {/* Upload CTA pinned to bottom */}

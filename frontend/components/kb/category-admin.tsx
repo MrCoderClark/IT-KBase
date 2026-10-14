@@ -29,7 +29,13 @@ type DialogMode =
 const fieldClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] leading-5 text-fg placeholder:text-fg-subtle/50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30";
 
-export function CategoryAdmin({ categories }: { categories: CategoryRow[] }) {
+export function CategoryAdmin({
+  categories,
+  canManage,
+}: {
+  categories: CategoryRow[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [mode, setMode] = useState<DialogMode | null>(null);
@@ -98,14 +104,16 @@ export function CategoryAdmin({ categories }: { categories: CategoryRow[] }) {
       description="Browse articles by the system they belong to."
       showCreate={false}
       action={
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
-        >
-          <Plus size={15} aria-hidden />
-          New category
-        </button>
+        canManage ? (
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
+          >
+            <Plus size={15} aria-hidden />
+            New category
+          </button>
+        ) : null
       }
     >
       {categories.length === 0 ? (
@@ -127,28 +135,32 @@ export function CategoryAdmin({ categories }: { categories: CategoryRow[] }) {
                     {category.count} {category.count === 1 ? "article" : "articles"}
                   </span>
                 </Link>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openRename(category)}
-                >
-                  Rename
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={blocked}
-                  aria-label={
-                    blocked
-                      ? `Cannot delete ${category.name} because it still has articles`
-                      : `Delete ${category.name}`
-                  }
-                  onClick={() => openDelete(category)}
-                >
-                  Delete
-                </Button>
+                {canManage ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openRename(category)}
+                    >
+                      Rename
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={blocked}
+                      aria-label={
+                        blocked
+                          ? `Cannot delete ${category.name} because it still has articles`
+                          : `Delete ${category.name}`
+                      }
+                      onClick={() => openDelete(category)}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                ) : null}
               </li>
             );
           })}

@@ -88,6 +88,7 @@ export interface Section {
 }
 
 export interface ArticleAuthor {
+  id?: string;
   name: string;
   avatarUrl?: string | null;
 }
@@ -110,6 +111,8 @@ export interface Article {
   summary: string | null;
   heroImageUrl: string | null;
   status: ArticleStatus;
+  /** Omitted on static fixtures. Live rows always set it. Default private. */
+  visibility?: "private" | "public";
   readingTimeMinutes: number;
   version: string;
   category: ArticleCategory | null;

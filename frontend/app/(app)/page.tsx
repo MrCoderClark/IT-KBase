@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, FileText, Sparkles, Upload } from "lucide-react";
 import { StatusChip } from "@/components/kb/status-chip";
+import { can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
 import { getHomeBrief } from "@/lib/queries/articles";
 import type { Article } from "@/lib/types/article";
 
@@ -18,7 +20,9 @@ export default function HomePage() {
             Welcome back
           </div>
           <h1 className="mt-1 text-[28px] leading-9 font-bold tracking-tight text-fg">
-            Joe, here&rsquo;s what&rsquo;s moving in the KB.
+            <Suspense fallback="Welcome back">
+              <HomeGreeting />
+            </Suspense>
           </h1>
           <p className="mt-2 max-w-[640px] text-[15px] leading-6 text-fg-muted">
             Drop a Word doc or PDF to turn it into a structured runbook, or
@@ -34,12 +38,9 @@ export default function HomePage() {
             <Upload size={16} aria-hidden />
             Import file
           </Link>
-          <Link
-            href="/create"
-            className="inline-flex h-9 items-center gap-2 rounded-sm border border-border-strong bg-surface px-3.5 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-muted"
-          >
-            New article
-          </Link>
+          <Suspense fallback={null}>
+            <NewArticleLink />
+          </Suspense>
         </div>
       </div>
 
@@ -50,8 +51,30 @@ export default function HomePage() {
   );
 }
 
+async function HomeGreeting() {
+  const session = await getSession();
+  const first = session?.name.split(" ")[0] ?? "there";
+  return <>{first}, here&rsquo;s what&rsquo;s moving in the KB.</>;
+}
+
+async function NewArticleLink() {
+  const session = await getSession();
+  if (!session || !can(session.role, "article.create")) return null;
+  return (
+    <Link
+      href="/create"
+      className="inline-flex h-9 items-center gap-2 rounded-sm border border-border-strong bg-surface px-3.5 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-muted"
+    >
+      <FileText size={16} aria-hidden />
+      New article
+    </Link>
+  );
+}
+
 async function HomeBrief() {
-  const brief = await getHomeBrief();
+  const session = await getSession();
+  if (!session) return null;
+  const brief = await getHomeBrief(session.userId);
   const now = new Date();
 
   return (

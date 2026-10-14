@@ -8,6 +8,8 @@ import {
   type CalloutVariant,
   type SectionKind,
 } from "@prisma/client";
+import { articleSaveError, can } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import {
   type EditorCallout,
@@ -20,8 +22,6 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
-
-const AUTHOR_EMAIL = "joe.clark@techbase.local";
 
 const STATUSES: ArticleStatus[] = ["draft", "in_review", "published", "archived"];
 
@@ -50,6 +50,9 @@ export async function saveArticle(
   input: EditorDraft,
   bump: VersionBump = "patch",
 ): Promise<SaveResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sign in to continue." };
+
   const publishing = bump === "minor" || bump === "major";
   const status: ArticleStatus = publishing ? "published" : input.status;
   const title = input.title.trim();
@@ -62,17 +65,6 @@ export async function saveArticle(
   if (publishing) {
     const reason = publishBlockReason(input);
     if (reason) return { ok: false, error: reason };
-  }
-
-  const author = await prisma.user.findUnique({
-    where: { email: AUTHOR_EMAIL },
-    select: { id: true },
-  });
-  if (!author) {
-    return {
-      ok: false,
-      error: "Seed user Joe Clark is missing. Run the database seed.",
-    };
   }
 
   const category = input.categorySlug
@@ -117,9 +109,26 @@ export async function saveArticle(
     return { ok: false, error: "Article not found." };
   }
 
+  const denied = articleSaveError({
+    role: session.role,
+    userId: session.userId,
+    existing: existing
+      ? { authorId: existing.authorId, status: existing.status }
+      : null,
+    nextStatus: status,
+    publishing,
+  });
+  if (denied) return { ok: false, error: denied };
+
   if (!publishing && status === "published" && existing?.status !== "published") {
     return { ok: false, error: "Use Publish to release this article." };
   }
+
+  const visibility = can(session.role, "article.makePublic")
+    ? input.visibility === "public"
+      ? "public"
+      : "private"
+    : (existing?.visibility ?? "private");
 
   const slug = existing ? existing.slug : await uniqueSlug(slugifyTitle(title));
   const version = nextArticleVersion(existing?.version ?? null, bump);
@@ -136,6 +145,7 @@ export async function saveArticle(
             title,
             summary: input.summary.trim() || null,
             status,
+            visibility,
             categoryId: category?.id ?? null,
             version,
             readingTimeMinutes: readingMinutes(input.sections),
@@ -151,8 +161,9 @@ export async function saveArticle(
             title,
             summary: input.summary.trim() || null,
             status,
+            visibility,
             categoryId: category?.id ?? null,
-            authorId: author.id,
+            authorId: session.userId,
             version,
             readingTimeMinutes: readingMinutes(input.sections),
             publishedAt: status === "published" ? new Date() : null,
@@ -169,7 +180,7 @@ export async function saveArticle(
     const created = await tx.articleVersion.create({
       data: {
         articleId: article.id,
-        authorId: author.id,
+        authorId: session.userId,
         version,
         title,
         summary: input.summary.trim() || null,

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
-import ArticleTable from "@/components/kb/article-table";
+import { SessionArticleTable } from "@/components/kb/session-article-table";
 import { getArticlesInCategory } from "@/lib/queries/articles";
 
 export default function CategoryPage({
@@ -31,7 +31,7 @@ async function CategoryArticles({ params }: { params: Promise<{ slug: string }> 
       description={`${result.articles.length} ${result.articles.length === 1 ? "article" : "articles"} in this category.`}
       showCreate={false}
     >
-      <ArticleTable
+      <SessionArticleTable
         articles={result.articles}
         emptyTitle="No articles in this category"
         emptyHint="Assign this category from the article editor."

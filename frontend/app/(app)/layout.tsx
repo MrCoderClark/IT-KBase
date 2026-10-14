@@ -1,17 +1,11 @@
 import { Suspense } from "react";
-import { PaletteArticleSync, PaletteProvider } from "@/components/layout/command-palette";
-import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
-import { getKbNavCounts, getPaletteArticles } from "@/lib/queries/articles";
+import { redirect } from "next/navigation";
+import { AppFrame } from "@/components/layout/app-frame";
+import { getSession } from "@/lib/auth/session";
 
 /**
- * Authenticated app shell: dark sidebar (left, full-height sticky) + dark
- * top bar + light canvas. See Docs/specs/02-design-system.md and
- * Docs/mocks/TechBase Windows Knowledge Article.png.
- *
- * Server Component — children stream in while the shell renders instantly.
- * Sidebar uses usePathname() so it must be inside Suspense (Next.js 16).
+ * Authenticated app shell. The article read route lives outside this
+ * layout so a published public article can be opened without a session.
  */
 export default function AppLayout({
   children,
@@ -19,32 +13,14 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PaletteProvider>
-      <div className="relative flex min-h-screen bg-canvas text-fg">
-        <Suspense fallback={<Sidebar />}>
-          <SidebarWithCounts />
-        </Suspense>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar />
-          <Suspense fallback={null}>
-            <PaletteArticleSource />
-          </Suspense>
-          <main className="min-w-0 flex-1">{children}</main>
-          <Suspense fallback={null}>
-            <KeyboardShortcuts />
-          </Suspense>
-        </div>
-      </div>
-    </PaletteProvider>
+    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
+      <RequireSession>{children}</RequireSession>
+    </Suspense>
   );
 }
 
-async function PaletteArticleSource() {
-  const articles = await getPaletteArticles();
-  return <PaletteArticleSync articles={articles} />;
-}
-
-async function SidebarWithCounts() {
-  const counts = await getKbNavCounts();
-  return <Sidebar counts={counts} />;
+async function RequireSession({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  return <AppFrame session={session}>{children}</AppFrame>;
 }

@@ -70,6 +70,11 @@ enum SourceKind {
   url
 }
 
+enum ArticleVisibility {
+  private
+  public
+}
+
 enum JobStatus {
   queued
   parsing
@@ -87,6 +92,7 @@ model User {
   name        String
   role        Role     @default(author)
   avatarUrl   String?
+  identityId  String?  @unique // auth.identity.id — null until the account can sign in
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -117,6 +123,7 @@ model Article {
   summary            String?
   heroImageUrl       String?
   status             ArticleStatus   @default(draft)
+  visibility         ArticleVisibility @default(private) // public is honored only when status=published
   readingTimeMinutes Int             @default(0)
   version            String          @default("1.0")
 
@@ -266,6 +273,85 @@ model IngestionJob {
 
 - v1: hard delete only for drafts; published articles are **archived** (`status=archived`) and never physically deleted. Admin UI exposes archive/unarchive.
 
+### 2.3 Auth schema
+
+Owned by the auth module and applied by the host app's Prisma migration. Postgres schema name: `auth`. See [ADR 0001](adr/0001-server-managed-sessions.md).
+
+```prisma
+model Identity {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  emailVerified DateTime?
+  disabledAt    DateTime?
+  sessionGen    Int       @default(0) // bumped to revoke every session
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions IdentitySession[]
+  tokens   EmailToken[]
+
+  @@map("identity")
+  @@schema("auth")
+}
+
+model IdentitySession {
+  id         String    @id @default(cuid())
+  identityId String
+  identity   Identity  @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  secretHash String    @unique // SHA-256 of the cookie value
+  expiresAt  DateTime
+  idleAt     DateTime
+  revokedAt  DateTime?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([identityId])
+  @@map("session")
+  @@schema("auth")
+}
+
+model EmailToken {
+  id         String   @id @default(cuid())
+  identityId String
+  identity   Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  purpose    String   // verify_email | reset_password
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([identityId])
+  @@map("email_token")
+  @@schema("auth")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String   // ip:… or email:…
+  attempted DateTime @default(now())
+
+  @@index([key, attempted])
+  @@map("login_attempt")
+  @@schema("auth")
+}
+
+model AuthAuditEvent {
+  id         String   @id @default(cuid())
+  identityId String?
+  action     String
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([identityId, createdAt])
+  @@map("audit_event")
+  @@schema("auth")
+}
+```
+
+`User.identityId` points at `Identity.id`. The auth package does not foreign-key into `User`.
+
 ---
 
 ## 3. Redis layout
@@ -276,8 +362,8 @@ model IngestionJob {
 | `article:{id}:toc`                 | string   | 300s    | Flattened TOC for the detail view          |
 | `article:slug:{slug}`              | string   | 300s    | slug → id lookup                           |
 | `search:q:{sha}`                   | string   | 60s     | Cached search results per query hash       |
-| `sess:{sid}`                       | hash     | 7d      | Auth.js session                            |
-| `csrf:{sid}`                       | string   | 1h      | CSRF tokens                                |
+| `sess:{sid}`                       | —        | —       | Retired. Sessions are Postgres `auth.session` (ADR 0001). |
+| `csrf:{sid}`                       | —        | —       | Retired. CSRF is the `tb_csrf` double-submit cookie. |
 | `views:{articleId}:{yyyymmdd}`     | HLL      | 48h     | Unique daily viewers                       |
 | `views:{articleId}:total`          | counter  | ∞       | Lifetime views (synced to Postgres hourly) |
 | `jobs:{jobId}:events`              | stream   | 24h     | Progress events for SSE                    |

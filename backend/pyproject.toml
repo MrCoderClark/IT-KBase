@@ -50,7 +50,7 @@ ignore = ["E501"]
 "**/__init__.py" = ["F401"]     # re-exports via __init__
 
 [tool.ruff.lint.isort]
-known-first-party = ["backend"]
+known-first-party = ["auth_py", "backend"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -62,7 +62,7 @@ docstring-code-format = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "../auth/py/src"]
 addopts = [
     "-ra",
     "--strict-markers",

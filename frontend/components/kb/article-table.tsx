@@ -11,6 +11,7 @@ import {
   Pencil,
   Search,
 } from "lucide-react";
+import { canEditArticle, type Role } from "@/lib/auth/policy";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { StatusChip } from "@/components/kb/status-chip";
@@ -160,6 +161,7 @@ interface ArticleTableProps {
   articles: Article[];
   emptyTitle?: string;
   emptyHint?: string;
+  actor?: { role: Role; userId: string } | null;
 }
 
 function deriveCategories(articles: Article[]): ArticleCategory[] {
@@ -176,6 +178,7 @@ export default function ArticleTable({
   articles,
   emptyTitle = "No articles match your filters",
   emptyHint = "Try broadening your search or removing a filter.",
+  actor = null,
 }: ArticleTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -401,13 +404,20 @@ export default function ArticleTable({
                 </td>
 
                 <td className={`px-3 text-right ${isCompact ? "py-1.5" : "py-2.5"}`}>
-                  <Link
-                    href={`/kb/${article.slug}/edit`}
-                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent hover:text-accent-hover"
-                  >
-                    <Pencil size={12} aria-hidden />
-                    Edit
-                  </Link>
+                  {actor &&
+                  article.author.id &&
+                  canEditArticle(actor.role, actor.userId, {
+                    authorId: article.author.id,
+                    status: article.status,
+                  }) ? (
+                    <Link
+                      href={`/kb/${article.slug}/edit`}
+                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-accent hover:text-accent-hover"
+                    >
+                      <Pencil size={12} aria-hidden />
+                      Edit
+                    </Link>
+                  ) : null}
                 </td>
               </tr>
             ))}

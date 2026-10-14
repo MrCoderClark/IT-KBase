@@ -27,6 +27,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 
 export type PaletteArticle = {
@@ -63,7 +64,7 @@ type PaletteContextValue = {
 
 const PaletteContext = createContext<PaletteContextValue | null>(null);
 
-export function PaletteProvider({ children }: { children: ReactNode }) {
+export function PaletteProvider({ children, role }: { children: ReactNode; role: Role }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [articles, setArticles] = useState<PaletteArticle[] | null>(null);
@@ -141,7 +142,7 @@ export function PaletteProvider({ children }: { children: ReactNode }) {
               )}
             </CommandGroup>
             <CommandGroup heading="Go to">
-              {NAV.map((item) => {
+              {NAV.filter((item) => item.href !== "/create" || can(role, "article.create")).map((item) => {
                 const Icon = item.icon;
                 return (
                   <CommandItem

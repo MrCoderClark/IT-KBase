@@ -26,6 +26,7 @@ const articleListSelect = {
   summary: true,
   heroImageUrl: true,
   status: true,
+  visibility: true,
   readingTimeMinutes: true,
   version: true,
   views: true,
@@ -38,7 +39,7 @@ const articleListSelect = {
   tags: {
     select: { tag: { select: { name: true, slug: true } } },
   },
-  author: { select: { name: true, avatarUrl: true } },
+  author: { select: { id: true, name: true, avatarUrl: true } },
 } as const;
 
 const articleDetailInclude = {
@@ -46,7 +47,7 @@ const articleDetailInclude = {
   tags: {
     select: { tag: { select: { name: true, slug: true } } },
   },
-  author: { select: { name: true, avatarUrl: true } },
+  author: { select: { id: true, name: true, avatarUrl: true } },
   currentVersion: {
     include: {
       sections: {
@@ -77,13 +78,14 @@ function mapListArticle(row: PrismaArticleList): Article {
     summary: row.summary,
     heroImageUrl: row.heroImageUrl,
     status: row.status as ArticleStatus,
+    visibility: row.visibility,
     readingTimeMinutes: row.readingTimeMinutes,
     version: row.version,
     category: row.category
       ? { name: row.category.name, slug: row.category.slug, color: row.category.color }
       : null,
     tags: row.tags.map((at) => ({ name: at.tag.name, slug: at.tag.slug })),
-    author: { name: row.author.name, avatarUrl: row.author.avatarUrl },
+    author: { id: row.author.id, name: row.author.name, avatarUrl: row.author.avatarUrl },
     sections: [],
     views: row.views,
     helpful: row.helpful,
@@ -180,9 +182,6 @@ function mapSection(s: any): Section {
 // Public query functions
 // ---------------------------------------------------------------------------
 
-/** Stand-in author until sign-in exists. Matches the editor save path. */
-const CURRENT_AUTHOR_EMAIL = "joe.clark@techbase.local";
-
 async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]> {
   const rows = await prisma.article.findMany({
     where,
@@ -197,11 +196,11 @@ export async function getAllArticles(): Promise<Article[]> {
   return listArticles();
 }
 
-/** Drafts owned by the stand-in author. */
-export async function getMyDrafts(): Promise<Article[]> {
+/** Drafts owned by the signed-in user. */
+export async function getMyDrafts(userId: string): Promise<Article[]> {
   return listArticles({
     status: "draft",
-    author: { email: CURRENT_AUTHOR_EMAIL },
+    authorId: userId,
   });
 }
 
@@ -211,16 +210,15 @@ export async function getRecentlyUpdated(): Promise<Article[]> {
 }
 
 /** Counts and the newest articles for the home brief. */
-export async function getHomeBrief(): Promise<{
+export async function getHomeBrief(userId: string): Promise<{
   published: number;
   drafts: number;
   inReview: number;
   recent: Article[];
 }> {
-  const mine = { email: CURRENT_AUTHOR_EMAIL };
   const [published, drafts, inReview, recentRows] = await Promise.all([
     prisma.article.count({ where: { status: "published" } }),
-    prisma.article.count({ where: { status: "draft", author: mine } }),
+    prisma.article.count({ where: { status: "draft", authorId: userId } }),
     prisma.article.count({ where: { status: "in_review" } }),
     prisma.article.findMany({
       where: { status: { not: "archived" } },
@@ -267,16 +265,15 @@ export async function getPaletteArticles(): Promise<
   }));
 }
 
-export async function getKbNavCounts(): Promise<{
+export async function getKbNavCounts(userId: string): Promise<{
   all: number;
   drafts: number;
   shared: number;
   recent: number;
 }> {
-  const mine = { email: CURRENT_AUTHOR_EMAIL };
   const [all, drafts, recent] = await Promise.all([
     prisma.article.count(),
-    prisma.article.count({ where: { status: "draft", author: mine } }),
+    prisma.article.count({ where: { status: "draft", authorId: userId } }),
     prisma.article.count({ where: { status: { not: "archived" } } }),
   ]);
   return { all, drafts, shared: 0, recent };
@@ -342,13 +339,14 @@ export async function getArticleBySlug(
     summary: row.summary,
     heroImageUrl: row.heroImageUrl,
     status: row.status as ArticleStatus,
+    visibility: row.visibility,
     readingTimeMinutes: row.readingTimeMinutes,
     version: row.version,
     category: row.category
       ? { name: row.category.name, slug: row.category.slug, color: row.category.color }
       : null,
     tags: row.tags.map((at) => ({ name: at.tag.name, slug: at.tag.slug })),
-    author: { name: row.author.name, avatarUrl: row.author.avatarUrl },
+    author: { id: row.author.id, name: row.author.name, avatarUrl: row.author.avatarUrl },
     sections,
     views: row.views,
     helpful: row.helpful,

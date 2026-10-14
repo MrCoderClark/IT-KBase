@@ -15,14 +15,17 @@
 
 ## 2. Authentication
 
-- **Primary**: Auth.js (NextAuth) with:
-  - **Credentials** provider in dev / self-hosted modes.
-  - **OIDC** provider in enterprise mode (Entra ID / Okta / Google Workspace).
-- Password rules (credentials): min 12 chars, must include 3 of {upper, lower, digit, symbol}, zxcvbn score ≥ 3. Breach check against HIBP range API.
-- Sessions:
-  - Server-side session via the Redis adapter.
-  - TTL 7 days absolute, 24h sliding.
-  - On role change, all existing sessions for that user are invalidated.
+Accepted in [ADR 0001](adr/0001-server-managed-sessions.md). Summary:
+
+- **Phase A:** email and password, checked by the Next.js server. The browser holds an opaque session cookie only.
+- **Later:** OIDC (Entra ID, Google Workspace), SAML 2.0, MFA, recovery codes, and passkeys. Those issue the same cookie. They are not part of Phase A.
+- Password rules (credentials): min 12 chars, must include 3 of {upper, lower, digit, symbol}, zxcvbn score ≥ 3. Breach check against HIBP range API. Hash: Argon2id, memory 19 MiB, iterations 2, parallelism 1.
+- Sessions live in Postgres `auth.session`. Redis is not the session store.
+  - Cookie `__Host-tb_session`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`.
+  - TTL 7 days absolute, 24h idle.
+  - New session id on login. Logout deletes that session. Password change, password reset, and role change delete every session for that identity.
+- FastAPI never receives the session cookie. Next.js sends a 60-second HMAC assertion (`Authorization: Bearer v1...`) after it has validated the session. FastAPI verifies the signature, audience, and expiry, then applies its own permission check.
+- Login rate limit: 5 attempts per 10 minutes, per IP and per email, counted in Postgres.
 
 ## 3. Authorization
 
@@ -38,10 +41,13 @@ Roles: `reader | author | reviewer | admin`.
 | Publish / unpublish                                   |        |        | ✅       | ✅    |
 | Rollback version                                      |        |        |          | ✅    |
 | Archive / unarchive                                   |        |        |          | ✅    |
+| Mark a published article public                       |        |        | ✅       | ✅    |
 | Manage users / integrations / settings                |        |        |          | ✅    |
 
+An anonymous caller may read a single article when `status` is `published` and `visibility` is `public`. No other capability is available without a session. Draft, in-review, and archived articles stay private.
+
 Enforcement:
-- **Every** server action / API route checks `canUserDoX(user, resource)` with a central policy module (`apps/web/lib/auth/policy.ts`). No ad-hoc checks.
+- **Every** server action and API route checks `can(principal, capability, resource)` in `frontend/lib/auth/policy.ts`. The reusable package does not know about articles. FastAPI repeats the check for its own routes.
 - Policy is table-driven and unit-tested.
 - UI hiding is a usability layer, not a security layer.
 
@@ -49,7 +55,7 @@ Enforcement:
 
 | Class            | Examples                                       | Handling                                                   |
 |------------------|------------------------------------------------|------------------------------------------------------------|
-| Public           | Marketing site content                         | n/a (not in this app in v1)                                 |
+| Public           | One published article with `visibility=public` | Read view only, no app chrome, no links to other articles. |
 | Internal         | Published KB articles                          | Default. Authenticated access only.                        |
 | Sensitive        | Drafts, raw uploads, artifact bundles          | Role-gated; signed URLs; shorter retention                 |
 | Secret           | Service tokens, OIDC secrets, LLM API keys     | Never in repo; env/secret manager; never logged            |
@@ -78,7 +84,7 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 ```
 
-Cookie attributes: `Secure; HttpOnly; SameSite=Lax; Path=/; __Host-` for session; `Secure; SameSite=Strict` for CSRF.
+Cookie attributes: `Secure; HttpOnly; SameSite=Lax; Path=/; __Host-tb_session` for the session; `Secure; SameSite=Strict` for `tb_csrf`. Mutating route handlers require the `x-csrf-token` header to match `tb_csrf`.
 
 ## 7. Uploads
 
@@ -105,8 +111,9 @@ Cookie attributes: `Secure; HttpOnly; SameSite=Lax; Path=/; __Host-` for session
 
 ## 10. Audit log
 
-- Appended to a `audit_log` table (and mirrored to a tamper-evident external store in regulated deployments).
-- Captured events: login success/failure, role change, article publish/unpublish/archive/rollback, integration config change, bulk operations, admin impersonation (if ever added — not in v1).
+- Authentication events append to `auth.audit_event` (login success and failure, logout, password reset, email verification, role change).
+- Article and admin events append to a business `audit_log` table, specified here and built with the feature that emits them (publish, unpublish, archive, rollback, integration config, bulk operations). Admin impersonation is not in v1.
+- Both are mirrored to a tamper-evident external store in regulated deployments.
 - Entry: `ts, actorUserId, action, resourceType, resourceId, prev?, next?, ip, userAgent`.
 
 ## 11. Privacy & retention

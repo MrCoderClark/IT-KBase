@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { AccessDenied } from "@/components/auth/access-denied";
 import { ArticleEditor } from "@/components/kb/editor/article-editor";
+import { canEditArticle } from "@/lib/auth/policy";
+import { getSession } from "@/lib/auth/session";
 import { articleToDraft } from "@/lib/editor/draft";
 import {
   getAllCategories,
@@ -26,18 +29,35 @@ export default function EditArticlePage({
 
 async function EditEditor({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [article, categories, tags] = await Promise.all([
+  const [article, categories, tags, session] = await Promise.all([
     getArticleBySlug(slug),
     getAllCategories(),
     getAllTags(),
+    getSession(),
   ]);
   if (!article) notFound();
+  if (
+    !session ||
+    !article.author.id ||
+    !canEditArticle(session.role, session.userId, {
+      authorId: article.author.id,
+      status: article.status,
+    })
+  ) {
+    return (
+      <AccessDenied
+        title="You cannot edit this article"
+        detail="Authors can edit their own drafts. Reviewers can edit any draft and publish. Admins can also archive."
+      />
+    );
+  }
 
   return (
     <ArticleEditor
       draft={articleToDraft(article)}
       categories={categories}
       tags={tags}
+      role={session.role}
     />
   );
 }

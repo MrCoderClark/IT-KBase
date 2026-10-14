@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public", "auth"]
 }
 
 // ---------------------------------------------------------------------------
@@ -19,6 +20,8 @@ enum Role {
   author
   reviewer
   admin
+
+  @@schema("public")
 }
 
 enum ArticleStatus {
@@ -26,6 +29,15 @@ enum ArticleStatus {
   in_review
   published
   archived
+
+  @@schema("public")
+}
+
+enum ArticleVisibility {
+  private
+  public
+
+  @@schema("public")
 }
 
 enum SectionKind {
@@ -36,6 +48,8 @@ enum SectionKind {
   troubleshooting
   related
   custom
+
+  @@schema("public")
 }
 
 enum BlockKind {
@@ -45,6 +59,8 @@ enum BlockKind {
   code
   image
   checklist
+
+  @@schema("public")
 }
 
 enum CalloutVariant {
@@ -52,6 +68,8 @@ enum CalloutVariant {
   important
   warning
   success
+
+  @@schema("public")
 }
 
 enum SourceKind {
@@ -59,6 +77,8 @@ enum SourceKind {
   pdf
   manual
   url
+
+  @@schema("public")
 }
 
 enum JobStatus {
@@ -70,6 +90,8 @@ enum JobStatus {
   succeeded
   failed
   cancelled
+
+  @@schema("public")
 }
 
 // ---------------------------------------------------------------------------
@@ -80,14 +102,17 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  role      Role     @default(author)
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role       Role     @default(author)
+  avatarUrl  String?
+  identityId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   articles Article[]        @relation("ArticleAuthor")
   versions ArticleVersion[] @relation("VersionAuthor")
   feedback Feedback[]
+
+  @@schema("public")
 }
 
 model Category {
@@ -96,6 +121,8 @@ model Category {
   slug     String    @unique
   color    String?
   articles Article[]
+
+  @@schema("public")
 }
 
 model Tag {
@@ -103,6 +130,8 @@ model Tag {
   name     String       @unique
   slug     String       @unique
   articles ArticleTag[]
+
+  @@schema("public")
 }
 
 model Article {
@@ -111,8 +140,9 @@ model Article {
   title              String
   summary            String?
   heroImageUrl       String?
-  status             ArticleStatus @default(draft)
-  readingTimeMinutes Int           @default(0)
+  status             ArticleStatus     @default(draft)
+  visibility         ArticleVisibility @default(private)
+  readingTimeMinutes Int               @default(0)
   version            String        @default("1.0")
 
   categoryId String?
@@ -145,6 +175,7 @@ model Article {
 
   @@index([status, updatedAt])
   @@index([categoryId])
+  @@schema("public")
 }
 
 model ArticleVersion {
@@ -167,6 +198,7 @@ model ArticleVersion {
 
   @@unique([articleId, version])
   @@index([articleId, createdAt])
+  @@schema("public")
 }
 
 model Section {
@@ -179,6 +211,7 @@ model Section {
   blocks    Block[]
 
   @@index([versionId, order])
+  @@schema("public")
 }
 
 model Block {
@@ -198,6 +231,7 @@ model Block {
   imageAlt       String?
 
   @@index([sectionId, order])
+  @@schema("public")
 }
 
 model ArticleTag {
@@ -208,6 +242,7 @@ model ArticleTag {
 
   @@id([articleId, tagId])
   @@index([tagId])
+  @@schema("public")
 }
 
 model Feedback {
@@ -221,6 +256,7 @@ model Feedback {
   createdAt DateTime @default(now())
 
   @@index([articleId, createdAt])
+  @@schema("public")
 }
 
 model IngestionJob {
@@ -239,4 +275,81 @@ model IngestionJob {
   createdAt      DateTime   @default(now())
 
   @@index([status, createdAt])
+  @@schema("public")
+}
+
+// ---------------------------------------------------------------------------
+// Auth schema — owned by the auth module. No relation to User.
+// See Docs/specs/adr/0001-server-managed-sessions.md
+// ---------------------------------------------------------------------------
+
+model Identity {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  emailVerified DateTime?
+  disabledAt    DateTime?
+  sessionGen    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions IdentitySession[]
+  tokens   EmailToken[]
+
+  @@map("identity")
+  @@schema("auth")
+}
+
+model IdentitySession {
+  id         String    @id @default(cuid())
+  identityId String
+  identity   Identity  @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  secretHash String    @unique
+  expiresAt  DateTime
+  idleAt     DateTime
+  revokedAt  DateTime?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([identityId])
+  @@map("session")
+  @@schema("auth")
+}
+
+model EmailToken {
+  id         String    @id @default(cuid())
+  identityId String
+  identity   Identity  @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  purpose    String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([identityId])
+  @@map("email_token")
+  @@schema("auth")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  attempted DateTime @default(now())
+
+  @@index([key, attempted])
+  @@map("login_attempt")
+  @@schema("auth")
+}
+
+model AuthAuditEvent {
+  id         String   @id @default(cuid())
+  identityId String?
+  action     String
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([identityId, createdAt])
+  @@map("audit_event")
+  @@schema("auth")
 }
