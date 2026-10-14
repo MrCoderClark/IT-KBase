@@ -13,7 +13,6 @@ import {
 import type { Article } from "@/lib/types/article";
 import { TagChip } from "@/components/kb/tag-chip";
 import { CategoryChip } from "@/components/kb/category-chip";
-import { RELATED_ARTICLES } from "@/lib/seed/articles";
 
 /**
  * Right-rail meta column (320px sticky).
@@ -21,11 +20,17 @@ import { RELATED_ARTICLES } from "@/lib/seed/articles";
  * Cards: Article Details, Related Articles, Quick Actions, Was this helpful?
  * Matches the right side of the north-star mock.
  */
-export function ArticleRightRail({ article }: { article: Article }) {
+export function ArticleRightRail({
+  article,
+  related,
+}: {
+  article: Article;
+  related: { title: string; slug: string }[];
+}) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
       <ArticleDetailsCard article={article} />
-      <RelatedArticlesCard />
+      <RelatedArticlesCard article={article} related={related} />
       <QuickActionsCard slug={article.slug} />
       <FeedbackCard article={article} />
     </aside>
@@ -124,38 +129,54 @@ function DetailRow({
 
 /* ──────────────────────────────────────────────────────────────────────── */
 
-function RelatedArticlesCard() {
+function RelatedArticlesCard({
+  article,
+  related,
+}: {
+  article: Article;
+  related: { title: string; slug: string }[];
+}) {
+  const viewAllHref = article.category
+    ? `/categories/${article.category.slug}`
+    : "/kb";
+
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <h3 className="text-[16px] leading-6 font-semibold text-fg">
           Related Articles
         </h3>
-        <button
-          type="button"
+        <Link
+          href={viewAllHref}
           className="text-[13px] font-medium text-accent transition-colors hover:text-accent-hover hover:underline"
         >
           View All
-        </button>
+        </Link>
       </div>
 
-      <ul className="mt-3 flex flex-col gap-0.5">
-        {RELATED_ARTICLES.map((ra) => (
-          <li key={ra.slug}>
-            <a
-              href={`/kb/${ra.slug}`}
-              className="flex items-start gap-2.5 rounded-sm px-1 py-2 text-[13px] leading-5 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
-            >
-              <FileText
-                size={16}
-                className="mt-0.5 shrink-0 text-fg-subtle"
-                aria-hidden
-              />
-              <span>{ra.title}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      {related.length === 0 ? (
+        <p className="mt-3 text-[13px] leading-5 text-fg-subtle">
+          No other published articles yet.
+        </p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-0.5">
+          {related.map((item) => (
+            <li key={item.slug}>
+              <Link
+                href={`/kb/${item.slug}`}
+                className="flex items-start gap-2.5 rounded-sm px-1 py-2 text-[13px] leading-5 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+              >
+                <FileText
+                  size={16}
+                  className="mt-0.5 shrink-0 text-fg-subtle"
+                  aria-hidden
+                />
+                <span>{item.title}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

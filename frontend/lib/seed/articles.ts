@@ -502,26 +502,6 @@ export function getArticleBySlug(slug: string): Article | undefined {
   return SEED_ARTICLES[slug];
 }
 
-/** Related articles shown in the right rail (static for now). */
-export const RELATED_ARTICLES = [
-  {
-    title: "Windows 11 - Creating a New Local User",
-    slug: "windows-11-creating-new-local-user",
-  },
-  {
-    title: "Resetting Microsoft Account Password",
-    slug: "resetting-microsoft-account-password",
-  },
-  {
-    title: "Troubleshooting Windows Login Issues",
-    slug: "troubleshooting-windows-login-issues",
-  },
-  {
-    title: "Windows 11 - Safe Mode Access",
-    slug: "windows-11-safe-mode-access",
-  },
-];
-
 /** Unique categories across all seed articles. */
 export const ALL_CATEGORIES = [
   ...new Map(
