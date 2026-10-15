@@ -159,7 +159,7 @@ Phase B:
 - ✅ Passkeys are a separate sign-in. Security has “Add a passkey”; the login page has “Sign in with a passkey”. Success sets the same session cookie and does not ask for an authenticator code. Checked on `:3001`: a passkey was created with Windows Hello, then sign-out and “Sign in with a passkey” opened the app. Migration `20261014223000_auth_passkey` is applied. `AUTH_WEBAUTHN_RP_ID` and `AUTH_WEBAUTHN_ORIGIN` are in `frontend/.env` and are not committed.
 - ⬜ Finer permissions and organizations. OIDC (Entra ID, Google Workspace) and SAML
 - ✅ Users admin. An admin can list accounts, change a role, and turn sign-in off or on. A role change or a disable signs that person out. Self and last-admin changes are refused. Invite is later. Checked on `:3001`: Joe sees the directory and his own row has no controls. Sarah Kim’s role was changed to reviewer and put back to author. Signed in as Sarah, `/admin/users` shows the admin-only message and no controls. Joe is signed in again.
-- ⬜ Settings (branding, retention, allowed domains)
+- ✅ Settings. An admin can set the accent, an optional logo URL, how long versions are kept, and allowed email domains. The signed-in shell uses the accent. Versions are not deleted, and sign-in is unchanged. Checked on `:3001`: a teal accent and 90-day retention saved, the Save button used that color after refresh, then both were put back to the defaults. Migration `20261015160000_site_setting` is applied.
 - ⬜ Integrations placeholder (ServiceNow, Jira, Teams webhook)
 - ⬜ Row-level permissions on drafts beyond the role matrix
 

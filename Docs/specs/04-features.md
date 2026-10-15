@@ -196,7 +196,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Users**: an admin can list accounts, change a role, and turn sign-in off or back on. A role change or a disable signs that person out. An admin cannot change their own access. The last admin who can still sign in cannot be demoted or disabled. Invite and delete come later.
 
-**Settings**: branding (logo override, accent color), content retention, allowed email domains for SSO, feature flags.
+**Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. Versions are not deleted yet, and password and passkey sign-in stay open. Feature flags come later.
 
 **Integrations** (placeholders in v1):
 - ServiceNow: outbound link from article to a Service Catalog item.

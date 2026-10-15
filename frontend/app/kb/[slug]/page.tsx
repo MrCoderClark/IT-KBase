@@ -6,6 +6,7 @@ import { PublicArticle } from "@/components/kb/public-article";
 import { isPublicArticle } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { getArticleBySlug } from "@/lib/queries/articles";
+import { readSiteSettings } from "@/lib/settings/store";
 
 /**
  * Article read lives outside the signed-in layout so a published public
@@ -25,12 +26,16 @@ export default function ArticlePage({
 
 async function ArticleEntry({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [article, session] = await Promise.all([getArticleBySlug(slug), getSession()]);
+  const [article, session, settings] = await Promise.all([
+    getArticleBySlug(slug),
+    getSession(),
+    readSiteSettings(),
+  ]);
 
   if (session) {
     if (!article) notFound();
     return (
-      <AppFrame session={session}>
+      <AppFrame session={session} settings={settings}>
         <ArticleView params={params} />
       </AppFrame>
     );

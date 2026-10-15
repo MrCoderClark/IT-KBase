@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AppFrame } from "@/components/layout/app-frame";
 import { getSession } from "@/lib/auth/session";
+import { readSiteSettings } from "@/lib/settings/store";
 
 /**
  * Authenticated app shell. The article read route lives outside this
@@ -22,5 +23,10 @@ export default function AppLayout({
 async function RequireSession({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  return <AppFrame session={session}>{children}</AppFrame>;
+  const settings = await readSiteSettings();
+  return (
+    <AppFrame session={session} settings={settings}>
+      {children}
+    </AppFrame>
+  );
 }

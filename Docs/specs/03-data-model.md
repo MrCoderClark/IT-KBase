@@ -348,7 +348,21 @@ model AuthAuditEvent {
   @@map("audit_event")
   @@schema("auth")
 }
+
+model SiteSetting {
+  id                   String   @id @default("default")
+  accentHex            String   @default("#1E6BFF")
+  logoUrl              String?
+  versionRetentionDays Int      @default(365)
+  allowedEmailDomains  String[] @default([])
+  updatedAt            DateTime @updatedAt
+
+  @@map("site_setting")
+  @@schema("public")
+}
 ```
+
+`SiteSetting` is one row, `id` = `default`. Empty `allowedEmailDomains` means no domain list is stored yet. Login does not read it.
 
 `User.identityId` points at `Identity.id`. The auth package does not foreign-key into `User`.
 
