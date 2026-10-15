@@ -71,7 +71,7 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key.toLowerCase() !== "k") return;
+      if (event.key?.toLowerCase() !== "k") return;
       if (!event.metaKey && !event.ctrlKey) return;
       event.preventDefault();
       setOpen((current) => !current);

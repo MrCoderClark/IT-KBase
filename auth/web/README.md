@@ -19,7 +19,7 @@ Copy `auth/web` and `auth/py` into the other repo. Leave them free of that app's
 
 The other app owns four host pieces:
 
-1. **Tables.** Create a Postgres schema named `auth` with `identity`, `session`, `email_token`, `login_attempt`, and `audit_event`. The column list is the migration `frontend/prisma/migrations/20261014173850_auth_schema/migration.sql`. Point the app's user row at `identity.id` with its own `identityId` column. Do not put a foreign key from `auth` back into the app schema.
+1. **Tables.** Create a Postgres schema named `auth` with `identity`, `session`, `email_token`, `login_attempt`, and `audit_event`. The column list is the migration `frontend/prisma/migrations/20261014173850_auth_schema/migration.sql`. Authenticator and passkey tables are the later migrations in that folder. Point the app's user row at `identity.id` with its own `identityId` column. Do not put a foreign key from `auth` back into the app schema.
 2. **`AuthStore`.** Implement the interface in `src/types.ts` against those tables. TechBase's implementation is `frontend/lib/auth/store.ts`.
 3. **`PasswordHasher`.** Argon2id with memory 19 MiB, iterations 2, parallelism 1. Inject it. This package does not import a native hasher.
 4. **Cookie and gate.** On login, call `loginWithPassword`, then set an HttpOnly, Secure, SameSite=Lax cookie (`__Host-` prefix, no Domain, Path=/). On each request, `resolveSession`. Logout calls `revokePresentedSession`. A layout redirect covers every page that requires a sign-in. A public read, if the app has one, is a property of that app's content, not of this module.
@@ -33,5 +33,8 @@ Environment the host keeps:
 | `AUTH_ASSERTION_KID` | Next.js | Optional. Defaults to the first key. |
 | `TB_ASSERTION_KEYS` | FastAPI | The same `kid:secret` string. |
 | `TB_SERVICE_TOKENS` | FastAPI | Optional comma-separated `sv_...` credentials for background jobs. |
+| `AUTH_MFA_KEY` | Next.js | Encrypts the authenticator secret. Empty means enrollment cannot start. |
+| `AUTH_WEBAUTHN_RP_ID` | Next.js | Passkey site id, such as `localhost`. Required in production. |
+| `AUTH_WEBAUTHN_ORIGIN` | Next.js | Passkey origin, such as `http://localhost:3001`. Required in production. |
 
-Mail, roles, and which routes stay public are the host's. Authenticator enrollment is also the host's: `newTotpSecret`, `matchTotpStep`, `encryptTotpSecret`, and `newRecoveryCodes` stay here, and the host stores the ciphertext. `hasConfirmedMfa` tells `loginWithPassword` to return without creating a session. Password reset uses `requestPasswordReset` and `completePasswordReset`; the host sends the link. FastAPI calls `require_principal(keys, service_tokens)` on routes that need a caller and leaves health checks outside that dependency.
+Mail, roles, and which routes stay public are the host's. Authenticator enrollment is also the host's: `newTotpSecret`, `matchTotpStep`, `encryptTotpSecret`, and `newRecoveryCodes` stay here, and the host stores the ciphertext. `hasConfirmedMfa` tells `loginWithPassword` to return without creating a session. Passkeys are a separate sign-in. `signatureCounterRegressed` is the clone check; the host verifies the ceremony with `@simplewebauthn/server` and stores the public key. Password reset uses `requestPasswordReset` and `completePasswordReset`; the host sends the link. FastAPI calls `require_principal(keys, service_tokens)` on routes that need a caller and leaves health checks outside that dependency.
