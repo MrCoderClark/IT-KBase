@@ -19,7 +19,8 @@ Accepted in [ADR 0001](adr/0001-server-managed-sessions.md). Summary:
 
 - **Phase A:** email and password, checked by the Next.js server. The browser holds an opaque session cookie only.
 - **MFA (optional):** a confirmed authenticator adds a second step before the session cookie is set. Enrollment shows a QR code; the setup key is available when a camera cannot scan it. The pending login lasts 5 minutes. Recovery codes are single-use and stored as SHA-256 hashes. The TOTP secret is encrypted with `AUTH_MFA_KEY`. Turning MFA on or off, and replacing recovery codes, revokes every other session.
-- **Later:** OIDC (Entra ID, Google Workspace), SAML 2.0, and passkeys. Those issue the same cookie.
+- **Passkeys (optional):** a separate sign-in, accepted in [ADR 0002](adr/0002-webauthn-passkeys.md). Windows Hello, a phone, or a security key sets the same session cookie and does not also ask for an authenticator code. Enrollment is “Add a passkey” on the Security page. Postgres stores the credential id, public key, and signature counter. The ceremony challenge lasts 5 minutes and is not a session. A counter that does not move forward after either side has left 0 is rejected. Relying party id and origin come from `AUTH_WEBAUTHN_RP_ID` and `AUTH_WEBAUTHN_ORIGIN`. Removing a passkey leaves the password and the authenticator in place.
+- **Later:** OIDC (Entra ID, Google Workspace) and SAML 2.0. Those issue the same cookie.
 - Password rules (credentials): min 12 chars, must include 3 of {upper, lower, digit, symbol}, zxcvbn score ≥ 3. Breach check against HIBP range API. Hash: Argon2id, memory 19 MiB, iterations 2, parallelism 1.
 - Sessions live in Postgres `auth.session`. Redis is not the session store.
   - Cookie `__Host-tb_session`: `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`.

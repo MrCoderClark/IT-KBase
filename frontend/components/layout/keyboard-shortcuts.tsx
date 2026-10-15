@@ -44,6 +44,7 @@ export function KeyboardShortcuts() {
       if (event.defaultPrevented || event.repeat) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isTypingTarget(event.target)) return;
+      if (!event.key) return;
 
       const key = event.key.toLowerCase();
       const dialogOpen = document.querySelector("[data-slot=dialog-content]");

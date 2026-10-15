@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { safeNextPath } from "../../../auth/web/src/session";
+import { PasskeySignIn } from "@/components/auth/passkey-sign-in";
 import { Button } from "@/components/ui/button";
 import { login } from "@/lib/auth/actions";
 import { DEV_ACCOUNT_PASSWORD } from "@/lib/auth/dev-password";
@@ -59,7 +60,8 @@ async function LoginForm({
       </aside>
 
       <main className="flex items-center justify-center bg-canvas px-6 py-16">
-        <form action={login} className="w-full max-w-sm">
+        <div className="w-full max-w-sm">
+          <form action={login}>
           <h2 className="text-[20px] font-semibold text-fg">Sign in</h2>
           <p className="mt-1 text-[14px] text-fg-muted">Use your TechBase account.</p>
 
@@ -114,7 +116,9 @@ async function LoginForm({
               the database seed once so those accounts can sign in.
             </p>
           ) : null}
-        </form>
+          </form>
+          <PasskeySignIn nextPath={nextPath} />
+        </div>
       </main>
     </div>
   );

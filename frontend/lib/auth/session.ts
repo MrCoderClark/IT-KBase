@@ -7,6 +7,7 @@ import { authStore } from "./store";
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "__Host-tb_session";
 const MFA_COOKIE = "__Host-tb_mfa";
 const RECOVERY_COOKIE = "__Host-tb_recovery";
+const PASSKEY_COOKIE = "__Host-tb_passkey";
 
 export type AppSession = {
   sessionId: string;
@@ -132,6 +133,33 @@ export async function setRecoveryCookie(payload: string): Promise<void> {
 export async function readRecoveryCookie(): Promise<string | undefined> {
   const jar = await cookies();
   return jar.get(RECOVERY_COOKIE)?.value;
+}
+
+export async function setPasskeyCookie(secret: string): Promise<void> {
+  const jar = await cookies();
+  jar.set(PASSKEY_COOKIE, secret, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 5 * 60,
+  });
+}
+
+export async function readPasskeyCookie(): Promise<string | undefined> {
+  const jar = await cookies();
+  return jar.get(PASSKEY_COOKIE)?.value;
+}
+
+export async function clearPasskeyCookie(): Promise<void> {
+  const jar = await cookies();
+  jar.set(PASSKEY_COOKIE, "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export async function clearRecoveryCookie(): Promise<void> {

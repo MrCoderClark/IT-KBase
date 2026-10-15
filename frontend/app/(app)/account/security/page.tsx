@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { qrSvg } from "../../../../../auth/web/src/qr";
 import { decryptTotpSecret } from "../../../../../auth/web/src/mfa-secret";
 import { otpauthUri } from "../../../../../auth/web/src/totp";
+import { AddPasskey } from "@/components/auth/add-passkey";
 import { Button } from "@/components/ui/button";
 import {
   beginTotp,
@@ -10,6 +11,8 @@ import {
   dismissRecoveryCodes,
   regenerateRecoveryCodes,
 } from "@/lib/auth/mfa-actions";
+import { removePasskey } from "@/lib/auth/passkey-actions";
+import { listPasskeys } from "@/lib/auth/passkey-store";
 import { MFA_ISSUER, mfaKey } from "@/lib/auth/mfa-key";
 import { findTotp } from "@/lib/auth/mfa-store";
 import { getSession, readRecoveryCookie } from "@/lib/auth/session";
@@ -37,6 +40,7 @@ async function SecurityPanel({
   const session = await getSession();
   if (!session) return null;
   const params = await searchParams;
+  const passkeys = await listPasskeys(session.identityId);
   const key = mfaKey();
   const totp = await findTotp(session.identityId);
   const confirmed = totp?.confirmedAt != null;
@@ -89,6 +93,32 @@ async function SecurityPanel({
           {message}
         </p>
       ) : null}
+
+      <section className="mt-6 rounded-lg border border-border bg-surface p-4">
+        <h2 className="text-[15px] font-semibold text-fg">Passkeys</h2>
+        <p className="mt-1 text-[13px] leading-5 text-fg-muted">
+          Windows Hello, a phone, or a security key can sign in on its own. Removing one leaves
+          the password and the authenticator as they are.
+        </p>
+        {passkeys.length === 0 ? (
+          <p className="mt-3 text-[13px] text-fg-muted">No passkeys yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-border">
+            {passkeys.map((passkey) => (
+              <li key={passkey.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="text-[13px] text-fg">{passkey.name}</span>
+                <form action={removePasskey}>
+                  <input type="hidden" name="id" value={passkey.id} />
+                  <Button type="submit" variant="outline" size="sm">
+                    Remove
+                  </Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <AddPasskey />
+      </section>
 
       {freshCodes.length > 0 ? (
         <section className="mt-6 rounded-lg border border-border bg-surface p-4">

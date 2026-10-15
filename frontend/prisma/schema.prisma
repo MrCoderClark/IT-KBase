@@ -298,6 +298,8 @@ model Identity {
   totp     TotpCredential?
   recovery RecoveryCode[]
   challenges MfaChallenge[]
+  passkeys   Passkey[]
+  passkeyChallenges PasskeyChallenge[]
 
   @@map("identity")
   @@schema("auth")
@@ -380,6 +382,37 @@ model MfaChallenge {
 
   @@index([identityId])
   @@map("mfa_challenge")
+  @@schema("auth")
+}
+
+model Passkey {
+  id           String   @id @default(cuid())
+  identityId   String
+  identity     Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      Int      @default(0)
+  transports   String   @default("")
+  name         String
+  createdAt    DateTime @default(now())
+
+  @@index([identityId])
+  @@map("passkey")
+  @@schema("auth")
+}
+
+model PasskeyChallenge {
+  id         String    @id @default(cuid())
+  identityId String?
+  identity   Identity? @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  secretHash String    @unique
+  purpose    String
+  challenge  String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([identityId])
+  @@map("passkey_challenge")
   @@schema("auth")
 }
 

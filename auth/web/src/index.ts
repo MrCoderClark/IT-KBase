@@ -33,6 +33,7 @@ export {
   recoveryCodeMatches,
 } from "./recovery-codes";
 export { matchTotpStep, newTotpSecret, otpauthUri } from "./totp";
+export { passkeyName, signatureCounterRegressed } from "./passkey";
 export { loginWithPassword } from "./login";
 export { resolveSession, revokePresentedSession } from "./read-session";
 export type {
