@@ -157,8 +157,8 @@ Phase B:
 
 - ✅ MFA and recovery codes. Optional authenticator. Setup shows a QR code the authenticator app scans; the setup key is behind “Can't scan?”. A correct password with MFA on goes to `/login/mfa` and the session cookie is set only after a 6-digit code or a recovery code. Ten one-time codes are shown once; the page clears them when the user confirms they are saved. Checked on `:3001` as Joe Clark: enroll, second step, then turn it off with a recovery code so the seed login is password-only again. The QR image for a normal account decodes back to the authenticator link. Migration `20261014211000_auth_mfa` is applied. `AUTH_MFA_KEY` lives in `frontend/.env` and is not committed.
 - ✅ Passkeys are a separate sign-in. Security has “Add a passkey”; the login page has “Sign in with a passkey”. Success sets the same session cookie and does not ask for an authenticator code. Checked on `:3001`: a passkey was created with Windows Hello, then sign-out and “Sign in with a passkey” opened the app. Migration `20261014223000_auth_passkey` is applied. `AUTH_WEBAUTHN_RP_ID` and `AUTH_WEBAUTHN_ORIGIN` are in `frontend/.env` and are not committed.
-- ⬜ Finer permissions, organizations, OIDC (Entra ID, Google Workspace), SAML
-- ⬜ Users admin page
+- ⬜ Finer permissions and organizations. OIDC (Entra ID, Google Workspace) and SAML
+- ✅ Users admin. An admin can list accounts, change a role, and turn sign-in off or on. A role change or a disable signs that person out. Self and last-admin changes are refused. Invite is later. Checked on `:3001`: Joe sees the directory and his own row has no controls. Sarah Kim’s role was changed to reviewer and put back to author. Signed in as Sarah, `/admin/users` shows the admin-only message and no controls. Joe is signed in again.
 - ⬜ Settings (branding, retention, allowed domains)
 - ⬜ Integrations placeholder (ServiceNow, Jira, Teams webhook)
 - ⬜ Row-level permissions on drafts beyond the role matrix

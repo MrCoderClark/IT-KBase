@@ -194,7 +194,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 ## F10 — Admin
 
-**Users**: list, invite, change role, deactivate.
+**Users**: an admin can list accounts, change a role, and turn sign-in off or back on. A role change or a disable signs that person out. An admin cannot change their own access. The last admin who can still sign in cannot be demoted or disabled. Invite and delete come later.
 
 **Settings**: branding (logo override, accent color), content retention, allowed email domains for SSO, feature flags.
 
