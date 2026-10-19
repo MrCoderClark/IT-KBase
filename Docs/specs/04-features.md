@@ -190,7 +190,9 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 The detail rail and the article list already show `Article.views`. Opening an article adds 1 once per signed-in user per UTC day. A public article also counts once per anonymous browser. A repeat open that day does not add another view, and the count does not change when the article was last updated. History does not count.
 
-A reviewer or admin also sees the last 30 UTC days on the article: one point per day from `ArticleView`, zeros included, plus the helpful ratio from the article counters. That series starts when view counting shipped, so it will not add up to the lifetime total. The global dashboard and Redis HLL are later.
+A reviewer or admin also sees the last 30 UTC days on the article: one point per day from `ArticleView`, zeros included, plus the helpful ratio from the article counters. That series starts when view counting shipped, so it will not add up to the lifetime total.
+
+Analytics shows the same audience a compact dashboard: totals by status, unique opens in 7 and 30 UTC days, the five articles with the most lifetime views, and published or in-review articles last updated more than 12 months ago. There is no separate review timestamp, so staleness uses `updatedAt`. Redis HLL is later.
 
 **Non-goals**: cohort analysis, funnel analysis, A/B testing.
 
