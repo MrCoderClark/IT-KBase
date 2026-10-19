@@ -27,7 +27,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { SearchSnippet } from "@/components/kb/search-snippet";
 import { can, type Role } from "@/lib/auth/policy";
+import type { SearchHit } from "@/lib/queries/search";
 import type { ArticleStatus } from "@/lib/types/article";
 
 export type PaletteArticle = {
@@ -68,6 +70,8 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [articles, setArticles] = useState<PaletteArticle[] | null>(null);
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -79,6 +83,29 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setHits(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=8`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : { hits: [] }))
+        .then((body: { hits?: SearchHit[] }) => {
+          if (!controller.signal.aborted) setHits(body.hits ?? []);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setHits([]);
+        });
+    }, 200);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [query]);
 
   const value = useMemo<PaletteContextValue>(
     () => ({
@@ -103,12 +130,36 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
         title="Search TechBase"
         description="Find an article or jump to a page"
       >
-        <Command>
-          <CommandInput placeholder="Search articles, keywords, or pages…" />
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search articles, keywords, or pages…"
+            onValueChange={(value) => {
+              setQuery(value);
+              if (value.trim().length < 2) setHits(null);
+            }}
+          />
           <CommandList>
             <CommandEmpty>No matches.</CommandEmpty>
             <CommandGroup heading="Articles">
-              {articles === null ? (
+              {query.trim().length >= 2 ? (
+                hits === null ? (
+                  <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">Searching…</p>
+                ) : hits.length === 0 ? (
+                  <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">
+                    No articles match. Try a broader word.
+                  </p>
+                ) : (
+                  hits.map((hit) => (
+                    <CommandItem key={hit.slug} value={hit.slug} onSelect={() => go(`/kb/${hit.slug}`)}>
+                      <FileText className="text-fg-subtle" aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-fg">{hit.title}</span>
+                        <SearchSnippet snippet={hit.snippet} />
+                      </span>
+                    </CommandItem>
+                  ))
+                )
+              ) : articles === null ? (
                 <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">
                   Loading articles…
                 </p>
@@ -142,7 +193,9 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
               )}
             </CommandGroup>
             <CommandGroup heading="Go to">
-              {NAV.filter((item) => item.href !== "/create" || can(role, "article.create")).map((item) => {
+              {NAV.filter((item) => item.href !== "/create" || can(role, "article.create"))
+                .filter((item) => query.trim().length < 2 || item.label.toLowerCase().includes(query.trim().toLowerCase()))
+                .map((item) => {
                 const Icon = item.icon;
                 return (
                   <CommandItem

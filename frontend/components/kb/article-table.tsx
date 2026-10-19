@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpDown,
@@ -14,6 +14,8 @@ import {
 import { canEditArticle, type Role } from "@/lib/auth/policy";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
+import { SearchSnippet } from "@/components/kb/search-snippet";
+import type { SearchHit } from "@/lib/queries/search";
 import { StatusChip } from "@/components/kb/status-chip";
 import { TagChip } from "@/components/kb/tag-chip";
 import ArticleFilters from "@/components/kb/article-filters";
@@ -184,11 +186,35 @@ export default function ArticleTable({
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [density, setDensity] = useState<Density>("comfortable");
   const [search, setSearch] = useState("");
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<ArticleStatus | null>(
     null,
   );
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+
+  useEffect(() => {
+    const trimmed = search.trim();
+    if (trimmed.length < 2) {
+      setHits(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=20`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : { hits: [] }))
+        .then((body: { hits?: SearchHit[] }) => {
+          if (!controller.signal.aborted) setHits(body.hits ?? []);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setHits([]);
+        });
+    }, 200);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [search]);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -199,22 +225,22 @@ export default function ArticleTable({
     }
   };
 
-  const filtered = useMemo(
-    () =>
-      applyFilters(
-        articles,
-        selectedCategory,
-        selectedStatus,
-        selectedPeriod,
-        search,
-      ),
-    [articles, selectedCategory, selectedStatus, selectedPeriod, search],
-  );
+  const filtered = useMemo(() => {
+    const narrowed = applyFilters(articles, selectedCategory, selectedStatus, selectedPeriod, "");
+    if (!hits) return applyFilters(articles, selectedCategory, selectedStatus, selectedPeriod, search);
+    const bySlug = new Map(narrowed.map((article) => [article.slug, article]));
+    return hits.flatMap((hit) => {
+      const article = bySlug.get(hit.slug);
+      return article ? [article] : [];
+    });
+  }, [articles, hits, search, selectedCategory, selectedStatus, selectedPeriod]);
 
+  const ranked = Boolean(hits) && sortKey === "updatedAt" && sortDir === "desc";
   const sorted = useMemo(
-    () => [...filtered].sort(comparator(sortKey, sortDir)),
-    [filtered, sortKey, sortDir],
+    () => (ranked ? filtered : [...filtered].sort(comparator(sortKey, sortDir))),
+    [filtered, ranked, sortKey, sortDir],
   );
+  const snippets = useMemo(() => new Map((hits ?? []).map((hit) => [hit.slug, hit.snippet])), [hits]);
 
   const isCompact = density === "compact";
 
@@ -234,11 +260,12 @@ export default function ArticleTable({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search articles…"
+            data-search-field=""
             className="
               w-full rounded-lg border border-border bg-surface
               py-1.5 pl-8 pr-3 text-[13px] text-fg
               placeholder:text-fg-subtle/50
-              focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30
+              outline-none focus:border-border-strong
               transition-colors
             "
           />
@@ -346,12 +373,15 @@ export default function ArticleTable({
                         className="shrink-0 px-1.5 py-px text-[10px]"
                       />
                     )}
-                    <Link
-                      href={`/kb/${article.slug}`}
-                      className="truncate text-[13px] font-medium text-fg transition-colors group-hover:text-accent"
-                    >
-                      {article.title}
-                    </Link>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/kb/${article.slug}`}
+                        className="block truncate text-[13px] font-medium text-fg transition-colors group-hover:text-accent"
+                      >
+                        {article.title}
+                      </Link>
+                      {snippets.get(article.slug) ? <SearchSnippet snippet={snippets.get(article.slug) ?? ""} /> : null}
+                    </div>
                   </div>
                 </td>
 

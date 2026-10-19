@@ -278,7 +278,7 @@ model IngestionJob {
 
 ### 2.1 Indexes & FTS
 
-- `article.searchVector` is maintained by a Postgres trigger that concatenates `title`, `summary`, section titles, and block prose text with weights `A`, `B`, `C`, `D`.
+- `article.searchVector` is maintained by a Postgres trigger that concatenates `title` (A), `summary` and tag names (B), current-version section titles (C), and block prose (D).
 - `GIN` index on `searchVector`.
 - Composite `(status, updatedAt DESC)` to serve the Recently Updated view fast.
 
