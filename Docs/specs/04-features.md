@@ -217,9 +217,9 @@ A reviewer or admin opens `/kb/[slug]/history`, reads an older version, and comp
 
 ## F12 — Feedback
 
-- Thumbs card on article detail. Optional comment (up to 500 chars) after clicking either thumb.
+- Thumbs card on article detail. Optional comment (up to 500 chars) sent with either thumb.
 - Rate-limited: 1 feedback per article per user per 7 days.
-- Reviewer sees aggregated feedback on article detail (behind a toggle) and in Analytics.
+- Reviewer sees the votes on the article, behind Feedback notes, and on Analytics as a recent list. Charts and view counts stay in F9.
 
 ---
 

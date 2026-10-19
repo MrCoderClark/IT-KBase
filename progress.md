@@ -167,7 +167,7 @@ Phase B:
 
 ## 7. Feedback, analytics, versioning (M6)
 
-- ⬜ Thumbs up/down + optional comment
+- ✅ Thumbs up/down + optional comment. One vote per person per article each week. A reviewer reads the notes on the article and on Analytics. Checked on `:3001` as Joe Clark: a helpful vote on BitLocker raised the count from 156 to 157, saved the comment, and blocked another vote until Oct 26. The same vote is on Analytics.
 - ⬜ View counting (Redis HLL for uniques)
 - ⬜ Article analytics page (per-article trend)
 - ⬜ Global analytics dashboard
