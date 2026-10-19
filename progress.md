@@ -171,8 +171,7 @@ Phase B:
 - ⬜ View counting (Redis HLL for uniques)
 - ⬜ Article analytics page (per-article trend)
 - ⬜ Global analytics dashboard
-- ⬜ Version history + diff viewer
-- ⬜ Rollback to previous version
+- ✅ Version history. Spec is `Docs/specs/09-version-history.md`. A reviewer or admin can read an older version and compare sections in order. An admin restores a version as a new current row; older rows stay. Checked on `:3001` as Joe Clark: restored DNS cache 1.6 as 1.8, then restored 1.7 as 1.9 so the live article matches the text that was current before the check.
 
 ---
 

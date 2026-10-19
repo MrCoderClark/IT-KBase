@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { canEditArticle } from "@/lib/auth/policy";
+import { canEditArticle, canReadArticleHistory } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
@@ -51,7 +51,12 @@ export async function ArticleView({
       <div className="mt-8 flex items-start gap-6">
         <ArticleToc sections={article.sections} />
         <ArticleContent article={article} />
-        <ArticleRightRail article={article} related={related} canEdit={canEdit} />
+        <ArticleRightRail
+          article={article}
+          related={related}
+          canEdit={canEdit}
+          historyHref={session && canReadArticleHistory(session.role) ? `/kb/${article.slug}/history` : undefined}
+        />
       </div>
     </div>
   );

@@ -24,14 +24,16 @@ export function ArticleRightRail({
   article,
   related,
   canEdit = false,
+  historyHref,
 }: {
   article: Article;
   related: { title: string; slug: string }[];
   canEdit?: boolean;
+  historyHref?: string;
 }) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
-      <ArticleDetailsCard article={article} />
+      <ArticleDetailsCard article={article} historyHref={historyHref} />
       <RelatedArticlesCard article={article} related={related} />
       <QuickActionsCard slug={article.slug} canEdit={canEdit} />
       <FeedbackCard article={article} />
@@ -41,7 +43,13 @@ export function ArticleRightRail({
 
 /* ──────────────────────────────────────────────────────────────────────── */
 
-function ArticleDetailsCard({ article }: { article: Article }) {
+function ArticleDetailsCard({
+  article,
+  historyHref,
+}: {
+  article: Article;
+  historyHref?: string;
+}) {
   const updatedDate = new Date(article.updatedAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -107,7 +115,13 @@ function ArticleDetailsCard({ article }: { article: Article }) {
         </DetailRow>
 
         <DetailRow label="Version">
-          <span className="tabular-nums text-fg">{article.version}</span>
+          {historyHref ? (
+            <Link href={historyHref} className="tabular-nums font-semibold text-accent hover:underline">
+              {article.version}
+            </Link>
+          ) : (
+            <span className="tabular-nums text-fg">{article.version}</span>
+          )}
         </DetailRow>
       </dl>
     </div>
