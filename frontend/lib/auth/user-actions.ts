@@ -1,11 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { passwordProblem } from "../../../auth/web/src";
 import { prisma } from "@/lib/db";
 import { can, ROLES, type Role } from "./policy";
+import { passwordHasher } from "./password";
 import { authStore } from "./store";
 import { currentRequestMeta, getSession, requestTime } from "./session";
-import { disableSignInBlock, roleChangeBlock } from "./user-directory";
+import { accountEmail, accountName, deleteAccountBlock, disableSignInBlock, roleChangeBlock } from "./user-directory";
 
 function isRole(value: string): value is Role {
   return (ROLES as readonly string[]).includes(value);
@@ -127,4 +129,146 @@ export async function setSignInEnabled(formData: FormData): Promise<void> {
     userAgent: meta.userAgent,
   });
   redirect(enable ? "/admin/users?notice=on" : "/admin/users?notice=off");
+}
+
+async function emailTaken(email: string, exceptUserId?: string): Promise<boolean> {
+  const [user, identity] = await Promise.all([
+    prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    prisma.identity.findUnique({ where: { email }, select: { id: true } }),
+  ]);
+  if (user && user.id !== exceptUserId) return true;
+  if (!identity) return false;
+  if (!exceptUserId) return true;
+  const owner = await prisma.user.findUnique({
+    where: { id: exceptUserId },
+    select: { identityId: true },
+  });
+  return owner?.identityId !== identity.id;
+}
+
+export async function createUser(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const name = accountName(String(formData.get("name") ?? ""));
+  if (!name) redirect("/admin/users?e=name");
+  const email = accountEmail(String(formData.get("email") ?? ""));
+  if (!email) redirect("/admin/users?e=email");
+  const role = String(formData.get("role") ?? "");
+  if (!isRole(role)) redirect("/admin/users?e=role");
+  const password = String(formData.get("password") ?? "");
+  if (password !== String(formData.get("confirmPassword") ?? "")) redirect("/admin/users?e=match");
+  if (passwordProblem(password)) redirect("/admin/users?e=password");
+  if (await emailTaken(email)) redirect("/admin/users?e=taken");
+
+  const now = await requestTime();
+  const passwordHash = await passwordHasher.hash(password);
+  const created = await prisma.$transaction(async (tx) => {
+    const identity = await tx.identity.create({
+      data: { email, passwordHash, emailVerified: now },
+      select: { id: true },
+    });
+    return tx.user.create({
+      data: { name, email, role, identityId: identity.id },
+      select: { identityId: true },
+    });
+  });
+
+  const meta = await currentRequestMeta();
+  await authStore.audit({
+    identityId: created.identityId,
+    action: "user_created",
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  });
+  redirect("/admin/users?notice=created");
+}
+
+export async function updateUserProfile(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const name = accountName(String(formData.get("name") ?? ""));
+  if (!name) redirect("/admin/users?e=name");
+  const email = accountEmail(String(formData.get("email") ?? ""));
+  if (!email) redirect("/admin/users?e=email");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, identityId: true },
+  });
+  if (!user) redirect("/admin/users?e=missing");
+  if (user.name === name && user.email === email) redirect("/admin/users");
+  if (email !== user.email && (await emailTaken(email, user.id))) redirect("/admin/users?e=taken");
+
+  const emailChanged = email !== user.email;
+  const now = await requestTime();
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: user.id }, data: { name, email } });
+    if (!user.identityId || !emailChanged) return;
+    await tx.identity.update({
+      where: { id: user.identityId },
+      data: { email, sessionGen: { increment: 1 } },
+    });
+    await tx.identitySession.updateMany({
+      where: { identityId: user.identityId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+  });
+
+  const meta = await currentRequestMeta();
+  await authStore.audit({
+    identityId: user.identityId,
+    action: emailChanged ? "email_changed" : "name_changed",
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  });
+  if (emailChanged && user.id === session.userId) redirect("/login");
+  redirect(emailChanged ? "/admin/users?notice=email" : "/admin/users?notice=name");
+}
+
+export async function deleteUser(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, role: true, identityId: true },
+  });
+  if (!user) redirect("/admin/users?e=missing");
+  if (accountEmail(String(formData.get("confirmEmail") ?? "")) !== user.email) {
+    redirect("/admin/users?e=confirm");
+  }
+
+  const block = deleteAccountBlock({
+    actorId: session.userId,
+    targetId: user.id,
+    targetRole: user.role,
+    enabledAdminIds: await enabledAdminIds(),
+  });
+  if (block) redirect(`/admin/users?e=${block}`);
+
+  const now = await requestTime();
+  const meta = await currentRequestMeta();
+  await authStore.audit({
+    identityId: user.identityId,
+    action: "user_deleted",
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  });
+  await prisma.$transaction(async (tx) => {
+    await tx.article.updateMany({ where: { authorId: user.id }, data: { authorId: session.userId } });
+    await tx.articleVersion.updateMany({ where: { authorId: user.id }, data: { authorId: session.userId } });
+    await tx.feedback.updateMany({ where: { userId: user.id }, data: { userId: null } });
+    await tx.ingestionJob.updateMany({ where: { createdById: user.id }, data: { createdById: session.userId } });
+    if (user.identityId) {
+      await tx.identity.update({
+        where: { id: user.identityId },
+        data: { sessionGen: { increment: 1 } },
+      });
+      await tx.identitySession.updateMany({
+        where: { identityId: user.identityId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await tx.identity.delete({ where: { id: user.identityId } });
+    }
+    await tx.user.delete({ where: { id: user.id } });
+  });
+  redirect("/admin/users?notice=deleted");
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { disableSignInBlock, roleChangeBlock } from "./user-directory";
+import { accountEmail, accountName, deleteAccountBlock, disableSignInBlock, roleChangeBlock } from "./user-directory";
 
 describe("user directory guards", () => {
   it("refuses an admin demoting themselves", () => {
@@ -61,5 +61,33 @@ describe("user directory guards", () => {
       }),
       "last",
     );
+  });
+
+  it("refuses deleting yourself or the last admin", () => {
+    assert.equal(
+      deleteAccountBlock({
+        actorId: "joe",
+        targetId: "joe",
+        targetRole: "admin",
+        enabledAdminIds: ["joe", "sarah"],
+      }),
+      "self",
+    );
+    assert.equal(
+      deleteAccountBlock({
+        actorId: "joe",
+        targetId: "sarah",
+        targetRole: "admin",
+        enabledAdminIds: ["sarah"],
+      }),
+      "last",
+    );
+  });
+
+  it("accepts a display name and a normal email", () => {
+    assert.equal(accountName("  Ada   Lovelace "), "Ada Lovelace");
+    assert.equal(accountName("A"), null);
+    assert.equal(accountEmail("Ada@Contoso.com"), "ada@contoso.com");
+    assert.equal(accountEmail("not-an-email"), null);
   });
 });

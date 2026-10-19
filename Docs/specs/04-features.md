@@ -194,7 +194,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 ## F10 — Admin
 
-**Users**: an admin can list accounts, change a role, and turn sign-in off or back on. A role change or a disable signs that person out. An admin cannot change their own access. The last admin who can still sign in cannot be demoted or disabled. Invite and delete come later.
+**Users**: an admin can add an account with a name, email, role, and password, edit a name or email, change a role, turn sign-in off or back on, and delete an account. A new password follows the same rules as a reset: 12 characters and three character classes. The new account is verified, so they can sign in immediately. A role change, a sign-in disable, an email change, or a delete signs that person out. Delete reassigns their articles and versions to the admin who deleted them. An admin cannot change their own role, turn off their own sign-in, or delete themselves. The last admin who can still sign in cannot be demoted, disabled, or deleted. Invite by email comes later.
 
 **Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. Versions are not deleted yet, and password and passkey sign-in stay open. Feature flags come later.
 
