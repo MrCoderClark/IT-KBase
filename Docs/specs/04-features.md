@@ -163,11 +163,11 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Behavior**:
 - Postgres FTS (`tsvector`) with weighted fields (title A, tags B, summary B, section titles C, body D).
-- Results show: title, snippet with highlighted terms, category chip, tags, author, updated date.
-- Filters apply to the FTS query, not post-filter.
-- Zero-result empty state suggests: broaden query, remove filters, create a new article.
+- `Ctrl+K` and the article-list search box query that index. Each hit shows the title and a short snippet with the matched words in bold.
+- The list still applies category, status, and date filters after the search. Pushing those filters into the FTS query is later.
+- Zero-result empty state suggests a broader word.
 
-**Non-goals (v1)**: embedding-based semantic search (planned M6).
+**Non-goals (v1)**: embedding-based semantic search.
 
 ---
 

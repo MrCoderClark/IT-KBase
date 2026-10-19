@@ -343,6 +343,11 @@ samp {
   box-shadow: var(--shadow-focus);
   border-radius: var(--radius-sm);
 }
+/* Search fields sit in an already-focused surface, so the accent ring reads as a stray border. */
+input[data-slot="command-input"]:focus-visible,
+input[data-search-field]:focus-visible {
+  box-shadow: none;
+}
 
 /* Honor prefers-reduced-motion globally */
 @media (prefers-reduced-motion: reduce) {
