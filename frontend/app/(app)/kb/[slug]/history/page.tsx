@@ -8,8 +8,10 @@ import { ArticleRightRail } from "@/components/kb/article-right-rail";
 import { ArticleToc } from "@/components/kb/article-toc";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
+import { VersionCompare } from "@/app/(app)/kb/[slug]/history/_components/version-compare";
 import { canReadArticleHistory } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
+import { compareSections } from "@/lib/kb/section-compare";
 import { getArticleVersion, getRelatedArticles, listArticleVersions } from "@/lib/queries/articles";
 
 export default function HistoryPage({
@@ -17,7 +19,7 @@ export default function HistoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; compare?: string }>;
 }) {
   return (
     <Suspense fallback={<ArticleListShell title="History" description="Loading versions…" showCreate={false}><div /></ArticleListShell>}>
@@ -41,7 +43,7 @@ async function HistoryPanel({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; compare?: string }>;
 }) {
   const session = await getSession();
   if (!session || !canReadArticleHistory(session.role)) {
@@ -54,7 +56,8 @@ async function HistoryPanel({
   }
 
   const { slug } = await params;
-  const { v } = await searchParams;
+  const { v, compare } = await searchParams;
+  if (v && compare === "1") return <VersionDiff slug={slug} version={v} />;
   if (v) return <VersionRead slug={slug} version={v} />;
   return <VersionList slug={slug} />;
 }
@@ -94,7 +97,16 @@ async function VersionList({ slug }: { slug: string }) {
                   >
                     {row.version}
                   </Link>
-                  {row.current ? <span className="ml-2 text-[12px] font-medium text-fg-muted">Current</span> : null}
+                  {row.current ? (
+                    <span className="ml-2 text-[12px] font-medium text-fg-muted">Current</span>
+                  ) : (
+                    <Link
+                      href={`/kb/${history.slug}/history?v=${encodeURIComponent(row.version)}&compare=1`}
+                      className="ml-3 text-[12px] font-medium text-fg-muted hover:text-accent hover:underline"
+                    >
+                      Compare
+                    </Link>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-fg-muted">{when(row.createdAt)}</td>
                 <td className="px-4 py-3 text-fg">{row.authorName}</td>
@@ -125,6 +137,17 @@ async function VersionRead({ slug, version }: { slug: string; version: string })
         <Link href={`/kb/${snap.article.slug}`} className="font-semibold text-accent hover:underline">
           Current article
         </Link>
+        {snap.article.version === snap.currentVersion ? null : (
+          <>
+            {" · "}
+            <Link
+              href={`/kb/${snap.article.slug}/history?v=${encodeURIComponent(snap.article.version)}&compare=1`}
+              className="font-semibold text-accent hover:underline"
+            >
+              Compare with current
+            </Link>
+          </>
+        )}
       </p>
       <Breadcrumbs
         segments={[
@@ -141,5 +164,29 @@ async function VersionRead({ slug, version }: { slug: string; version: string })
         <ArticleRightRail article={snap.article} related={related} historyHref={historyHref} />
       </div>
     </div>
+  );
+}
+
+async function VersionDiff({ slug, version }: { slug: string; version: string }) {
+  const selected = await getArticleVersion(slug, version);
+  if (!selected) notFound();
+  if (selected.article.version === selected.currentVersion) {
+    return (
+      <ArticleListShell title="Compare" description="This is already the current version." showCreate={false}>
+        <Link href={`/kb/${slug}/history`} className="text-[13px] font-semibold text-accent hover:underline">
+          All versions
+        </Link>
+      </ArticleListShell>
+    );
+  }
+  const current = await getArticleVersion(slug, selected.currentVersion);
+  if (!current) notFound();
+  return (
+    <VersionCompare
+      slug={slug}
+      currentVersion={selected.currentVersion}
+      selectedVersion={selected.article.version}
+      rows={compareSections(current.article.sections, selected.article.sections)}
+    />
   );
 }
