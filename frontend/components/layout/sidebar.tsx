@@ -85,7 +85,15 @@ function isActive(pathname: string, href?: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function Sidebar({ counts, role }: { counts?: KbNavCounts; role?: Role }) {
+export function Sidebar({
+  counts,
+  role,
+  logoUrl,
+}: {
+  counts?: KbNavCounts;
+  role?: Role;
+  logoUrl?: string | null;
+}) {
   const pathname = usePathname();
   const items = PRIMARY.filter((item) => item.href !== "/create" || (role && can(role, "article.create"))).map(
     (item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item),
@@ -102,7 +110,11 @@ export function Sidebar({ counts, role }: { counts?: KbNavCounts; role?: Role })
     >
       {/* Brand */}
       <div className="flex shrink-0 items-center gap-3 px-5 pt-5 pb-6">
-        <BrandMark size={36} title="TechBase" />
+        {logoUrl ? (
+          <img src={logoUrl} alt="" width={36} height={36} className="size-9 rounded-md object-cover" />
+        ) : (
+          <BrandMark size={36} title="TechBase" />
+        )}
         <div className="min-w-0">
           <div className="text-[18px] leading-6 font-semibold text-white">
             TechBase

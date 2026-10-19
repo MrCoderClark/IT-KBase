@@ -46,6 +46,8 @@ Roles: `reader | author | reviewer | admin`.
 | Mark a published article public                       |        |        | ✅       | ✅    |
 | Manage users / integrations / settings                |        |        |          | ✅    |
 
+`admin.manage` is the Users page. Creating an account uses the same password rules as a reset and marks the email verified, because an admin set the password. Changing a role, turning sign-in off, changing an email, or deleting the account revokes that person's sessions and bumps `sessionGen` so an outstanding FastAPI assertion dies within 60 seconds. An admin cannot change their own role, turn off their own sign-in, or delete themselves. The last admin whose sign-in is still on cannot be demoted, disabled, or deleted. Delete asks for the current email and reassigns that person's articles to the acting admin. A disabled identity fails password and passkey sign-in the same way.
+
 An anonymous caller may read a single article when `status` is `published` and `visibility` is `public`. No other capability is available without a session. Draft, in-review, and archived articles stay private.
 
 Enforcement:

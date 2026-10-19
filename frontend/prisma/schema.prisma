@@ -278,6 +278,19 @@ model IngestionJob {
   @@schema("public")
 }
 
+/// Single row (`id` = "default") for admin-owned site options.
+model SiteSetting {
+  id                   String   @id @default("default")
+  accentHex            String   @default("#1E6BFF")
+  logoUrl              String?
+  versionRetentionDays Int      @default(365)
+  allowedEmailDomains  String[] @default([])
+  updatedAt            DateTime @updatedAt
+
+  @@map("site_setting")
+  @@schema("public")
+}
+
 // ---------------------------------------------------------------------------
 // Auth schema — owned by the auth module. No relation to User.
 // See Docs/specs/adr/0001-server-managed-sessions.md
