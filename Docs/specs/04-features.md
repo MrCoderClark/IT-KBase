@@ -41,10 +41,11 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 **Behavior**:
 - Search is a disclosure trigger. Typing opens the command palette (`cmdk`) in-place rather than navigating.
 - `Ctrl + K` / `⌘ + K` opens the palette from any screen.
-- Palette scopes (switchable with `Tab`):
-  - **Articles** — fuzzy match on title + tags + category.
-  - **Actions** — "Create article", "Import file", "Toggle theme", "Go to Analytics", etc.
-  - **Jump to** — recent 10 articles the user viewed/edited.
+- One list, not separate tabs.
+  - **Recent** — the last 10 articles this person opened or edited, newest first. An empty query shows this list.
+  - **Actions** — Create article (author and above), Import from file, Toggle theme, Keyboard shortcuts, and Analytics (reviewer and admin).
+  - **Go to** — pages such as Home, All Articles, and Categories.
+- Typing two or more characters searches article text and filters Actions and Go to by name.
 - Notifications bell shows unread count (badge). Panel lists: ingestion-complete, review-requested, mention.
 - Theme toggle cycles light → dark → system.
 - User menu: profile, keyboard shortcuts (`?`), sign out.

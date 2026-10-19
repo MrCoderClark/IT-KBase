@@ -343,10 +343,20 @@ samp {
   box-shadow: var(--shadow-focus);
   border-radius: var(--radius-sm);
 }
-/* Search fields sit in an already-focused surface, so the accent ring reads as a stray border. */
+/* Search inputs should never have focus rings - they sit in already-focused surfaces */
+input[data-slot="command-input"],
+input[data-slot="command-input"]:focus,
 input[data-slot="command-input"]:focus-visible,
-input[data-search-field]:focus-visible {
-  box-shadow: none;
+input[data-search-field],
+input[data-search-field]:focus,
+input[data-search-field]:focus-visible,
+[data-slot="command-input-wrapper"],
+[data-slot="command-input-wrapper"]:focus-within,
+[data-slot="command"] *:focus,
+[data-slot="command"] *:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+  outline-color: transparent !important;
 }
 
 /* Honor prefers-reduced-motion globally */

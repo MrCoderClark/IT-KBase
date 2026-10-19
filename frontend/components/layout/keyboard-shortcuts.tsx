@@ -12,6 +12,8 @@ import {
 
 const CHORD_MS = 1000;
 
+export const SHORTCUTS_EVENT = "tb-shortcuts";
+
 const SHORTCUTS = [
   { keys: ["Ctrl", "K"], sequence: false, label: "Search" },
   { keys: ["?"], sequence: false, label: "Show this list" },
@@ -30,6 +32,14 @@ export function KeyboardShortcuts() {
   const [helpOpen, setHelpOpen] = useState(false);
   const pendingG = useRef(false);
   const chordTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    function openFromPalette() {
+      setHelpOpen(true);
+    }
+    window.addEventListener(SHORTCUTS_EVENT, openFromPalette);
+    return () => window.removeEventListener(SHORTCUTS_EVENT, openFromPalette);
+  }, []);
 
   useEffect(() => {
     function clearChord() {

@@ -265,7 +265,7 @@ export default function ArticleTable({
               w-full rounded-lg border border-border bg-surface
               py-1.5 pl-8 pr-3 text-[13px] text-fg
               placeholder:text-fg-subtle/50
-              outline-none focus:border-border-strong
+              outline-none shadow-none focus:border-border-strong focus:shadow-none
               transition-colors
             "
           />
