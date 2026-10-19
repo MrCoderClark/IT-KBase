@@ -143,6 +143,7 @@ model Article {
 
   tags               ArticleTag[]
   feedback           Feedback[]
+  articleViews       ArticleView[]
   ingestionJob       IngestionJob?
 
   views              Int             @default(0)
@@ -242,6 +243,18 @@ model Feedback {
   createdAt  DateTime @default(now())
 
   @@index([articleId, createdAt])
+}
+
+/// One row per viewer per UTC day. A repeat open that day does not add another view.
+model ArticleView {
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  viewerKey String   // user:{userId} or anon:{uuid}
+  day       String   // YYYYMMDD in UTC
+  createdAt DateTime @default(now())
+
+  @@id([articleId, viewerKey, day])
+  @@index([day])
 }
 
 model IngestionJob {
@@ -378,8 +391,8 @@ model SiteSetting {
 | `search:q:{sha}`                   | string   | 60s     | Cached search results per query hash       |
 | `sess:{sid}`                       | —        | —       | Retired. Sessions are Postgres `auth.session` (ADR 0001). |
 | `csrf:{sid}`                       | —        | —       | Retired. CSRF is the `tb_csrf` double-submit cookie. |
-| `views:{articleId}:{yyyymmdd}`     | HLL      | 48h     | Unique daily viewers                       |
-| `views:{articleId}:total`          | counter  | ∞       | Lifetime views (synced to Postgres hourly) |
+| `views:{articleId}:{yyyymmdd}`     | HLL      | 48h     | Later. Unique daily viewers in Redis. Today the count is `ArticleView` plus `Article.views`. |
+| `views:{articleId}:total`          | counter  | ∞       | Later. Lifetime views synced to Postgres. Today `Article.views` is incremented in place. |
 | `jobs:{jobId}:events`              | stream   | 24h     | Progress events for SSE                    |
 | `queue:ingest:*`                   | lists    | –       | BullMQ internals                           |
 | `rate:{userId}:{bucket}`           | string   | varies  | Rate limiting (login, upload, search)      |

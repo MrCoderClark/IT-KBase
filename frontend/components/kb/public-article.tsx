@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { ArticleContent } from "@/components/kb/article-content";
+import { RecordArticleView } from "@/components/kb/record-article-view";
 import { ArticleToc } from "@/components/kb/article-toc";
 import type { Article } from "@/lib/types/article";
 
@@ -10,6 +11,7 @@ import type { Article } from "@/lib/types/article";
 export function PublicArticle({ article }: { article: Article }) {
   return (
     <div className="min-h-screen bg-canvas text-fg">
+      <RecordArticleView articleId={article.id} />
       <header className="border-b border-white/10 bg-[#0B1220] text-white">
         <div className="mx-auto flex h-14 max-w-[1100px] items-center justify-between px-6">
           <div className="flex items-center gap-3">

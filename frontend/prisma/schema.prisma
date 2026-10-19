@@ -161,6 +161,7 @@ model Article {
 
   tags         ArticleTag[]
   feedback     Feedback[]
+  articleViews ArticleView[]
   ingestionJob IngestionJob?
 
   views      Int @default(0)
@@ -256,6 +257,19 @@ model Feedback {
   createdAt DateTime @default(now())
 
   @@index([articleId, createdAt])
+  @@schema("public")
+}
+
+/// One row per viewer per UTC day. A repeat open that day does not add another view.
+model ArticleView {
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  viewerKey String
+  day       String
+  createdAt DateTime @default(now())
+
+  @@id([articleId, viewerKey, day])
+  @@index([day])
   @@schema("public")
 }
 
