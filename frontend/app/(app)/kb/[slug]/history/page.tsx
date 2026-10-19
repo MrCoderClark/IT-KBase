@@ -8,8 +8,9 @@ import { ArticleRightRail } from "@/components/kb/article-right-rail";
 import { ArticleToc } from "@/components/kb/article-toc";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
+import { RestoreVersionForm } from "@/app/(app)/kb/[slug]/history/_components/restore-version-form";
 import { VersionCompare } from "@/app/(app)/kb/[slug]/history/_components/version-compare";
-import { canReadArticleHistory } from "@/lib/auth/policy";
+import { can, canReadArticleHistory } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { compareSections } from "@/lib/kb/section-compare";
 import { getArticleVersion, getRelatedArticles, listArticleVersions } from "@/lib/queries/articles";
@@ -19,7 +20,7 @@ export default function HistoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ v?: string; compare?: string }>;
+  searchParams: Promise<{ v?: string; compare?: string; notice?: string; from?: string; to?: string; e?: string }>;
 }) {
   return (
     <Suspense fallback={<ArticleListShell title="History" description="Loading versions…" showCreate={false}><div /></ArticleListShell>}>
@@ -43,7 +44,7 @@ async function HistoryPanel({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ v?: string; compare?: string }>;
+  searchParams: Promise<{ v?: string; compare?: string; notice?: string; from?: string; to?: string; e?: string }>;
 }) {
   const session = await getSession();
   if (!session || !canReadArticleHistory(session.role)) {
@@ -56,13 +57,30 @@ async function HistoryPanel({
   }
 
   const { slug } = await params;
-  const { v, compare } = await searchParams;
-  if (v && compare === "1") return <VersionDiff slug={slug} version={v} />;
-  if (v) return <VersionRead slug={slug} version={v} />;
-  return <VersionList slug={slug} />;
+  const query = await searchParams;
+  const canRestore = can(session.role, "article.rollback");
+  if (query.v && query.compare === "1") {
+    return <VersionDiff slug={slug} version={query.v} canRestore={canRestore} />;
+  }
+  if (query.v) return <VersionRead slug={slug} version={query.v} canRestore={canRestore} />;
+  return <VersionList slug={slug} notice={historyNotice(query)} />;
 }
 
-async function VersionList({ slug }: { slug: string }) {
+function historyNotice(query: { notice?: string; from?: string; to?: string; e?: string }): string | null {
+  if (query.e === "current") return "That version is already current.";
+  if (query.e === "missing") return "That version was not found.";
+  if (query.e === "role") return "Only an admin can restore a version.";
+  if (query.notice === "restored" && isVersion(query.from) && isVersion(query.to)) {
+    return `Restored ${query.from} as ${query.to}. Older versions are still in this list.`;
+  }
+  return null;
+}
+
+function isVersion(value: string | undefined): value is string {
+  return Boolean(value && /^\d+\.\d+$/.test(value));
+}
+
+async function VersionList({ slug, notice }: { slug: string; notice: string | null }) {
   const history = await listArticleVersions(slug);
   if (!history) notFound();
 
@@ -72,6 +90,7 @@ async function VersionList({ slug }: { slug: string }) {
       description={`${history.title}. Current version is ${history.currentVersion}.`}
       showCreate={false}
     >
+      {notice ? <p className="mb-4 rounded-lg border border-border bg-surface px-4 py-3 text-[13px] text-fg">{notice}</p> : null}
       <p className="mb-4 text-[13px]">
         <Link href={`/kb/${history.slug}`} className="font-semibold text-accent hover:underline">
           Back to the article
@@ -120,7 +139,15 @@ async function VersionList({ slug }: { slug: string }) {
   );
 }
 
-async function VersionRead({ slug, version }: { slug: string; version: string }) {
+async function VersionRead({
+  slug,
+  version,
+  canRestore,
+}: {
+  slug: string;
+  version: string;
+  canRestore: boolean;
+}) {
   const snap = await getArticleVersion(slug, version);
   if (!snap) notFound();
   const related = await getRelatedArticles(snap.article);
@@ -149,6 +176,9 @@ async function VersionRead({ slug, version }: { slug: string; version: string })
           </>
         )}
       </p>
+      {canRestore && snap.article.version !== snap.currentVersion ? (
+        <RestoreVersionForm slug={snap.article.slug} version={snap.article.version} />
+      ) : null}
       <Breadcrumbs
         segments={[
           { label: "Knowledge Base", href: "/kb" },
@@ -167,7 +197,15 @@ async function VersionRead({ slug, version }: { slug: string; version: string })
   );
 }
 
-async function VersionDiff({ slug, version }: { slug: string; version: string }) {
+async function VersionDiff({
+  slug,
+  version,
+  canRestore,
+}: {
+  slug: string;
+  version: string;
+  canRestore: boolean;
+}) {
   const selected = await getArticleVersion(slug, version);
   if (!selected) notFound();
   if (selected.article.version === selected.currentVersion) {
@@ -187,6 +225,7 @@ async function VersionDiff({ slug, version }: { slug: string; version: string })
       currentVersion={selected.currentVersion}
       selectedVersion={selected.article.version}
       rows={compareSections(current.article.sections, selected.article.sections)}
+      canRestore={canRestore}
     />
   );
 }

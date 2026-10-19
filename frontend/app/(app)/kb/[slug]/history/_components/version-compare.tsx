@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RestoreVersionForm } from "@/app/(app)/kb/[slug]/history/_components/restore-version-form";
 import type { ComparedSection } from "@/lib/kb/section-compare";
 
 function statusLabel(status: ComparedSection["status"], selectedVersion: string): string {
@@ -13,11 +14,13 @@ export function VersionCompare({
   currentVersion,
   selectedVersion,
   rows,
+  canRestore = false,
 }: {
   slug: string;
   currentVersion: string;
   selectedVersion: string;
   rows: ComparedSection[];
+  canRestore?: boolean;
 }) {
   const changed = rows.filter((row) => row.status !== "unchanged").length;
   const differ =
@@ -39,6 +42,7 @@ export function VersionCompare({
           All versions
         </Link>
       </p>
+      {canRestore ? <div className="mb-4"><RestoreVersionForm slug={slug} version={selectedVersion} /></div> : null}
       <div className="mb-3 grid grid-cols-2 gap-4 text-[12px] font-semibold tracking-wide text-fg-muted uppercase">
         <p>Current {currentVersion}</p>
         <p>Selected {selectedVersion}</p>
