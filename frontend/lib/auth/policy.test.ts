@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { articleSaveError, can, canEditArticle, canReadArticleHistory, isPublicArticle } from "./policy";
+import { articleSaveError, can, canEditArticle, canReadArticleHistory, canReviewArticleFeedback, isPublicArticle } from "./policy";
 
 describe("role matrix", () => {
   it("lets every signed-in role read and only an admin manage the directory", () => {
@@ -16,6 +16,8 @@ describe("role matrix", () => {
     assert.equal(canReadArticleHistory("author"), false);
     assert.equal(canReadArticleHistory("reviewer"), true);
     assert.equal(canReadArticleHistory("admin"), true);
+    assert.equal(canReviewArticleFeedback("author"), false);
+    assert.equal(canReviewArticleFeedback("reviewer"), true);
   });
 });
 

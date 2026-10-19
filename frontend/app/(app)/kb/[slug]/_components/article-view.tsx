@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { canEditArticle, canReadArticleHistory } from "@/lib/auth/policy";
+import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
+import { canEditArticle, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
@@ -7,6 +8,14 @@ import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
 import { ArticleContent } from "@/components/kb/article-content";
 import { ArticleRightRail } from "@/components/kb/article-right-rail";
+
+function feedbackNotice(query: { notice?: string; e?: string }): string | null {
+  if (query.notice === "feedback") return "Thanks. Your vote is saved.";
+  if (query.e === "wait") return "You already voted on this article this week.";
+  if (query.e === "comment") return "Keep the comment to 500 characters.";
+  if (query.e === "vote") return "Choose helpful or not helpful.";
+  return null;
+}
 
 /**
  * Inner async component that awaits params inside Suspense.
@@ -17,10 +26,13 @@ import { ArticleRightRail } from "@/components/kb/article-right-rail";
  */
 export async function ArticleView({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ notice?: string; e?: string }>;
 }) {
   const { slug } = await params;
+  const query = searchParams ? await searchParams : {};
   const [article, session] = await Promise.all([getArticleBySlug(slug), getSession()]);
 
   if (!article) notFound();
@@ -50,12 +62,23 @@ export async function ArticleView({
 
       <div className="mt-8 flex items-start gap-6">
         <ArticleToc sections={article.sections} />
-        <ArticleContent article={article} />
+        <div className="min-w-0 flex-1">
+          <ArticleContent article={article} />
+          {session && canReviewArticleFeedback(session.role) ? (
+            <details className="mt-2 rounded-xl border border-border bg-canvas px-4 py-3">
+              <summary className="cursor-pointer text-[13px] font-semibold text-fg">Feedback notes</summary>
+              <div className="mt-3">
+                <ArticleFeedbackNotes articleId={article.id} />
+              </div>
+            </details>
+          ) : null}
+        </div>
         <ArticleRightRail
           article={article}
           related={related}
           canEdit={canEdit}
           historyHref={session && canReadArticleHistory(session.role) ? `/kb/${article.slug}/history` : undefined}
+          feedbackNotice={feedbackNotice(query)}
         />
       </div>
     </div>

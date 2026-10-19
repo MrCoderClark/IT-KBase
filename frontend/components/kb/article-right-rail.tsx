@@ -7,9 +7,8 @@ import {
   MoreVertical,
   Pencil,
   Printer,
-  ThumbsDown,
-  ThumbsUp,
 } from "lucide-react";
+import { ArticleFeedback } from "@/components/kb/article-feedback";
 import type { Article } from "@/lib/types/article";
 import { TagChip } from "@/components/kb/tag-chip";
 import { CategoryChip } from "@/components/kb/category-chip";
@@ -25,18 +24,26 @@ export function ArticleRightRail({
   related,
   canEdit = false,
   historyHref,
+  feedbackNotice = null,
 }: {
   article: Article;
   related: { title: string; slug: string }[];
   canEdit?: boolean;
   historyHref?: string;
+  feedbackNotice?: string | null;
 }) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
       <ArticleDetailsCard article={article} historyHref={historyHref} />
       <RelatedArticlesCard article={article} related={related} />
       <QuickActionsCard slug={article.slug} canEdit={canEdit} />
-      <FeedbackCard article={article} />
+      <ArticleFeedback
+        articleId={article.id}
+        slug={article.slug}
+        helpful={article.helpful}
+        notHelpful={article.notHelpful}
+        notice={feedbackNotice}
+      />
     </aside>
   );
 }
@@ -245,52 +252,3 @@ function QuickActionsCard({ slug, canEdit }: { slug: string; canEdit: boolean })
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────── */
-
-function FeedbackCard({ article }: { article: Article }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-      <h3 className="text-[16px] leading-6 font-semibold text-fg">
-        Was this article helpful?
-      </h3>
-      <p className="mt-1 text-[13px] leading-5 text-fg-subtle">
-        Help us improve by sharing your feedback.
-      </p>
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Helpful"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-border-strong text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg"
-        >
-          <ThumbsUp size={16} aria-hidden />
-        </button>
-        <button
-          type="button"
-          aria-label="Not helpful"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-border-strong text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg"
-        >
-          <ThumbsDown size={16} aria-hidden />
-        </button>
-        <button
-          type="button"
-          aria-label="Leave a comment"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-border-strong text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-}

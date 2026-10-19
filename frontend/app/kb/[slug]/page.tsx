@@ -14,17 +14,25 @@ import { readSiteSettings } from "@/lib/settings/store";
  */
 export default function ArticlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ notice?: string; e?: string }>;
 }) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
-      <ArticleEntry params={params} />
+      <ArticleEntry params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function ArticleEntry({ params }: { params: Promise<{ slug: string }> }) {
+async function ArticleEntry({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ notice?: string; e?: string }>;
+}) {
   const { slug } = await params;
   const [article, session, settings] = await Promise.all([
     getArticleBySlug(slug),
@@ -36,7 +44,7 @@ async function ArticleEntry({ params }: { params: Promise<{ slug: string }> }) {
     if (!article) notFound();
     return (
       <AppFrame session={session} settings={settings}>
-        <ArticleView params={params} />
+        <ArticleView params={params} searchParams={searchParams} />
       </AppFrame>
     );
   }
