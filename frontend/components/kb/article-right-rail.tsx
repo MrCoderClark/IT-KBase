@@ -121,6 +121,10 @@ function ArticleDetailsCard({
           </span>
         </DetailRow>
 
+        <DetailRow label="Views">
+          <span className="tabular-nums text-fg">{article.views.toLocaleString("en-US")}</span>
+        </DetailRow>
+
         <DetailRow label="Version">
           {historyHref ? (
             <Link href={historyHref} className="tabular-nums font-semibold text-accent hover:underline">

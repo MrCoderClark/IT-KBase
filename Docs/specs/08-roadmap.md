@@ -90,7 +90,7 @@ Phase B — after Phase A is verified:
 **Outcome**: KB owners can see what matters and roll back mistakes.
 
 - Thumbs feedback with optional comment, rate-limited.
-- Unique view counting via Redis HLL.
+- Unique view counting. One open per viewer per UTC day increments `Article.views`. Redis HLL is later.
 - Global analytics dashboard.
 - Per-article analytics page.
 - Version picker + side-by-side diff.

@@ -188,6 +188,8 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 - Global dashboard: total articles, published, drafts, views (7d/30d), top articles by views, articles not reviewed in 12 months.
 - Per-article page: views over 30 days (sparkline), helpful ratio, feedback comments.
 
+The detail rail and the article list already show `Article.views`. Opening an article adds 1 once per signed-in user per UTC day. A public article also counts once per anonymous browser. A repeat open that day does not add another view, and the count does not change when the article was last updated. History does not count. Sparklines, the global dashboard, and Redis HLL are later.
+
 **Non-goals**: cohort analysis, funnel analysis, A/B testing.
 
 ---

@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
 import { ArticleContent } from "@/components/kb/article-content";
+import { RecordArticleView } from "@/components/kb/record-article-view";
 import { ArticleRightRail } from "@/components/kb/article-right-rail";
 
 function feedbackNotice(query: { notice?: string; e?: string }): string | null {
@@ -49,6 +50,7 @@ export async function ArticleView({
 
   return (
     <div className="w-full px-6 py-6">
+      <RecordArticleView articleId={article.id} />
       <Breadcrumbs
         segments={[
           { label: "Knowledge Base", href: "/kb" },
