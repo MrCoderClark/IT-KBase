@@ -169,7 +169,7 @@ Phase B:
 
 - ✅ Thumbs up/down + optional comment. One vote per person per article each week. A reviewer reads the notes on the article and on Analytics. Checked on `:3001` as Joe Clark: a helpful vote on BitLocker raised the count from 156 to 157, saved the comment, and blocked another vote until Oct 26. The same vote is on Analytics.
 - ✅ View counting. One open per signed-in user per UTC day, or per anonymous browser on a public article, adds 1 to `Article.views`. A second open the same day does not. The count does not change the article's updated time, and history does not count. Checked on `:3001` as Joe Clark: Defender went from 54 to 55, DHCP scope exhaustion from 12 to 13, and a reload stayed at 13. Both still show Oct 14 in the article list. An anonymous open of public BitLocker counted once (1893 to 1894); a second open and a private article without a session did not. Redis HLL is later.
-- ⬜ Article analytics page (per-article trend)
+- ✅ Article analytics. A reviewer or admin sees the last 30 UTC days and the helpful ratio on the article. The series is daily unique opens, so it does not add up to the lifetime view total. Checked on `:3001` as Joe Clark: Defender showed 1 view on Oct 19 and 55 lifetime views, with 100% helpful (3 of 3). The global dashboard is later.
 - ⬜ Global analytics dashboard
 - ✅ Version history. Spec is `Docs/specs/09-version-history.md`. A reviewer or admin can read an older version and compare sections in order. An admin restores a version as a new current row; older rows stay. Checked on `:3001` as Joe Clark: restored DNS cache 1.6 as 1.8, then restored 1.7 as 1.9 so the live article matches the text that was current before the check.
 
