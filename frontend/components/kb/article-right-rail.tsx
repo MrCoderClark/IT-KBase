@@ -9,6 +9,8 @@ import {
   Printer,
 } from "lucide-react";
 import { ArticleFeedback } from "@/components/kb/article-feedback";
+import { ViewTrendCard } from "@/components/kb/view-trend-card";
+import type { TrendPoint } from "@/lib/kb/view-trend";
 import type { Article } from "@/lib/types/article";
 import { TagChip } from "@/components/kb/tag-chip";
 import { CategoryChip } from "@/components/kb/category-chip";
@@ -25,16 +27,21 @@ export function ArticleRightRail({
   canEdit = false,
   historyHref,
   feedbackNotice = null,
+  trend = null,
 }: {
   article: Article;
   related: { title: string; slug: string }[];
   canEdit?: boolean;
   historyHref?: string;
   feedbackNotice?: string | null;
+  trend?: TrendPoint[] | null;
 }) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
       <ArticleDetailsCard article={article} historyHref={historyHref} />
+      {trend ? (
+        <ViewTrendCard points={trend} helpful={article.helpful} notHelpful={article.notHelpful} />
+      ) : null}
       <RelatedArticlesCard article={article} related={related} />
       <QuickActionsCard slug={article.slug} canEdit={canEdit} />
       <ArticleFeedback

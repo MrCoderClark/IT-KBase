@@ -49,6 +49,11 @@ export function canReviewArticleFeedback(role: Role): boolean {
   return can(role, "article.publish");
 }
 
+/** Reviewer and admin can read the per-article view trend. */
+export function canReadArticleAnalytics(role: Role): boolean {
+  return can(role, "article.publish");
+}
+
 /** Anonymous readers may open this article. Every other status stays private. */
 export function isPublicArticle(article: {
   status: ArticleStatus;

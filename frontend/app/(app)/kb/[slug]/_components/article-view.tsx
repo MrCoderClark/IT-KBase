@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
-import { canEditArticle, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
-import { getSession } from "@/lib/auth/session";
+import { canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
+import { getSession, requestTime } from "@/lib/auth/session";
+import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
+import { listArticleViewCounts } from "@/lib/queries/view-trend";
 import { Breadcrumbs } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
@@ -39,6 +41,12 @@ export async function ArticleView({
   if (!article) notFound();
 
   const related = await getRelatedArticles(article);
+  let trend: TrendPoint[] | null = null;
+  if (session && canReadArticleAnalytics(session.role)) {
+    const days = trendDays(await requestTime());
+    const fromDay = days[0];
+    if (fromDay) trend = fillTrend(days, await listArticleViewCounts(article.id, fromDay));
+  }
   const canEdit = Boolean(
     session &&
       article.author.id &&
@@ -81,6 +89,7 @@ export async function ArticleView({
           canEdit={canEdit}
           historyHref={session && canReadArticleHistory(session.role) ? `/kb/${article.slug}/history` : undefined}
           feedbackNotice={feedbackNotice(query)}
+          trend={trend}
         />
       </div>
     </div>

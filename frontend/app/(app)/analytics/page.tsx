@@ -28,7 +28,7 @@ async function AnalyticsPanel() {
   return (
     <ArticleListShell
       title="Analytics"
-      description="Recent helpful and not-helpful votes. Charts come later."
+      description="Recent helpful and not-helpful votes. A 30-day trend is on each article. The dashboard comes later."
       showCreate={false}
     >
       <FeedbackNotes notes={notes} showArticle />
