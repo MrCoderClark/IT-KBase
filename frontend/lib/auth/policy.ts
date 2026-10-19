@@ -39,6 +39,11 @@ export function can(role: Role, capability: Capability): boolean {
   return ALLOWED[capability].includes(role);
 }
 
+/** Reviewer and admin can open version history. Restore stays `article.rollback`. */
+export function canReadArticleHistory(role: Role): boolean {
+  return can(role, "article.publish");
+}
+
 /** Anonymous readers may open this article. Every other status stays private. */
 export function isPublicArticle(article: {
   status: ArticleStatus;

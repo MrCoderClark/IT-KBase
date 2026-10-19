@@ -209,11 +209,9 @@ Each integration page shows: enable toggle, config form, connection test, last-s
 
 ## F11 — Versioning & diff
 
-**Behavior**:
-- Every publish creates a new `ArticleVersion` with a `version` string.
-- Version picker on the article page (admin/reviewer only in v1).
-- Side-by-side diff: left current, right selected. Blocks are keyed by stable id, so moves show as moves (not delete+insert).
-- `Rollback` restores a prior version as the new current, incrementing the version.
+Specified in [09-version-history.md](09-version-history.md).
+
+A reviewer or admin opens `/kb/[slug]/history`, reads an older version, and compares it with the current one by section. An admin restores an older version as a new current version. The older rows stay. Move detection and deletion of old versions are later.
 
 ---
 

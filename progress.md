@@ -171,8 +171,8 @@ Phase B:
 - ⬜ View counting (Redis HLL for uniques)
 - ⬜ Article analytics page (per-article trend)
 - ⬜ Global analytics dashboard
-- ⬜ Version history + diff viewer
-- ⬜ Rollback to previous version
+- 🟡 Version history. Spec is `Docs/specs/09-version-history.md`. Phase 1 is the list and a read-only older version for a reviewer or admin. Checked on `:3001` as Joe Clark: BitLocker history lists 2.4 (current) and 2.3, the version chip links there, and opening 2.3 shows “Viewing 2.3. Current is 2.4.” with no Edit. Compare and restore are still open.
+- ⬜ Rollback to previous version (phase 3 of the spec above)
 
 ---
 

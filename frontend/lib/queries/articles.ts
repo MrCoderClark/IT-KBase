@@ -357,6 +357,114 @@ export async function getArticleBySlug(
   };
 }
 
+export type ArticleVersionRow = {
+  id: string;
+  version: string;
+  notes: string | null;
+  authorName: string;
+  createdAt: string;
+  current: boolean;
+};
+
+/** Newest first. Null when the slug does not exist. */
+export async function listArticleVersions(slug: string): Promise<{
+  slug: string;
+  title: string;
+  currentVersion: string;
+  versions: ArticleVersionRow[];
+} | null> {
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    select: {
+      slug: true,
+      title: true,
+      version: true,
+      currentVersionId: true,
+      versions: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          version: true,
+          notes: true,
+          createdAt: true,
+          author: { select: { name: true } },
+        },
+      },
+    },
+  });
+  if (!article) return null;
+  return {
+    slug: article.slug,
+    title: article.title,
+    currentVersion: article.version,
+    versions: article.versions.map((row) => ({
+      id: row.id,
+      version: row.version,
+      notes: row.notes,
+      authorName: row.author.name,
+      createdAt: row.createdAt.toISOString(),
+      current: row.id === article.currentVersionId,
+    })),
+  };
+}
+
+/** One saved snapshot, with the live article's category and tags. */
+export async function getArticleVersion(
+  slug: string,
+  version: string,
+): Promise<{ article: Article; currentVersion: string; notes: string | null } | null> {
+  const row = await prisma.article.findUnique({
+    where: { slug },
+    include: {
+      category: { select: { name: true, slug: true, color: true } },
+      tags: { select: { tag: { select: { name: true, slug: true } } } },
+      versions: {
+        where: { version },
+        include: {
+          author: { select: { id: true, name: true, avatarUrl: true } },
+          sections: {
+            orderBy: { order: "asc" },
+            include: { blocks: { orderBy: { order: "asc" } } },
+          },
+        },
+      },
+    },
+  });
+  const snap = row?.versions[0];
+  if (!row || !snap) return null;
+  return {
+    currentVersion: row.version,
+    notes: snap.notes,
+    article: {
+      id: row.id,
+      slug: row.slug,
+      title: snap.title,
+      summary: snap.summary,
+      heroImageUrl: row.heroImageUrl,
+      status: row.status as ArticleStatus,
+      visibility: row.visibility,
+      readingTimeMinutes: row.readingTimeMinutes,
+      version: snap.version,
+      category: row.category
+        ? { name: row.category.name, slug: row.category.slug, color: row.category.color }
+        : null,
+      tags: row.tags.map((at) => ({ name: at.tag.name, slug: at.tag.slug })),
+      author: {
+        id: snap.author.id,
+        name: snap.author.name,
+        avatarUrl: snap.author.avatarUrl,
+      },
+      sections: snap.sections.map(mapSection),
+      views: row.views,
+      helpful: row.helpful,
+      notHelpful: row.notHelpful,
+      createdAt: snap.createdAt.toISOString(),
+      updatedAt: snap.createdAt.toISOString(),
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+    },
+  };
+}
+
 export async function getCategoryIndex() {
   const rows = await prisma.category.findMany({
     orderBy: { name: "asc" },
