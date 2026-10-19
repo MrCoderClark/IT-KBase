@@ -11,12 +11,18 @@ import {
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
+  ChartColumn,
   FileText,
   FolderClosed,
+  History,
   House,
+  Keyboard,
+  Moon,
   Plus,
   Search,
+  Sun,
   Tag,
+  Upload,
 } from "lucide-react";
 import {
   Command,
@@ -28,8 +34,10 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { SearchSnippet } from "@/components/kb/search-snippet";
-import { can, type Role } from "@/lib/auth/policy";
+import { SHORTCUTS_EVENT } from "@/components/layout/keyboard-shortcuts";
+import { can, canReadArticleAnalytics, type Role } from "@/lib/auth/policy";
 import type { SearchHit } from "@/lib/queries/search";
+import { readThemeMode, THEME_EVENT, toggleTheme, type ThemeMode } from "@/lib/theme";
 import type { ArticleStatus } from "@/lib/types/article";
 
 export type PaletteArticle = {
@@ -37,7 +45,6 @@ export type PaletteArticle = {
   slug: string;
   status: ArticleStatus;
   category: string | null;
-  tags: string[];
 };
 
 const NAV = [
@@ -46,7 +53,6 @@ const NAV = [
   { href: "/kb/drafts", label: "My Drafts", icon: BookOpen },
   { href: "/kb/recent", label: "Recently Updated", icon: BookOpen },
   { href: "/kb/shared", label: "Shared With Me", icon: BookOpen },
-  { href: "/create", label: "Create Article", icon: Plus },
   { href: "/categories", label: "Categories", icon: FolderClosed },
   { href: "/tags", label: "Tags", icon: Tag },
 ] as const;
@@ -60,8 +66,7 @@ const STATUS_LABEL: Record<ArticleStatus, string> = {
 
 type PaletteContextValue = {
   openPalette: () => void;
-  setArticles: (articles: PaletteArticle[]) => void;
-  articles: PaletteArticle[] | null;
+  setRecent: (articles: PaletteArticle[]) => void;
 };
 
 const PaletteContext = createContext<PaletteContextValue | null>(null);
@@ -69,9 +74,10 @@ const PaletteContext = createContext<PaletteContextValue | null>(null);
 export function PaletteProvider({ children, role }: { children: ReactNode; role: Role }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [articles, setArticles] = useState<PaletteArticle[] | null>(null);
+  const [recent, setRecent] = useState<PaletteArticle[] | null>(null);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [theme, setTheme] = useState<ThemeMode | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -82,6 +88,15 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    function syncTheme() {
+      setTheme(readThemeMode());
+    }
+    syncTheme();
+    window.addEventListener(THEME_EVENT, syncTheme);
+    return () => window.removeEventListener(THEME_EVENT, syncTheme);
   }, []);
 
   useEffect(() => {
@@ -110,10 +125,9 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
   const value = useMemo<PaletteContextValue>(
     () => ({
       openPalette: () => setOpen(true),
-      setArticles,
-      articles,
+      setRecent,
     }),
-    [articles],
+    [],
   );
 
   function go(href: string) {
@@ -121,12 +135,46 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
     router.push(href);
   }
 
+  function showShortcuts() {
+    setOpen(false);
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event(SHORTCUTS_EVENT));
+    }, 0);
+  }
+
+  const searching = query.trim().length >= 2;
+  const needle = query.trim().toLowerCase();
+  function matches(label: string) {
+    return !searching || label.toLowerCase().includes(needle);
+  }
+
+  const themeLabel = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+  const ThemeIcon = theme === "dark" ? Sun : Moon;
+  const actions = [
+    can(role, "article.create")
+      ? { id: "create", label: "Create article", icon: Plus, run: () => go("/create") }
+      : null,
+    { id: "import", label: "Import from file", icon: Upload, run: () => go("/import") },
+    { id: "theme", label: themeLabel, icon: ThemeIcon, run: () => toggleTheme() },
+    { id: "shortcuts", label: "Keyboard shortcuts", icon: Keyboard, run: showShortcuts },
+    canReadArticleAnalytics(role)
+      ? { id: "analytics", label: "Analytics", icon: ChartColumn, run: () => go("/analytics") }
+      : null,
+  ].filter((item) => item !== null && matches(item.label));
+  const pages = NAV.filter((item) => matches(item.label));
+
   return (
     <PaletteContext.Provider value={value}>
       {children}
       <CommandDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            setQuery("");
+            setHits(null);
+          }
+        }}
         title="Search TechBase"
         description="Find an article or jump to a page"
       >
@@ -140,9 +188,9 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
           />
           <CommandList>
             <CommandEmpty>No matches.</CommandEmpty>
-            <CommandGroup heading="Articles">
-              {query.trim().length >= 2 ? (
-                hits === null ? (
+            {searching ? (
+              <CommandGroup heading="Articles">
+                {hits === null ? (
                   <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">Searching…</p>
                 ) : hits.length === 0 ? (
                   <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">
@@ -158,57 +206,57 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
                       </span>
                     </CommandItem>
                   ))
-                )
-              ) : articles === null ? (
-                <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">
-                  Loading articles…
-                </p>
-              ) : (
-                articles.map((article) => (
-                  <CommandItem
-                    key={article.slug}
-                    value={[
-                      article.title,
-                      article.category,
-                      ...article.tags,
-                      article.slug,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onSelect={() => go(`/kb/${article.slug}`)}
-                  >
-                    <FileText className="text-fg-subtle" aria-hidden />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-fg">
-                        {article.title}
+                )}
+              </CommandGroup>
+            ) : (
+              <CommandGroup heading="Recent">
+                {recent === null ? (
+                  <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">Loading…</p>
+                ) : recent.length === 0 ? (
+                  <p className="px-2 py-2 text-[13px] leading-5 text-fg-subtle">
+                    Articles you open or edit show up here.
+                  </p>
+                ) : (
+                  recent.map((article) => (
+                    <CommandItem key={article.slug} value={article.slug} onSelect={() => go(`/kb/${article.slug}`)}>
+                      <History className="text-fg-subtle" aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-fg">{article.title}</span>
+                        <span className="block truncate text-[12px] leading-4 text-fg-subtle">
+                          {[article.category, STATUS_LABEL[article.status]].filter(Boolean).join(" · ")}
+                        </span>
                       </span>
-                      <span className="block truncate text-[12px] leading-4 text-fg-subtle">
-                        {[article.category, STATUS_LABEL[article.status]]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    </span>
-                  </CommandItem>
-                ))
-              )}
-            </CommandGroup>
-            <CommandGroup heading="Go to">
-              {NAV.filter((item) => item.href !== "/create" || can(role, "article.create"))
-                .filter((item) => query.trim().length < 2 || item.label.toLowerCase().includes(query.trim().toLowerCase()))
-                .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <CommandItem
-                    key={item.href}
-                    value={item.label}
-                    onSelect={() => go(item.href)}
-                  >
-                    <Icon className="text-fg-subtle" aria-hidden />
-                    <span className="font-medium text-fg">{item.label}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+                    </CommandItem>
+                  ))
+                )}
+              </CommandGroup>
+            )}
+            {actions.length > 0 ? (
+              <CommandGroup heading="Actions">
+                {actions.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem key={item.id} value={item.label} onSelect={item.run}>
+                      <Icon className="text-fg-subtle" aria-hidden />
+                      <span className="font-medium text-fg">{item.label}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ) : null}
+            {pages.length > 0 ? (
+              <CommandGroup heading="Go to">
+                {pages.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem key={item.href} value={item.label} onSelect={() => go(item.href)}>
+                      <Icon className="text-fg-subtle" aria-hidden />
+                      <span className="font-medium text-fg">{item.label}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ) : null}
           </CommandList>
         </Command>
       </CommandDialog>
@@ -224,12 +272,12 @@ export function usePalette() {
   return value;
 }
 
-/** Pushes server-loaded articles into the palette without remounting it. */
-export function PaletteArticleSync({ articles }: { articles: PaletteArticle[] }) {
-  const { setArticles } = usePalette();
+/** Pushes this person's recent articles into the palette without remounting it. */
+export function PaletteArticleSync({ recent }: { recent: PaletteArticle[] }) {
+  const { setRecent } = usePalette();
   useEffect(() => {
-    setArticles(articles);
-  }, [articles, setArticles]);
+    setRecent(recent);
+  }, [recent, setRecent]);
   return null;
 }
 

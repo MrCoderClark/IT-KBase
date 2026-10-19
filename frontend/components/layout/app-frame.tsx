@@ -5,7 +5,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import type { Role } from "@/lib/auth/policy";
 import type { AppSession } from "@/lib/auth/session";
-import { getKbNavCounts, getPaletteArticles } from "@/lib/queries/articles";
+import { getKbNavCounts } from "@/lib/queries/articles";
+import { listRecentPaletteArticles } from "@/lib/queries/recent-articles";
 import { accentTokens, type SiteSettings } from "@/lib/settings/site-settings";
 
 /** Signed-in chrome: dark sidebar, top bar, light canvas. */
@@ -36,7 +37,7 @@ export function AppFrame({
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar name={session.name} role={session.role} />
           <Suspense fallback={null}>
-            <PaletteArticleSource />
+            <PaletteArticleSource userId={session.userId} />
           </Suspense>
           <main className="min-w-0 flex-1">{children}</main>
           <Suspense fallback={null}>
@@ -48,9 +49,9 @@ export function AppFrame({
   );
 }
 
-async function PaletteArticleSource() {
-  const articles = await getPaletteArticles();
-  return <PaletteArticleSync articles={articles} />;
+async function PaletteArticleSource({ userId }: { userId: string }) {
+  const recent = await listRecentPaletteArticles(userId);
+  return <PaletteArticleSync recent={recent} />;
 }
 
 async function SidebarWithCounts({

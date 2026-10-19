@@ -127,7 +127,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 ## 5. Search & taxonomy (M4)
 
 - ✅ Postgres FTS. `Ctrl+K` and the article list search title, summary, tags, and the current version's text, and show a short snippet. Filters stay on the list. Checked on `:3001` as Joe Clark: "net user" found the local administrator article from the command in the steps, and "BitLocker" ranked the BitLocker article ahead of the password article that only mentions it in troubleshooting. Semantic search is later.
-- 🟡 `Ctrl+K` palette hits articles and nav; actions and recently viewed remain
+- ✅ `Ctrl+K` palette. An empty query lists the last 10 articles this person opened or edited, then actions (create, import, theme, keyboard shortcuts, analytics for a reviewer) and pages. Typing still searches article text and filters those actions and pages by name. Closing the palette clears the query. Checked on `:3001` as Joe Clark: Recent led with the local administrator article, "dark" switched the theme and the top bar followed, and "bitlocker" still opened on the BitLocker article. Theme was put back to light.
 - ⬜ Facets: category, tag, status, updated-within
 - ✅ Public category and tag browse pages (index + filtered article list)
 - 🟡 Category admin: create, rename, and delete when the category has no articles. Merge and the color override remain

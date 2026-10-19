@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { applyTheme, readThemeMode, THEME_EVENT, type ThemeMode } from "@/lib/theme";
 
-type Mode = "light" | "dark";
+type Mode = ThemeMode;
 
 /**
  * Minimal theme toggle — reads/writes `tb_theme` in localStorage and toggles
@@ -17,23 +18,18 @@ type Mode = "light" | "dark";
 export function ThemeToggle({ className }: { className?: string }) {
   const [mode, setMode] = useState<Mode | null>(null);
 
-  // Sync local state with whatever the pre-paint script decided.
   useEffect(() => {
-    const current =
-      document.documentElement.classList.contains("dark") ? "dark" : "light";
-    setMode(current);
+    function sync() {
+      setMode(readThemeMode());
+    }
+    sync();
+    window.addEventListener(THEME_EVENT, sync);
+    return () => window.removeEventListener(THEME_EVENT, sync);
   }, []);
 
   const toggle = () => {
     const next: Mode = mode === "dark" ? "light" : "dark";
-    document.documentElement.classList.toggle("dark", next === "dark");
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("tb_theme", next);
-    } catch {
-      /* storage disabled — toggle still works for the session */
-    }
-    setMode(next);
+    applyTheme(next);
   };
 
   const isDark = mode === "dark";
