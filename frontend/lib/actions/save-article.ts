@@ -138,6 +138,16 @@ export async function saveArticle(
   ].map((section, order) => ({ ...section, order }));
 
   const articleId = await prisma.$transaction(async (tx) => {
+    // Determine order for new articles (append as last sibling)
+    let newOrder = 0;
+    if (!existing && input.parentId !== undefined) {
+      const maxOrder = await tx.article.aggregate({
+        where: { parentId: input.parentId },
+        _max: { order: true },
+      });
+      newOrder = (maxOrder._max.order ?? -1) + 1;
+    }
+
     const article = existing
       ? await tx.article.update({
           where: { id: existing.id },
@@ -153,6 +163,7 @@ export async function saveArticle(
               status === "published"
                 ? (existing.publishedAt ?? new Date())
                 : existing.publishedAt,
+            // Note: parentId is NOT updated here; use moveArticle action instead
           },
         })
       : await tx.article.create({
@@ -167,6 +178,8 @@ export async function saveArticle(
             version,
             readingTimeMinutes: readingMinutes(input.sections),
             publishedAt: status === "published" ? new Date() : null,
+            parentId: input.parentId ?? null,
+            order: newOrder,
           },
         });
 

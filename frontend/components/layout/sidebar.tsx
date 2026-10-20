@@ -21,6 +21,8 @@ import { can, type Role } from "@/lib/auth/policy";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { SidebarUploadCta } from "@/components/layout/sidebar-upload-cta";
+import { SidebarArticleTree } from "@/components/layout/sidebar-article-tree";
+import type { ArticleTreeNode } from "@/lib/queries/article-tree";
 
 export type KbNavCounts = {
   all: number;
@@ -89,16 +91,19 @@ export function Sidebar({
   counts,
   role,
   logoUrl,
+  articleTree,
 }: {
   counts?: KbNavCounts;
   role?: Role;
   logoUrl?: string | null;
+  articleTree?: ArticleTreeNode[];
 }) {
   const pathname = usePathname();
   const items = PRIMARY.filter((item) => item.href !== "/create" || (role && can(role, "article.create"))).map(
     (item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item),
   );
   const showAdmin = role ? can(role, "admin.manage") : false;
+  const canMovePages = role ? can(role, "article.publish") : false;
 
   return (
     <aside
@@ -129,7 +134,13 @@ export function Sidebar({
       <nav className="min-h-0 flex-1 overflow-y-auto px-3">
         <ul className="flex flex-col gap-0.5">
           {items.map((item) => (
-            <NavRow key={item.label} item={item} pathname={pathname} />
+            <NavRow
+              key={item.label}
+              item={item}
+              pathname={pathname}
+              articleTree={item.label === "Knowledge Base" ? articleTree : undefined}
+              canMovePages={item.label === "Knowledge Base" ? canMovePages : false}
+            />
           ))}
         </ul>
 
@@ -155,7 +166,17 @@ export function Sidebar({
   );
 }
 
-function NavRow({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavRow({
+  item,
+  pathname,
+  articleTree,
+  canMovePages = false,
+}: {
+  item: NavItem;
+  pathname: string;
+  articleTree?: ArticleTreeNode[];
+  canMovePages?: boolean;
+}) {
   const Icon = item.icon;
   const hasChildren = Boolean(item.children?.length);
   const childActive = useMemo(
@@ -198,38 +219,51 @@ function NavRow({ item, pathname }: { item: NavItem; pathname: string }) {
         </button>
 
         {open ? (
-          <ul className="relative mt-0.5 ml-6 flex flex-col gap-0.5 border-l border-white/[0.08] pl-3">
-            {item.children!.map((child) => {
-              const isChildActive = isActive(pathname, child.href);
-              return (
-                <li key={child.href}>
-                  <Link
-                    href={child.href}
-                    className={cn(
-                      "flex h-9 items-center gap-2 rounded-sm px-2.5 text-[13px] leading-5 font-medium transition-colors",
-                      isChildActive
-                        ? "bg-sidebar-active text-white"
-                        : "text-sidebar-fg/90 hover:bg-white/[0.04] hover:text-white",
-                    )}
-                  >
-                    <span className="flex-1 truncate">{child.label}</span>
-                    {typeof child.count === "number" ? (
-                      <span
-                        className={cn(
-                          "tabular-nums text-[11px] font-semibold",
-                          isChildActive
-                            ? "text-white/90"
-                            : "text-sidebar-fg/60",
-                        )}
-                      >
-                        {child.count}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="relative mt-0.5 ml-6 border-l border-white/[0.08] pl-3">
+            {/* Static nav children (All Articles, My Drafts, etc.) */}
+            <ul className="flex flex-col gap-0.5">
+              {item.children!.map((child) => {
+                const isChildActive = isActive(pathname, child.href);
+                return (
+                  <li key={child.href}>
+                    <Link
+                      href={child.href}
+                      className={cn(
+                        "flex h-9 items-center gap-2 rounded-sm px-2.5 text-[13px] leading-5 font-medium transition-colors",
+                        isChildActive
+                          ? "bg-sidebar-active text-white"
+                          : "text-sidebar-fg/90 hover:bg-white/[0.04] hover:text-white",
+                      )}
+                    >
+                      <span className="flex-1 truncate">{child.label}</span>
+                      {typeof child.count === "number" ? (
+                        <span
+                          className={cn(
+                            "tabular-nums text-[11px] font-semibold",
+                            isChildActive
+                              ? "text-white/90"
+                              : "text-sidebar-fg/60",
+                          )}
+                        >
+                          {child.count}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Article tree (nested pages) */}
+            {articleTree && articleTree.length > 0 ? (
+              <div className="mt-3 border-t border-white/[0.06] pt-2">
+                <div className="mb-1 px-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase text-sidebar-fg/40">
+                  Pages
+                </div>
+                <SidebarArticleTree tree={articleTree} canMove={canMovePages} />
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </li>
     );

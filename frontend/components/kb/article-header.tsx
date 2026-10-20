@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar, Clock, MoreHorizontal, Pencil } from "lucide-react";
+import { Calendar, Clock, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import type { Article } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { ShareLinkButton } from "@/components/kb/share-link-button";
@@ -14,9 +14,11 @@ import { StatusChip } from "@/components/kb/status-chip";
 export function ArticleHeader({
   article,
   canEdit = false,
+  canCreateChild = false,
 }: {
   article: Article;
   canEdit?: boolean;
+  canCreateChild?: boolean;
 }) {
   const formattedDate = new Date(article.createdAt).toLocaleDateString(
     "en-US",
@@ -102,6 +104,15 @@ export function ArticleHeader({
             >
               <Pencil size={14} aria-hidden />
               Edit
+            </Link>
+          ) : null}
+          {canCreateChild ? (
+            <Link
+              href={`/create?parentId=${article.id}`}
+              className="inline-flex h-9 items-center gap-2 rounded-sm border border-border-strong bg-surface px-3.5 text-[14px] font-semibold text-fg transition-colors hover:bg-surface-muted"
+            >
+              <Plus size={14} aria-hidden />
+              Add child
             </Link>
           ) : null}
           <ShareLinkButton />

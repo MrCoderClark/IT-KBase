@@ -324,6 +324,7 @@ export async function getArticleBySlug(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
+    parentId: row.parentId,
   };
 }
 

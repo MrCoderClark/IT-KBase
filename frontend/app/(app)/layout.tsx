@@ -5,8 +5,9 @@ import { getSession } from "@/lib/auth/session";
 import { readSiteSettings } from "@/lib/settings/store";
 
 /**
- * Authenticated app shell. The article read route lives outside this
- * layout so a published public article can be opened without a session.
+ * Authenticated app shell. Article reads live here so in-app links stay
+ * client-side. A published public article with no session is rewritten
+ * to /p/[slug] by proxy.ts.
  */
 export default function AppLayout({
   children,

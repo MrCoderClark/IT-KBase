@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
-import { canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
+import { can, canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
+import { getArticleAncestors } from "@/lib/queries/article-tree";
 import { listArticleViewCounts } from "@/lib/queries/view-trend";
-import { Breadcrumbs } from "@/components/kb/breadcrumbs";
+import { Breadcrumbs, type BreadcrumbSegment } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
 import { ArticleToc } from "@/components/kb/article-toc";
 import { ArticleContent } from "@/components/kb/article-content";
@@ -40,7 +41,10 @@ export async function ArticleView({
 
   if (!article) notFound();
 
-  const related = await getRelatedArticles(article);
+  const [related, ancestors] = await Promise.all([
+    getRelatedArticles(article),
+    getArticleAncestors(article.id),
+  ]);
   let trend: TrendPoint[] | null = null;
   if (session && canReadArticleAnalytics(session.role)) {
     const days = trendDays(await requestTime());
@@ -62,12 +66,20 @@ export async function ArticleView({
       <Breadcrumbs
         segments={[
           { label: "Knowledge Base", href: "/kb" },
-          { label: "Articles", href: "/kb" },
+          ...ancestors.map((a): BreadcrumbSegment => ({
+            label: a.title,
+            href: `/kb/${a.slug}`,
+          })),
+          { label: article.title },
         ]}
       />
 
       <div className="mt-5">
-        <ArticleHeader article={article} canEdit={canEdit} />
+        <ArticleHeader
+          article={article}
+          canEdit={canEdit}
+          canCreateChild={Boolean(session && can(session.role, "article.create"))}
+        />
       </div>
 
       <div className="mt-8 flex items-start gap-6">
