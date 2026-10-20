@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-20 (feat/page-tree)
+Last updated: 2026-10-20 (feat/article-comments)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -183,10 +183,10 @@ These turn TechBase from a flat article list into a structured knowledge system.
 |---|---------|------|--------|
 | 1 | **Version history** | `09-version-history.md` | ✅ History list, read older version, section compare, restore |
 | 2 | **Page tree** | `10-page-tree.md` | 🟡 Sidebar tree, ancestor breadcrumbs, Add child, reviewer drag-reorder. Dragging a page under another page checked in the browser |
-| 3 | **Comments** | TBD | ⬜ Threaded comments on articles, @mentions |
+| 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: comments.
+Next: ingestion (Word/PDF → draft article). `feat/article-comments` is uncommitted.
 
 ---
 

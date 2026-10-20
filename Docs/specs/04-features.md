@@ -92,7 +92,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 - RSC streams in order: title block (immediate) → sections (suspense per section) → right rail (suspense).
 - Code blocks are highlighted server-side via Shiki (no runtime JS highlighter).
 
-**Non-goals**: inline comments, @mentions, realtime presence.
+**Non-goals**: comments anchored to a paragraph, @mentions, realtime presence. Field notes on the whole article are [11-article-notes.md](11-article-notes.md).
 
 ---
 
@@ -217,6 +217,10 @@ Each integration page shows: enable toggle, config form, connection test, last-s
 ## F11 — Versioning & diff
 
 Specified in [09-version-history.md](09-version-history.md).
+
+## F12 — Field notes
+
+Specified in [11-article-notes.md](11-article-notes.md). A signed-in person can leave a note after running the procedure. This is not the helpful-vote comment.
 
 A reviewer or admin opens `/kb/[slug]/history`, reads an older version, and compares it with the current one by section. An admin restores an older version as a new current version. The older rows stay. Move detection and deletion of old versions are later.
 

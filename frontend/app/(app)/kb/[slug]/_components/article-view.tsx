@@ -5,6 +5,8 @@ import { getSession, requestTime } from "@/lib/auth/session";
 import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
 import { getArticleAncestors } from "@/lib/queries/article-tree";
+import { listArticleNotes } from "@/lib/queries/article-notes";
+import { ArticleNotes } from "@/components/kb/article-notes";
 import { listArticleViewCounts } from "@/lib/queries/view-trend";
 import { Breadcrumbs, type BreadcrumbSegment } from "@/components/kb/breadcrumbs";
 import { ArticleHeader } from "@/components/kb/article-header";
@@ -18,6 +20,12 @@ function feedbackNotice(query: { notice?: string; e?: string }): string | null {
   if (query.e === "wait") return "You already voted on this article this week.";
   if (query.e === "comment") return "Keep the comment to 500 characters.";
   if (query.e === "vote") return "Choose helpful or not helpful.";
+  return null;
+}
+
+function noteError(code: string | undefined): string | null {
+  if (code === "note") return "Write a note, up to 2,000 characters.";
+  if (code === "note-role") return "You cannot change notes on this article.";
   return null;
 }
 
@@ -86,6 +94,17 @@ export async function ArticleView({
         <ArticleToc sections={article.sections} />
         <div className="min-w-0 flex-1">
           <ArticleContent article={article} />
+          {session ? (
+            <ArticleNotes
+              slug={article.slug}
+              notes={await listArticleNotes(article.id)}
+              canPost={can(session.role, "article.feedback")}
+              userId={session.userId}
+              canDeleteAny={can(session.role, "admin.manage")}
+              error={noteError(query.e)}
+              saved={query.notice === "note"}
+            />
+          ) : null}
           {session && canReviewArticleFeedback(session.role) ? (
             <details className="mt-2 rounded-xl border border-border bg-canvas px-4 py-3">
               <summary className="cursor-pointer text-[13px] font-semibold text-fg">Feedback notes</summary>
