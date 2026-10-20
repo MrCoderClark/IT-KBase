@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { can } from "@/lib/auth/policy";
+import { can, canReadArticle } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { feedbackComment, feedbackIsCooling } from "@/lib/kb/feedback";
@@ -16,9 +16,9 @@ export async function submitArticleFeedback(formData: FormData): Promise<void> {
 
   const article = await prisma.article.findUnique({
     where: { slug },
-    select: { id: true },
+    select: { id: true, status: true, authorId: true },
   });
-  if (!article) redirect("/kb");
+  if (!article || !canReadArticle(session.role, session.userId, article)) redirect("/kb");
 
   const vote = String(formData.get("helpful") ?? "");
   if (vote !== "yes" && vote !== "no") redirect(`${back}?e=vote`);

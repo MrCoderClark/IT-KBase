@@ -54,6 +54,33 @@ export function canReadArticleAnalytics(role: Role): boolean {
   return can(role, "article.publish");
 }
 
+/**
+ * Who may open an article.
+ * Published: every signed-in role.
+ * Draft and in review: the author, a reviewer, or an admin.
+ * Archived: an admin.
+ */
+export function canReadArticle(
+  role: Role,
+  userId: string,
+  article: { authorId: string; status: ArticleStatus },
+): boolean {
+  if (article.status === "published") return true;
+  if (article.status === "archived") return can(role, "article.archive");
+  if (can(role, "article.editAny")) return true;
+  return article.authorId === userId && can(role, "article.editOwn");
+}
+
+/** Status chips a role may filter by. The query still enforces the same rule. */
+export function listableStatuses(role: Role): ArticleStatus[] {
+  const statuses: ArticleStatus[] = ["published"];
+  if (can(role, "article.editOwn") || can(role, "article.editAny")) {
+    statuses.push("in_review", "draft");
+  }
+  if (can(role, "article.archive")) statuses.push("archived");
+  return statuses;
+}
+
 /** Anonymous readers may open this article. Every other status stays private. */
 export function isPublicArticle(article: {
   status: ArticleStatus;

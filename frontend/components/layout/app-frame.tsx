@@ -3,7 +3,7 @@ import { PaletteArticleSync, PaletteProvider } from "@/components/layout/command
 import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import type { Role } from "@/lib/auth/policy";
+import { can, type Role } from "@/lib/auth/policy";
 import type { AppSession } from "@/lib/auth/session";
 import { getKbNavCounts } from "@/lib/queries/articles";
 import { getArticleTree } from "@/lib/queries/article-tree";
@@ -38,11 +38,11 @@ export function AppFrame({
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar name={session.name} role={session.role} />
           <Suspense fallback={null}>
-            <PaletteArticleSource userId={session.userId} />
+            <PaletteArticleSource role={session.role} userId={session.userId} />
           </Suspense>
           <main className="min-w-0 flex-1">{children}</main>
           <Suspense fallback={null}>
-            <KeyboardShortcuts />
+            <KeyboardShortcuts canImport={can(session.role, "article.create")} />
           </Suspense>
         </div>
       </div>
@@ -50,8 +50,8 @@ export function AppFrame({
   );
 }
 
-async function PaletteArticleSource({ userId }: { userId: string }) {
-  const recent = await listRecentPaletteArticles(userId);
+async function PaletteArticleSource({ role, userId }: { role: Role; userId: string }) {
+  const recent = await listRecentPaletteArticles(role, userId);
   return <PaletteArticleSync recent={recent} />;
 }
 
@@ -64,6 +64,9 @@ async function SidebarWithCounts({
   role: Role;
   logoUrl: string | null;
 }) {
-  const [counts, articleTree] = await Promise.all([getKbNavCounts(userId), getArticleTree()]);
+  const [counts, articleTree] = await Promise.all([
+    getKbNavCounts(role, userId),
+    getArticleTree(role, userId),
+  ]);
   return <Sidebar counts={counts} role={role} logoUrl={logoUrl} articleTree={articleTree} />;
 }

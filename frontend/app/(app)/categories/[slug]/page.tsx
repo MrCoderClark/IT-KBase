@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { SessionArticleTable } from "@/components/kb/session-article-table";
+import { getSession } from "@/lib/auth/session";
 import { getArticlesInCategory } from "@/lib/queries/articles";
 
 export default function CategoryPage({
@@ -22,7 +23,9 @@ export default function CategoryPage({
 
 async function CategoryArticles({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const result = await getArticlesInCategory(slug);
+  const session = await getSession();
+  if (!session) notFound();
+  const result = await getArticlesInCategory(slug, session.role, session.userId);
   if (!result) notFound();
 
   return (

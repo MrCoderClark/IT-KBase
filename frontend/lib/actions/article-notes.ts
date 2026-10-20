@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { can } from "@/lib/auth/policy";
+import { can, canReadArticle } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 
@@ -23,9 +23,9 @@ export async function postArticleNote(formData: FormData): Promise<void> {
 
   const article = await prisma.article.findUnique({
     where: { slug },
-    select: { id: true },
+    select: { id: true, status: true, authorId: true },
   });
-  if (!article) redirect("/kb");
+  if (!article || !canReadArticle(session.role, session.userId, article)) redirect("/kb");
 
   const parsed = noteBody(String(formData.get("body") ?? ""));
   if (!parsed.ok) redirect(`${back}?e=note#notes`);
@@ -51,9 +51,14 @@ export async function deleteArticleNote(formData: FormData): Promise<void> {
 
   const note = await prisma.articleNote.findUnique({
     where: { id: noteId },
-    select: { id: true, authorId: true, article: { select: { slug: true } } },
+    select: {
+      id: true,
+      authorId: true,
+      article: { select: { slug: true, status: true, authorId: true } },
+    },
   });
   if (!note || note.article.slug !== slug) redirect(back);
+  if (!canReadArticle(session.role, session.userId, note.article)) redirect("/kb");
   const own = note.authorId === session.userId;
   if (!own && !can(session.role, "admin.manage")) redirect(`${back}?e=note-role#notes`);
 

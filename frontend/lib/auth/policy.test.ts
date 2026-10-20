@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { articleSaveError, can, canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback, isPublicArticle } from "./policy";
+import { articleSaveError, can, canEditArticle, canReadArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback, isPublicArticle, listableStatuses } from "./policy";
 
 describe("role matrix", () => {
   it("lets every signed-in role read and only an admin manage the directory", () => {
@@ -21,6 +21,38 @@ describe("role matrix", () => {
     assert.equal(canReadArticleAnalytics("author"), false);
     assert.equal(canReadArticleAnalytics("reviewer"), true);
     assert.equal(canReadArticleAnalytics("admin"), true);
+  });
+});
+
+describe("article reads", () => {
+  const published = { authorId: "sarah", status: "published" as const };
+  const draft = { authorId: "sarah", status: "draft" as const };
+  const review = { authorId: "sarah", status: "in_review" as const };
+  const archived = { authorId: "sarah", status: "archived" as const };
+
+  it("lets a reader open published articles only", () => {
+    assert.equal(canReadArticle("reader", "pat", published), true);
+    assert.equal(canReadArticle("reader", "pat", draft), false);
+    assert.equal(canReadArticle("reader", "sarah", draft), false);
+    assert.equal(canReadArticle("reader", "pat", review), false);
+    assert.equal(canReadArticle("reader", "pat", archived), false);
+    assert.deepEqual(listableStatuses("reader"), ["published"]);
+  });
+
+  it("lets an author open their own drafts and hides archived articles", () => {
+    assert.equal(canReadArticle("author", "sarah", draft), true);
+    assert.equal(canReadArticle("author", "sarah", review), true);
+    assert.equal(canReadArticle("author", "joe", draft), false);
+    assert.equal(canReadArticle("author", "sarah", archived), false);
+    assert.deepEqual(listableStatuses("author"), ["published", "in_review", "draft"]);
+  });
+
+  it("lets a reviewer open the library and an admin open archived articles", () => {
+    assert.equal(canReadArticle("reviewer", "marcus", draft), true);
+    assert.equal(canReadArticle("reviewer", "marcus", archived), false);
+    assert.equal(canReadArticle("admin", "joe", archived), true);
+    assert.deepEqual(listableStatuses("reviewer"), ["published", "in_review", "draft"]);
+    assert.deepEqual(listableStatuses("admin"), ["published", "in_review", "draft", "archived"]);
   });
 });
 

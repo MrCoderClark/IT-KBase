@@ -18,16 +18,17 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
     - `My Drafts` + count
     - `Shared With Me` + count
     - `Recently Updated` + count
-  - `Create Article`
+  - `Create Article` — roles that can create an article
   - `Categories`
   - `Tags`
-  - `AI Assistant` (badge: `New`)
-  - `Import from File`
-  - `Analytics`
+  - `AI Assistant` (badge: `New`) — roles that can create an article
+  - `Import from File` — roles that can create an article
+  - `Analytics` — reviewer and admin
+  - Upload File card — roles that can create an article. A reader does not see it, and `g` then `i` does not open import.
   - section header `ADMIN`
     - `Users`, `Settings`, `Integrations` (admin role only)
 - Counts update live via a Server Action on route change; stale-while-revalidate from Redis.
-- Upload CTA card pinned to the bottom. Clicking it goes to `/import`.
+- Upload File card is pinned to the bottom for roles that can create an article. Clicking it goes to `/import`.
 - Sidebar collapsible to a 72px icon rail (persisted per user).
 
 **Non-goals**: no drag-and-reorder of nav; no user-customizable sidebar in v1.
@@ -284,5 +285,6 @@ Discoverable through `?` and the command palette.
 - Forgot-password always responds the same way, whether or not the email exists. The reset link expires in one hour and works once.
 - A public article is `published` and `visibility=public`. Its page shows the read view only: no sidebar, no edit or share controls, and no links to other articles.
 - Drafts, in-review articles, and archived articles stay private. Reviewer and admin may change visibility.
+- A reader sees published articles. An author also sees their own drafts and articles in review. A reviewer sees every article that is not archived. An admin also sees archived articles. Lists, search, the page tree, category and tag counts, and a direct link follow that rule.
 
 **Non-goals (Phase A)**: SSO, MFA, a user admin screen, and a public catalog or search.

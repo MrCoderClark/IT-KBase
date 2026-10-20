@@ -14,7 +14,8 @@ export default function RecentlyUpdatedPage() {
 }
 
 async function RecentLoader() {
-  const [articles, session] = await Promise.all([getRecentlyUpdated(), getSession()]);
+  const session = await getSession();
+  const articles = session ? await getRecentlyUpdated(session.role, session.userId) : [];
   return (
     <ArticleListShell
       title="Recently Updated"

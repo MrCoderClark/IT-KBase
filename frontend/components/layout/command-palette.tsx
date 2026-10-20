@@ -154,7 +154,9 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
     can(role, "article.create")
       ? { id: "create", label: "Create article", icon: Plus, run: () => go("/create") }
       : null,
-    { id: "import", label: "Import from file", icon: Upload, run: () => go("/import") },
+    can(role, "article.create")
+      ? { id: "import", label: "Import from file", icon: Upload, run: () => go("/import") }
+      : null,
     { id: "theme", label: themeLabel, icon: ThemeIcon, run: () => toggleTheme() },
     { id: "shortcuts", label: "Keyboard shortcuts", icon: Keyboard, run: showShortcuts },
     canReadArticleAnalytics(role)

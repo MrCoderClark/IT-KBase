@@ -21,7 +21,8 @@ export default function AllArticlesPage() {
 }
 
 async function ArticleTableLoader() {
-  const [articles, session] = await Promise.all([getAllArticles(), getSession()]);
+  const session = await getSession();
+  const articles = session ? await getAllArticles(session.role, session.userId) : [];
   return (
     <ArticleListShell
       title="All Articles"

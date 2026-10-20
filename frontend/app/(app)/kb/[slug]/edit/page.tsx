@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { AccessDenied } from "@/components/auth/access-denied";
 import { ArticleEditor } from "@/components/kb/editor/article-editor";
-import { canEditArticle } from "@/lib/auth/policy";
+import { canEditArticle, canReadArticle } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { articleToDraft } from "@/lib/editor/draft";
 import {
@@ -43,10 +43,16 @@ async function EditEditor({
     getAllTags(),
     getSession(),
   ]);
-  if (!article) notFound();
+  if (!article || !session || !article.author.id) notFound();
   if (
-    !session ||
-    !article.author.id ||
+    !canReadArticle(session.role, session.userId, {
+      authorId: article.author.id,
+      status: article.status,
+    })
+  ) {
+    notFound();
+  }
+  if (
     !canEditArticle(session.role, session.userId, {
       authorId: article.author.id,
       status: article.status,

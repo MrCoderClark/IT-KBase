@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-20 (feat/ingest-docx)
+Last updated: 2026-10-20 (fix/reader-access)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -61,7 +61,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Brand mark (isometric cobalt polyhedron) + wordmark
 - ✅ Primary nav (Home, Knowledge Base w/ children, Create, Categories, Tags, AI Assistant, Import, Analytics)
 - ✅ Admin sub-nav (Users, Settings, Integrations)
-- ✅ Upload CTA card (bottom of sidebar) with gradient treatment
+- ✅ Upload CTA card (bottom of sidebar) with gradient treatment. Hidden, with AI Assistant and Import, unless the role can create an article. Analytics stays reviewer and admin.
+- ✅ Article lists, search, the page tree, and a direct link follow the role. A reader sees published articles. An admin also sees archived articles.
 - ✅ Home brief: published count, your drafts (links to `/kb/drafts`), in-review count, and the five newest articles
 - 🟡 Top bar: layout + bell + theme toggle done; search opens the command palette. Avatar menu has Sign out. Profile and shortcut entries remain
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
@@ -186,7 +187,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: import the OneDrive file again. Verification and Troubleshooting should be filled from the steps. PDF and the stepper come after that.
+Next: sign in as a reader and confirm the sidebar hides AI Assistant, Import, and Upload File, and All Articles has no archived rows. An admin still sees those links and archived articles. PDF and the ingestion stepper come after that.
 
 ---
 

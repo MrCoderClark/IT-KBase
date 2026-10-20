@@ -8,8 +8,8 @@ import { getHomeBrief } from "@/lib/queries/articles";
 import type { Article } from "@/lib/types/article";
 
 /**
- * Home brief. The header and import card are static. Counts and the
- * recent list read Postgres inside Suspense (`cacheComponents`).
+ * Home brief. The greeting, import link, counts, and recent list read
+ * Postgres inside Suspense (`cacheComponents`).
  */
 export default function HomePage() {
   return (
@@ -25,19 +25,16 @@ export default function HomePage() {
             </Suspense>
           </h1>
           <p className="mt-2 max-w-[640px] text-[15px] leading-6 text-fg-muted">
-            Drop a Word doc or PDF to turn it into a structured runbook, or
-            open an article your team updated recently.
+            <Suspense fallback="Open an article your team published recently.">
+              <HomeLede />
+            </Suspense>
           </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/import"
-            className="inline-flex h-9 items-center gap-2 rounded-sm bg-accent px-3.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
-          >
-            <Upload size={16} aria-hidden />
-            Import file
-          </Link>
+          <Suspense fallback={null}>
+            <ImportLink />
+          </Suspense>
           <Suspense fallback={null}>
             <NewArticleLink />
           </Suspense>
@@ -57,6 +54,33 @@ async function HomeGreeting() {
   return <>{first}, here&rsquo;s what&rsquo;s moving in the KB.</>;
 }
 
+async function HomeLede() {
+  const session = await getSession();
+  if (session && can(session.role, "article.create")) {
+    return (
+      <>
+        Drop a Word doc or PDF to turn it into a structured runbook, or open an
+        article your team updated recently.
+      </>
+    );
+  }
+  return <>Open an article your team published recently.</>;
+}
+
+async function ImportLink() {
+  const session = await getSession();
+  if (!session || !can(session.role, "article.create")) return null;
+  return (
+    <Link
+      href="/import"
+      className="inline-flex h-9 items-center gap-2 rounded-sm bg-accent px-3.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
+    >
+      <Upload size={16} aria-hidden />
+      Import file
+    </Link>
+  );
+}
+
 async function NewArticleLink() {
   const session = await getSession();
   if (!session || !can(session.role, "article.create")) return null;
@@ -74,23 +98,35 @@ async function NewArticleLink() {
 async function HomeBrief() {
   const session = await getSession();
   if (!session) return null;
-  const brief = await getHomeBrief(session.userId);
+  const brief = await getHomeBrief(session.role, session.userId);
   const now = new Date();
+  const canCreate = can(session.role, "article.create");
+  const showDrafts = can(session.role, "article.editOwn");
 
   return (
     <>
       <section className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatTile label="Published articles" value={brief.published} hint="Currently published" />
-        <StatTile
-          label="Your drafts"
-          value={brief.drafts}
-          hint="Open drafts"
-          href="/kb/drafts"
-        />
-        <StatTile label="In review" value={brief.inReview} hint="Marked in review" />
+        {showDrafts ? (
+          <StatTile
+            label="Your drafts"
+            value={brief.drafts}
+            hint="Open drafts"
+            href="/kb/drafts"
+          />
+        ) : null}
+        {showDrafts ? (
+          <StatTile label="In review" value={brief.inReview} hint="Marked in review" />
+        ) : null}
       </section>
 
-      <section className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <section
+        className={
+          canCreate
+            ? "mt-8 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]"
+            : "mt-8"
+        }
+      >
         <div className="rounded-xl border border-border bg-surface shadow-sm">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <div>
@@ -111,10 +147,15 @@ async function HomeBrief() {
           </div>
           {brief.recent.length === 0 ? (
             <p className="px-5 py-10 text-center text-[13px] text-fg-subtle">
-              No articles yet.{" "}
-              <Link href="/create" className="font-medium text-accent hover:underline">
-                Create one
-              </Link>
+              No articles yet.
+              {canCreate ? (
+                <>
+                  {" "}
+                  <Link href="/create" className="font-medium text-accent hover:underline">
+                    Create one
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : (
             <ul className="divide-y divide-border">
@@ -125,7 +166,7 @@ async function HomeBrief() {
           )}
         </div>
 
-        <ImportCard />
+        {canCreate ? <ImportCard /> : null}
       </section>
     </>
   );

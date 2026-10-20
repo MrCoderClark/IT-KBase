@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
-import { can, canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
+import { can, canEditArticle, canReadArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
@@ -47,11 +47,19 @@ export async function ArticleView({
   const query = searchParams ? await searchParams : {};
   const [article, session] = await Promise.all([getArticleBySlug(slug), getSession()]);
 
-  if (!article) notFound();
+  if (!article || !session) notFound();
+  if (
+    !canReadArticle(session.role, session.userId, {
+      authorId: article.author.id,
+      status: article.status,
+    })
+  ) {
+    notFound();
+  }
 
   const [related, ancestors] = await Promise.all([
     getRelatedArticles(article),
-    getArticleAncestors(article.id),
+    getArticleAncestors(article.id, session.role, session.userId),
   ]);
   let trend: TrendPoint[] | null = null;
   if (session && canReadArticleAnalytics(session.role)) {

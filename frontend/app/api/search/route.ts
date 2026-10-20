@@ -12,6 +12,6 @@ export async function GET(request: Request): Promise<Response> {
 
   const requested = Number(url.searchParams.get("limit") ?? 8);
   const limit = Number.isFinite(requested) ? Math.min(20, Math.max(1, Math.floor(requested))) : 8;
-  const hits = await searchArticles(query, limit);
+  const hits = await searchArticles(query, limit, session.role, session.userId);
   return Response.json({ hits });
 }
