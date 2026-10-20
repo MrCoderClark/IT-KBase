@@ -145,6 +145,12 @@ model Article {
   readingTimeMinutes Int               @default(0)
   version            String        @default("1.0")
 
+  // Page tree (spec 10-page-tree.md)
+  parentId String?
+  parent   Article?  @relation("ArticleTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Article[] @relation("ArticleTree")
+  order    Int       @default(0)
+
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
@@ -176,6 +182,7 @@ model Article {
 
   @@index([status, updatedAt])
   @@index([categoryId])
+  @@index([parentId, order])
   @@schema("public")
 }
 

@@ -127,6 +127,12 @@ model Article {
   readingTimeMinutes Int             @default(0)
   version            String          @default("1.0")
 
+  // Page tree (10-page-tree.md)
+  parentId           String?
+  parent             Article?        @relation("ArticleTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children           Article[]       @relation("ArticleTree")
+  order              Int             @default(0) // sort order among siblings
+
   categoryId         String?
   category           Category?       @relation(fields: [categoryId], references: [id])
 

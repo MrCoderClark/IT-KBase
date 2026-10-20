@@ -72,6 +72,8 @@ export interface EditorDraft {
   status: ArticleStatus;
   visibility: "private" | "public";
   sections: EditorSection[];
+  /** Parent article ID for page tree hierarchy. Null = root-level. */
+  parentId: string | null;
 }
 
 export type VersionBump = "patch" | "minor" | "major";
@@ -117,7 +119,7 @@ export function defaultSection(kind: EditableKind): EditorSection {
   }
 }
 
-export function blankDraft(): EditorDraft {
+export function blankDraft(parentId: string | null = null): EditorDraft {
   return {
     slug: null,
     version: null,
@@ -128,6 +130,7 @@ export function blankDraft(): EditorDraft {
     status: "draft",
     visibility: "private",
     sections: EDITABLE_KINDS.map(defaultSection),
+    parentId,
   };
 }
 
@@ -147,6 +150,7 @@ export function articleToDraft(article: Article): EditorDraft {
     status: article.status,
     visibility: article.visibility === "public" ? "public" : "private",
     sections,
+    parentId: article.parentId ?? null,
   };
 }
 

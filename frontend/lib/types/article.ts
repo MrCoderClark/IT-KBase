@@ -125,4 +125,6 @@ export interface Article {
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
+  /** Parent article ID for page tree hierarchy. Null = root-level. */
+  parentId?: string | null;
 }

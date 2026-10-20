@@ -6,6 +6,7 @@ import { Topbar } from "@/components/layout/topbar";
 import type { Role } from "@/lib/auth/policy";
 import type { AppSession } from "@/lib/auth/session";
 import { getKbNavCounts } from "@/lib/queries/articles";
+import { getArticleTree } from "@/lib/queries/article-tree";
 import { listRecentPaletteArticles } from "@/lib/queries/recent-articles";
 import { accentTokens, type SiteSettings } from "@/lib/settings/site-settings";
 
@@ -63,6 +64,6 @@ async function SidebarWithCounts({
   role: Role;
   logoUrl: string | null;
 }) {
-  const counts = await getKbNavCounts(userId);
-  return <Sidebar counts={counts} role={role} logoUrl={logoUrl} />;
+  const [counts, articleTree] = await Promise.all([getKbNavCounts(userId), getArticleTree()]);
+  return <Sidebar counts={counts} role={role} logoUrl={logoUrl} articleTree={articleTree} />;
 }

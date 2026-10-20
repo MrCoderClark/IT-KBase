@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-14 (feat/auth-phase-a)
+Last updated: 2026-10-20 (feat/page-tree)
 
 Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪 experimental`
 
@@ -66,7 +66,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 Top bar: layout + bell + theme toggle done; search opens the command palette. Avatar menu has Sign out. Profile and shortcut entries remain
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
 - ✅ Command palette (`cmdk`): `Ctrl+K` and the top-bar search find articles by title, category, and tag, and jump to Home, Knowledge Base, Create, Categories, and Tags
-- ⬜ Command palette scopes for actions and recently viewed
+- ✅ Command palette actions (create, import, theme, shortcuts, analytics) and recent 10 articles
 - 🟡 User menu: avatar opens a dropdown with Sign out (checked in the browser). Profile and keyboard-shortcut entries remain
 - ⬜ Notifications panel
 
@@ -172,6 +172,21 @@ Phase B:
 - ✅ Article analytics. A reviewer or admin sees the last 30 UTC days and the helpful ratio on the article. The series is daily unique opens, so it does not add up to the lifetime view total. Checked on `:3001` as Joe Clark: Defender showed 1 view on Oct 19 and 55 lifetime views, with 100% helpful (3 of 3). The global dashboard is later.
 - ✅ Global analytics dashboard. A reviewer or admin sees status counts, unique opens in 7 and 30 days, the top five articles by lifetime views, and published or in-review articles not updated in 12 months. Checked on `:3001` as Joe Clark: 12 articles (9 published, 1 in review, 2 drafts, 0 archived), 8 unique opens in both windows, Active Directory at the top with 2,103 views, and no article older than 12 months.
 - ✅ Version history. Spec is `Docs/specs/09-version-history.md`. A reviewer or admin can read an older version and compare sections in order. An admin restores a version as a new current row; older rows stay. Checked on `:3001` as Joe Clark: restored DNS cache 1.6 as 1.8, then restored 1.7 as 1.9 so the live article matches the text that was current before the check.
+
+---
+
+## 7b. Confluence-like features
+
+These turn TechBase from a flat article list into a structured knowledge system. Build in order — each depends on the previous.
+
+| # | Feature | Spec | Status |
+|---|---------|------|--------|
+| 1 | **Version history** | `09-version-history.md` | ✅ History list, read older version, section compare, restore |
+| 2 | **Page tree** | `10-page-tree.md` | 🟡 Sidebar tree, ancestor breadcrumbs, create with `?parentId=`. Drag-reorder and an add-child action remain |
+| 3 | **Comments** | TBD | ⬜ Threaded comments on articles, @mentions |
+| 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
+
+Next: drag-reorder and an add-child action on `feat/page-tree`, then comments.
 
 ---
 
