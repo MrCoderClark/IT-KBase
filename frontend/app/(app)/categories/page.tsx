@@ -24,7 +24,8 @@ export default function CategoriesPage() {
 }
 
 async function CategoryIndex() {
-  const [categories, session] = await Promise.all([getCategoryIndex(), getSession()]);
+  const session = await getSession();
+  const categories = session ? await getCategoryIndex(session.role, session.userId) : [];
   return (
     <CategoryAdmin
       categories={categories}

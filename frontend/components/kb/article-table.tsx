@@ -11,7 +11,7 @@ import {
   Pencil,
   Search,
 } from "lucide-react";
-import { canEditArticle, type Role } from "@/lib/auth/policy";
+import { canEditArticle, listableStatuses, type Role } from "@/lib/auth/policy";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { SearchSnippet } from "@/components/kb/search-snippet";
@@ -278,6 +278,7 @@ export default function ArticleTable({
           onCategoryChange={setSelectedCategory}
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
+          statuses={actor ? listableStatuses(actor.role) : ["published"]}
           selectedPeriod={selectedPeriod}
           onPeriodChange={setSelectedPeriod}
         />

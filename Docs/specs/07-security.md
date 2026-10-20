@@ -50,6 +50,8 @@ Roles: `reader | author | reviewer | admin`.
 
 An anonymous caller may read a single article when `status` is `published` and `visibility` is `public`. No other capability is available without a session. Draft, in-review, and archived articles stay private.
 
+A signed-in reader sees published articles. An author also sees their own drafts and articles in review. A reviewer sees every article that is not archived. An admin also sees archived articles. Lists, search, the page tree, and a direct URL enforce that rule. Hiding a nav link is not the check.
+
 Enforcement:
 - **Every** server action and API route checks `can(principal, capability, resource)` in `frontend/lib/auth/policy.ts`. The reusable package does not know about articles. FastAPI repeats the check for its own routes.
 - Policy is table-driven and unit-tested.

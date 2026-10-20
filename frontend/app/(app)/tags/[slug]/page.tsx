@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { SessionArticleTable } from "@/components/kb/session-article-table";
+import { getSession } from "@/lib/auth/session";
 import { getArticlesWithTag } from "@/lib/queries/articles";
 
 export default function TagPage({
@@ -20,7 +21,9 @@ export default function TagPage({
 
 async function TagArticles({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const result = await getArticlesWithTag(slug);
+  const session = await getSession();
+  if (!session) notFound();
+  const result = await getArticlesWithTag(slug, session.role, session.userId);
   if (!result) notFound();
 
   return (

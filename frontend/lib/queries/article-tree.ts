@@ -1,5 +1,7 @@
 import { cache } from "react";
+import { canReadArticle, type Role } from "@/lib/auth/policy";
 import { prisma } from "@/lib/db";
+import { readableWhere } from "@/lib/queries/articles";
 
 /**
  * A node in the article tree. Children are nested recursively.
@@ -18,10 +20,10 @@ export type ArticleTreeNode = {
  * Fetch all articles with tree fields, then build the nested structure.
  * For <100 articles, this is simpler than recursive CTEs.
  */
-export const getArticleTree = cache(async (): Promise<ArticleTreeNode[]> => {
+export const getArticleTree = cache(async (role: Role, userId: string): Promise<ArticleTreeNode[]> => {
   const articles = await prisma.article.findMany({
     where: {
-      status: { not: "archived" },
+      AND: [readableWhere(role, userId), { status: { not: "archived" } }],
     },
     select: {
       id: true,
@@ -87,7 +89,11 @@ function buildTree(
  * Get ancestors of an article (for breadcrumbs), ordered from root to immediate parent.
  */
 export const getArticleAncestors = cache(
-  async (articleId: string): Promise<{ id: string; slug: string; title: string }[]> => {
+  async (
+    articleId: string,
+    role: Role,
+    userId: string,
+  ): Promise<{ id: string; slug: string; title: string }[]> => {
     const ancestors: { id: string; slug: string; title: string }[] = [];
 
     let currentId: string | null = articleId;
@@ -99,11 +105,14 @@ export const getArticleAncestors = cache(
 
       const article = await prisma.article.findUnique({
         where: { id: currentId },
-        select: { id: true, slug: true, title: true, parentId: true },
+        select: { id: true, slug: true, title: true, parentId: true, status: true, authorId: true },
       });
 
       if (!article) break;
-      if (article.id !== articleId) {
+      if (
+        article.id !== articleId &&
+        canReadArticle(role, userId, { authorId: article.authorId, status: article.status })
+      ) {
         ancestors.unshift({ id: article.id, slug: article.slug, title: article.title });
       }
       currentId = article.parentId;

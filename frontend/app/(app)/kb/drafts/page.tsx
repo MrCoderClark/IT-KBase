@@ -15,7 +15,8 @@ export default function MyDraftsPage() {
 
 async function DraftsLoader() {
   const session = await getSession();
-  const articles = session ? await getMyDrafts(session.userId) : [];
+  const articles =
+    session && can(session.role, "article.editOwn") ? await getMyDrafts(session.userId) : [];
   return (
     <ArticleListShell
       title="My Drafts"

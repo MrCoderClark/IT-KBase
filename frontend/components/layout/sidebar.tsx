@@ -17,7 +17,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { can, type Role } from "@/lib/auth/policy";
+import { can, canReadArticleAnalytics, type Role } from "@/lib/auth/policy";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { SidebarUploadCta } from "@/components/layout/sidebar-upload-cta";
@@ -99,9 +99,13 @@ export function Sidebar({
   articleTree?: ArticleTreeNode[];
 }) {
   const pathname = usePathname();
-  const items = PRIMARY.filter((item) => item.href !== "/create" || (role && can(role, "article.create"))).map(
-    (item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item),
-  );
+  const canCreate = Boolean(role && can(role, "article.create"));
+  const showAnalytics = Boolean(role && canReadArticleAnalytics(role));
+  const items = PRIMARY.filter((item) => {
+    if (item.href === "/create" || item.href === "/assistant" || item.href === "/import") return canCreate;
+    if (item.href === "/analytics") return showAnalytics;
+    return true;
+  }).map((item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item));
   const showAdmin = role ? can(role, "admin.manage") : false;
   const canMovePages = role ? can(role, "article.publish") : false;
 
@@ -158,10 +162,11 @@ export function Sidebar({
         ) : null}
       </nav>
 
-      {/* Upload CTA pinned to bottom */}
-      <div className="shrink-0 p-4">
-        <SidebarUploadCta />
-      </div>
+      {canCreate ? (
+        <div className="shrink-0 p-4">
+          <SidebarUploadCta />
+        </div>
+      ) : null}
     </aside>
   );
 }

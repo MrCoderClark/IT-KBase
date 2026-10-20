@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { TaxonomyList } from "@/components/kb/taxonomy-list";
+import { getSession } from "@/lib/auth/session";
 import { getTagIndex } from "@/lib/queries/articles";
 
 export default function TagsPage() {
@@ -18,7 +19,8 @@ export default function TagsPage() {
 }
 
 async function TagIndex() {
-  const tags = await getTagIndex();
+  const session = await getSession();
+  const tags = session ? await getTagIndex(session.role, session.userId) : [];
   return (
     <TaxonomyList
       emptyTitle="No tags yet"

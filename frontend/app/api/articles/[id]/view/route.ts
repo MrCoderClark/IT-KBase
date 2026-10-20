@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
-import { isPublicArticle } from "@/lib/auth/policy";
+import { canReadArticle, isPublicArticle } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { articleViewerKey, viewDay } from "@/lib/kb/article-views";
@@ -14,12 +14,18 @@ export async function POST(
   const { id } = await context.params;
   const article = await prisma.article.findUnique({
     where: { id },
-    select: { id: true, status: true, visibility: true },
+    select: { id: true, status: true, visibility: true, authorId: true },
   });
   if (!article) return new Response(null, { status: 404 });
 
   const session = await getSession();
-  if (!session && !isPublicArticle(article)) return new Response(null, { status: 404 });
+  if (session) {
+    if (!canReadArticle(session.role, session.userId, article)) {
+      return new Response(null, { status: 404 });
+    }
+  } else if (!isPublicArticle(article)) {
+    return new Response(null, { status: 404 });
+  }
   const jar = await cookies();
   let anonId = jar.get(VIEWER_COOKIE)?.value ?? "";
   if (!session && !anonId) {

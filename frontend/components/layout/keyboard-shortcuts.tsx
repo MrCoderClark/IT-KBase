@@ -27,7 +27,7 @@ const SHORTCUTS = [
  * Global shortcuts. Quiet while a field is focused or a dialog is open,
  * so the palette and the editor keep their keys.
  */
-export function KeyboardShortcuts() {
+export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const [helpOpen, setHelpOpen] = useState(false);
@@ -76,7 +76,7 @@ export function KeyboardShortcuts() {
         } else if (key === "h") {
           event.preventDefault();
           router.push("/");
-        } else if (key === "i") {
+        } else if (key === "i" && canImport) {
           event.preventDefault();
           router.push("/import");
         }
@@ -109,7 +109,7 @@ export function KeyboardShortcuts() {
       window.removeEventListener("keydown", onKeyDown);
       clearChord();
     };
-  }, [helpOpen, pathname, router]);
+  }, [canImport, helpOpen, pathname, router]);
 
   return (
     <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
@@ -121,7 +121,7 @@ export function KeyboardShortcuts() {
           </DialogDescription>
         </DialogHeader>
         <ul className="flex flex-col gap-2">
-          {SHORTCUTS.map((row) => (
+          {SHORTCUTS.filter((row) => row.label !== "Import from file" || canImport).map((row) => (
             <li
               key={row.label}
               className="flex items-center justify-between gap-4"

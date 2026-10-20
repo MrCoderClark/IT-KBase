@@ -103,6 +103,7 @@ interface ArticleFiltersProps {
   onCategoryChange: (slug: string | null) => void;
   selectedStatus: ArticleStatus | null;
   onStatusChange: (status: ArticleStatus | null) => void;
+  statuses: ArticleStatus[];
   selectedPeriod: string | null;
   onPeriodChange: (period: string | null) => void;
 }
@@ -126,6 +127,7 @@ export default function ArticleFilters({
   onCategoryChange,
   selectedStatus,
   onStatusChange,
+  statuses,
   selectedPeriod,
   onPeriodChange,
 }: ArticleFiltersProps) {
@@ -142,7 +144,7 @@ export default function ArticleFilters({
       <FilterDropdown
         label="Status"
         value={selectedStatus}
-        options={STATUS_OPTIONS}
+        options={STATUS_OPTIONS.filter((option) => statuses.includes(option.value))}
         onChange={(v) => onStatusChange(v as ArticleStatus | null)}
       />
       <FilterDropdown

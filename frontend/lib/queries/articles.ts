@@ -5,6 +5,7 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { can, type Role } from "@/lib/auth/policy";
 import { prisma } from "@/lib/db";
 import type {
   Article,
@@ -182,6 +183,25 @@ function mapSection(s: any): Section {
 // Public query functions
 // ---------------------------------------------------------------------------
 
+/** Rows this role may see. Matches `canReadArticle`. */
+export function readableWhere(role: Role, userId: string): Prisma.ArticleWhereInput {
+  if (can(role, "article.archive")) return {};
+  if (can(role, "article.editAny")) return { status: { not: "archived" } };
+  if (can(role, "article.editOwn")) {
+    return {
+      OR: [
+        { status: "published" },
+        { authorId: userId, status: { in: ["draft", "in_review"] } },
+      ],
+    };
+  }
+  return { status: "published" };
+}
+
+function libraryWhere(role: Role, userId: string): Prisma.ArticleWhereInput {
+  return { AND: [readableWhere(role, userId), { status: { not: "archived" } }] };
+}
+
 async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]> {
   const rows = await prisma.article.findMany({
     where,
@@ -191,9 +211,9 @@ async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]
   return rows.map(mapListArticle);
 }
 
-/** All articles for the list view (no sections/blocks loaded). */
-export async function getAllArticles(): Promise<Article[]> {
-  return listArticles();
+/** Articles this role may see (no sections/blocks loaded). */
+export async function getAllArticles(role: Role, userId: string): Promise<Article[]> {
+  return listArticles(readableWhere(role, userId));
 }
 
 /** Drafts owned by the signed-in user. */
@@ -204,24 +224,29 @@ export async function getMyDrafts(userId: string): Promise<Article[]> {
   });
 }
 
-/** Every article that is still in the library, newest first. */
-export async function getRecentlyUpdated(): Promise<Article[]> {
-  return listArticles({ status: { not: "archived" } });
+/** Articles still in the library that this role may see, newest first. */
+export async function getRecentlyUpdated(role: Role, userId: string): Promise<Article[]> {
+  return listArticles(libraryWhere(role, userId));
 }
 
 /** Counts and the newest articles for the home brief. */
-export async function getHomeBrief(userId: string): Promise<{
+export async function getHomeBrief(role: Role, userId: string): Promise<{
   published: number;
   drafts: number;
   inReview: number;
   recent: Article[];
 }> {
+  const inReviewWhere: Prisma.ArticleWhereInput = can(role, "article.editAny")
+    ? { status: "in_review" }
+    : { status: "in_review", authorId: userId };
   const [published, drafts, inReview, recentRows] = await Promise.all([
     prisma.article.count({ where: { status: "published" } }),
     prisma.article.count({ where: { status: "draft", authorId: userId } }),
-    prisma.article.count({ where: { status: "in_review" } }),
+    can(role, "article.editOwn") || can(role, "article.editAny")
+      ? prisma.article.count({ where: inReviewWhere })
+      : Promise.resolve(0),
     prisma.article.findMany({
-      where: { status: { not: "archived" } },
+      where: libraryWhere(role, userId),
       select: articleListSelect,
       orderBy: { updatedAt: "desc" },
       take: 5,
@@ -235,16 +260,18 @@ export async function getHomeBrief(userId: string): Promise<{
   };
 }
 
-export async function getKbNavCounts(userId: string): Promise<{
+export async function getKbNavCounts(role: Role, userId: string): Promise<{
   all: number;
   drafts: number;
   shared: number;
   recent: number;
 }> {
   const [all, drafts, recent] = await Promise.all([
-    prisma.article.count(),
-    prisma.article.count({ where: { status: "draft", authorId: userId } }),
-    prisma.article.count({ where: { status: { not: "archived" } } }),
+    prisma.article.count({ where: readableWhere(role, userId) }),
+    can(role, "article.editOwn")
+      ? prisma.article.count({ where: { status: "draft", authorId: userId } })
+      : Promise.resolve(0),
+    prisma.article.count({ where: libraryWhere(role, userId) }),
   ]);
   return { all, drafts, shared: 0, recent };
 }
@@ -436,10 +463,15 @@ export async function getArticleVersion(
   };
 }
 
-export async function getCategoryIndex() {
+export async function getCategoryIndex(role: Role, userId: string) {
+  const visible = readableWhere(role, userId);
   const rows = await prisma.category.findMany({
     orderBy: { name: "asc" },
-    select: { name: true, slug: true, _count: { select: { articles: true } } },
+    select: {
+      name: true,
+      slug: true,
+      _count: { select: { articles: { where: visible } } },
+    },
   });
   return rows.map((row) => ({
     name: row.name,
@@ -448,10 +480,16 @@ export async function getCategoryIndex() {
   }));
 }
 
-export async function getTagIndex() {
+export async function getTagIndex(role: Role, userId: string) {
+  const visible = readableWhere(role, userId);
   const rows = await prisma.tag.findMany({
     orderBy: { name: "asc" },
-    select: { name: true, slug: true, _count: { select: { articles: true } } },
+    select: {
+      name: true,
+      slug: true,
+      // Tag.articles is the join table. Status lives on the article.
+      _count: { select: { articles: { where: { article: visible } } } },
+    },
   });
   return rows.map((row) => ({
     name: row.name,
@@ -461,24 +499,28 @@ export async function getTagIndex() {
 }
 
 /** Articles in one category. Null when the category slug does not exist. */
-export async function getArticlesInCategory(slug: string) {
+export async function getArticlesInCategory(slug: string, role: Role, userId: string) {
   const category = await prisma.category.findUnique({
     where: { slug },
     select: { name: true },
   });
   if (!category) return null;
-  const articles = await listArticles({ category: { slug } });
+  const articles = await listArticles({
+    AND: [{ category: { slug } }, readableWhere(role, userId)],
+  });
   return { name: category.name, articles };
 }
 
 /** Articles with one tag. Null when the tag slug does not exist. */
-export async function getArticlesWithTag(slug: string) {
+export async function getArticlesWithTag(slug: string, role: Role, userId: string) {
   const tag = await prisma.tag.findUnique({
     where: { slug },
     select: { name: true },
   });
   if (!tag) return null;
-  const articles = await listArticles({ tags: { some: { tag: { slug } } } });
+  const articles = await listArticles({
+    AND: [{ tags: { some: { tag: { slug } } } }, readableWhere(role, userId)],
+  });
   return { name: tag.name, articles };
 }
 
