@@ -40,6 +40,7 @@ export interface EditorStep {
   body: string;
   code: string;
   language: string;
+  images?: string[];
 }
 
 export type EditorSection =
@@ -259,6 +260,7 @@ function stepsFromBlocks(blocks: Block[]): EditorStep[] {
         body: block.content,
         code: "",
         language: "powershell",
+        images: [],
       });
       continue;
     }
@@ -267,6 +269,8 @@ function stepsFromBlocks(blocks: Block[]): EditorStep[] {
     if (block.kind === "code" && !last.code) {
       last.code = block.code;
       last.language = block.language ?? "powershell";
+    } else if (block.kind === "image" && block.imageUrl) {
+      last.images = [...(last.images ?? []), block.imageUrl];
     } else if (block.kind === "prose") {
       last.body = combineProse([last.body, block.content]);
     }

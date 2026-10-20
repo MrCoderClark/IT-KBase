@@ -20,6 +20,7 @@ const SHORTCUTS = [
   { keys: ["E"], sequence: false, label: "Edit this article" },
   { keys: ["G", "A"], sequence: true, label: "All articles" },
   { keys: ["G", "H"], sequence: true, label: "Home" },
+  { keys: ["G", "I"], sequence: true, label: "Import from file" },
 ] as const;
 
 /**
@@ -75,6 +76,9 @@ export function KeyboardShortcuts() {
         } else if (key === "h") {
           event.preventDefault();
           router.push("/");
+        } else if (key === "i") {
+          event.preventDefault();
+          router.push("/import");
         }
         return;
       }

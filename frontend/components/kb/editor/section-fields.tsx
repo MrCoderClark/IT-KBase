@@ -279,6 +279,20 @@ function StepFields({
           minHeight="4.5rem"
         />
       </div>
+      {step.images && step.images.length > 0 ? (
+        <div className="mb-2 flex flex-col gap-2">
+          {step.images.map((src, index) => (
+            // The picture is part of the imported step, not a remote layout image.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`${number}-${index}`}
+              src={src}
+              alt="Screenshot from the Word document"
+              className="max-h-64 rounded-lg border border-border"
+            />
+          ))}
+        </div>
+      ) : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Language">
           <input

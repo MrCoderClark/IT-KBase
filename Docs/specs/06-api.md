@@ -187,6 +187,15 @@ GET  /metrics          # Prometheus
 
 In Vercel-hosted mode, Next.js *does not* call `/ingest` synchronously; it writes a BullMQ job and the Python service consumes the queue. The HTTP endpoint exists for local dev where no queue is required.
 
+The first slice does not use that job. It parses one Word file on the request:
+
+```
+POST /v1/parse/docx
+  headers: Authorization: Bearer v1...   # author, reviewer, or admin
+  body:    multipart file field `file` (.docx, max 25MB)
+  effect:  returns a draft (title, summary, five sections). Does not write the database.
+```
+
 ## 5. Rate limiting
 
 Per-IP and per-user. Login attempts are counted in Postgres (`auth.login_attempt`) until Redis is wired. Other limits stay as specified and land with the feature that needs them:
