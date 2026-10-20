@@ -37,6 +37,8 @@ type BlockWrite = {
   calloutVariant?: CalloutVariant;
   language?: string;
   code?: string;
+  imageUrl?: string;
+  imageAlt?: string;
 };
 
 type SectionWrite = {
@@ -49,6 +51,7 @@ type SectionWrite = {
 export async function saveArticle(
   input: EditorDraft,
   bump: VersionBump = "patch",
+  notes?: string,
 ): Promise<SaveResult> {
   const session = await getSession();
   if (!session) return { ok: false, error: "Sign in to continue." };
@@ -197,7 +200,7 @@ export async function saveArticle(
         version,
         title,
         summary: input.summary.trim() || null,
-        notes: publishing ? "Published from the editor" : "Saved from the editor",
+        notes: notes?.trim() || (publishing ? "Published from the editor" : "Saved from the editor"),
         sections: {
           create: sections.map((section) => ({
             kind: section.kind,
@@ -212,6 +215,8 @@ export async function saveArticle(
                 calloutVariant: block.calloutVariant ?? null,
                 language: block.language ?? null,
                 code: block.code ?? null,
+                imageUrl: block.imageUrl ?? null,
+                imageAlt: block.imageAlt ?? null,
               })),
             },
           })),
@@ -273,6 +278,15 @@ function blocksFor(section: EditorSection): BlockWrite[] {
             code: step.code.replace(/\r\n/g, "\n"),
             language: step.language.trim() || "text",
           });
+        }
+        for (const image of step.images ?? []) {
+          if (image.trim()) {
+            push({
+              kind: "image",
+              imageUrl: image,
+              imageAlt: "Screenshot from the Word document",
+            });
+          }
         }
       });
       break;
@@ -375,7 +389,9 @@ function hasCallout(callout: EditorCallout): boolean {
 }
 
 function hasStep(step: EditorStep): boolean {
-  return Boolean(step.title.trim() || step.body.trim() || step.code.trim());
+  return Boolean(
+    step.title.trim() || step.body.trim() || step.code.trim() || step.images?.length,
+  );
 }
 
 function readingMinutes(sections: EditorSection[]): number {

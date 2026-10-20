@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 from auth_py import parse_assertion_keys, require_principal
 from backend.api.health import router as health_router
+from backend.api.parse import build_parse_router
 from backend.api.principal import build_principal_router
 from backend.config import get_settings
 from backend.telemetry import configure_logging, get_logger
@@ -56,7 +57,9 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     keys = parse_assertion_keys(settings.assertion_keys)
     service_tokens = {item.strip() for item in settings.service_tokens.split(",") if item.strip()}
-    app.include_router(build_principal_router(require_principal(keys, service_tokens)))
+    principal = require_principal(keys, service_tokens)
+    app.include_router(build_principal_router(principal))
+    app.include_router(build_parse_router(principal))
 
     return app
 

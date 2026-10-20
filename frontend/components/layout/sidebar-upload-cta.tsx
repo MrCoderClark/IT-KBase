@@ -29,8 +29,7 @@ export function SidebarUploadCta() {
         Turn documents into knowledge
       </div>
       <p className="mt-1.5 text-[12px] leading-[18px] text-sidebar-fg/80">
-        Upload a Word document or PDF and let AI create a structured knowledge
-        article for you.
+        Upload a Word document and turn it into a draft article you can edit.
       </p>
 
       <Link

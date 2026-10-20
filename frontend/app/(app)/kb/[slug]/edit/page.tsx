@@ -13,8 +13,10 @@ import {
 
 export default function EditArticlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ notice?: string }>;
 }) {
   return (
     <Suspense
@@ -22,13 +24,19 @@ export default function EditArticlePage({
         <div className="px-6 py-10 text-[13px] text-fg-subtle">Loading editor…</div>
       }
     >
-      <EditEditor params={params} />
+      <EditEditor params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function EditEditor({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function EditEditor({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ notice?: string }>;
+}) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [article, categories, tags, session] = await Promise.all([
     getArticleBySlug(slug),
     getAllCategories(),
@@ -58,6 +66,11 @@ async function EditEditor({ params }: { params: Promise<{ slug: string }> }) {
       categories={categories}
       tags={tags}
       role={session.role}
+      notice={
+        query.notice === "imported"
+          ? "Drafted from a Word document. Review the sections, then save or publish."
+          : null
+      }
     />
   );
 }

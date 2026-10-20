@@ -137,7 +137,14 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Entry**: sidebar `Import from File`, bottom CTA, keyboard `g i`.
 
-**Flow**:
+**First slice** (Word only):
+1. `/import` accepts one `.docx` up to 25MB. A PDF is refused.
+2. Next.js checks `article.create`, then sends the file to `POST /v1/parse/docx` with the 60-second assertion.
+3. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview.
+4. If Overview, Verification, or Troubleshooting is missing, and `AI_API_KEY` is set, the service writes the missing sections from the extracted steps through `AI_BASE_URL` and `AI_MODEL`. A section already in the file is kept.
+5. The draft is saved and the editor opens. There is no S3 upload and no progress stepper in this slice.
+
+**Target flow** (after the first slice):
 1. Dropzone: accepts `.docx`, `.pdf` up to 25MB.
 2. Pick category (optional), add tags (optional). These seed the extractor but don't override its structural work.
 3. Click `Start`. Client requests presigned PUT, uploads to S3, calls `POST /api/upload/complete`.

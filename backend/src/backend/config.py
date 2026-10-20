@@ -62,7 +62,29 @@ class Settings(BaseSettings):
         return self.env == "prod"
 
 
+class AiSettings(BaseSettings):
+    """OpenRouter, or any other OpenAI-compatible host. Env names are `AI_*`."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="AI_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    provider: str = "openai_compatible"
+    base_url: str = "https://openrouter.ai/api/v1"
+    api_key: str = ""
+    model: str = ""
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Return a process-wide cached Settings instance."""
     return Settings()  # type: ignore[call-arg]
+
+
+@lru_cache(maxsize=1)
+def get_ai_settings() -> AiSettings:
+    return AiSettings()

@@ -53,12 +53,14 @@ export function ArticleEditor({
   tags,
   role,
   parentTitle = null,
+  notice = null,
 }: {
   draft: EditorDraft;
   categories: { name: string; slug: string }[];
   tags: { name: string; slug: string }[];
   role: Role;
   parentTitle?: string | null;
+  notice?: string | null;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
@@ -142,6 +144,7 @@ export function ArticleEditor({
           <p className="mt-0.5 text-[13px] text-fg-subtle">
             {parentTitle ? `Child of ${parentTitle} · ` : null}/kb/{slugPreview}
           </p>
+          {notice ? <p className="mt-1 text-[13px] text-fg">{notice}</p> : null}
         </div>
         <div className="flex items-center gap-2">
           <Link
