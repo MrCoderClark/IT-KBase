@@ -251,6 +251,19 @@ model Feedback {
   @@index([articleId, createdAt])
 }
 
+/// A note left after someone ran the procedure. See `11-article-notes.md`.
+model ArticleNote {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([articleId, createdAt])
+}
+
 /// One row per viewer per UTC day. A repeat open that day does not add another view.
 model ArticleView {
   articleId String

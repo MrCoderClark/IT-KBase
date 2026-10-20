@@ -111,6 +111,7 @@ model User {
   articles Article[]        @relation("ArticleAuthor")
   versions ArticleVersion[] @relation("VersionAuthor")
   feedback Feedback[]
+  notes    ArticleNote[]     @relation("NoteAuthor")
 
   @@schema("public")
 }
@@ -167,6 +168,7 @@ model Article {
 
   tags         ArticleTag[]
   feedback     Feedback[]
+  notes        ArticleNote[]
   articleViews ArticleView[]
   ingestionJob IngestionJob?
 
@@ -261,6 +263,20 @@ model Feedback {
   user      User?    @relation(fields: [userId], references: [id])
   helpful   Boolean
   comment   String?
+  createdAt DateTime @default(now())
+
+  @@index([articleId, createdAt])
+  @@schema("public")
+}
+
+/// A note left after someone ran the procedure. Not a helpful/not-helpful vote.
+model ArticleNote {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  body      String
   createdAt DateTime @default(now())
 
   @@index([articleId, createdAt])
