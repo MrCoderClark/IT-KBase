@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
-import { canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
+import { can, canEditArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
@@ -75,7 +75,11 @@ export async function ArticleView({
       />
 
       <div className="mt-5">
-        <ArticleHeader article={article} canEdit={canEdit} />
+        <ArticleHeader
+          article={article}
+          canEdit={canEdit}
+          canCreateChild={Boolean(session && can(session.role, "article.create"))}
+        />
       </div>
 
       <div className="mt-8 flex items-start gap-6">

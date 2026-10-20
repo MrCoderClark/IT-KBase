@@ -52,11 +52,13 @@ export function ArticleEditor({
   categories,
   tags,
   role,
+  parentTitle = null,
 }: {
   draft: EditorDraft;
   categories: { name: string; slug: string }[];
   tags: { name: string; slug: string }[];
   role: Role;
+  parentTitle?: string | null;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
@@ -137,7 +139,9 @@ export function ArticleEditor({
           <h1 className="text-[22px] leading-7 font-bold tracking-tight text-fg">
             {draft.slug ? "Edit article" : "New article"}
           </h1>
-          <p className="mt-0.5 text-[13px] text-fg-subtle">/kb/{slugPreview}</p>
+          <p className="mt-0.5 text-[13px] text-fg-subtle">
+            {parentTitle ? `Child of ${parentTitle} · ` : null}/kb/{slugPreview}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link

@@ -103,6 +103,7 @@ export function Sidebar({
     (item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item),
   );
   const showAdmin = role ? can(role, "admin.manage") : false;
+  const canMovePages = role ? can(role, "article.publish") : false;
 
   return (
     <aside
@@ -138,6 +139,7 @@ export function Sidebar({
               item={item}
               pathname={pathname}
               articleTree={item.label === "Knowledge Base" ? articleTree : undefined}
+              canMovePages={item.label === "Knowledge Base" ? canMovePages : false}
             />
           ))}
         </ul>
@@ -168,10 +170,12 @@ function NavRow({
   item,
   pathname,
   articleTree,
+  canMovePages = false,
 }: {
   item: NavItem;
   pathname: string;
   articleTree?: ArticleTreeNode[];
+  canMovePages?: boolean;
 }) {
   const Icon = item.icon;
   const hasChildren = Boolean(item.children?.length);
@@ -256,7 +260,7 @@ function NavRow({
                 <div className="mb-1 px-2.5 text-[10px] font-semibold tracking-[0.08em] uppercase text-sidebar-fg/40">
                   Pages
                 </div>
-                <SidebarArticleTree tree={articleTree} />
+                <SidebarArticleTree tree={articleTree} canMove={canMovePages} />
               </div>
             ) : null}
           </div>

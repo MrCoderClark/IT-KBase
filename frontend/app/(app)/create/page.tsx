@@ -40,6 +40,7 @@ async function CreateEditor({
 
   // Validate parentId if provided
   let parentId: string | null = null;
+  let parentTitle: string | null = null;
   if (query.parentId) {
     const parent = await prisma.article.findUnique({
       where: { id: query.parentId },
@@ -47,9 +48,18 @@ async function CreateEditor({
     });
     if (parent) {
       parentId = parent.id;
+      parentTitle = parent.title;
     }
   }
 
   const [categories, tags] = await Promise.all([getAllCategories(), getAllTags()]);
-  return <ArticleEditor draft={blankDraft(parentId)} categories={categories} tags={tags} role={session.role} />;
+  return (
+    <ArticleEditor
+      draft={blankDraft(parentId)}
+      categories={categories}
+      tags={tags}
+      role={session.role}
+      parentTitle={parentTitle}
+    />
+  );
 }

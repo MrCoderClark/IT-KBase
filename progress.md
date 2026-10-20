@@ -182,11 +182,11 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | # | Feature | Spec | Status |
 |---|---------|------|--------|
 | 1 | **Version history** | `09-version-history.md` | ✅ History list, read older version, section compare, restore |
-| 2 | **Page tree** | `10-page-tree.md` | 🟡 Sidebar tree, ancestor breadcrumbs, create with `?parentId=`. Drag-reorder and an add-child action remain |
+| 2 | **Page tree** | `10-page-tree.md` | 🟡 Sidebar tree, ancestor breadcrumbs, Add child, reviewer drag-reorder. Dragging a page under another page checked in the browser |
 | 3 | **Comments** | TBD | ⬜ Threaded comments on articles, @mentions |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: drag-reorder and an add-child action on `feat/page-tree`, then comments.
+Next: comments.
 
 ---
 
