@@ -116,7 +116,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 **Entry points**: sidebar `Create Article`, or `Edit` on an existing article, or completion of an ingestion job.
 
 **Layout**: two-pane editor.
-- Left: TipTap-based editor matching the read view styling (same section headers, same callouts, same code blocks). It **is** the preview; there is no separate preview tab.
+- Left: TipTap-based editor matching the read view styling (same section headers, same callouts, same code blocks). Prerequisites and verification checks use the green checklist mark. Steps use the cobalt badge. Callouts use the tinted panel. Commands use the dark code block. It **is** the preview; there is no separate preview tab.
 - Right: structure sidebar: section list with drag handles, add-section button, metadata (title, summary, category, tags, hero), publish status.
 
 **Behavior**:

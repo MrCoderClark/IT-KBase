@@ -20,7 +20,7 @@ Word import already lands a draft, keeps pictures on numbered steps, and fills a
 
 The field editor already saves versions. Publish already checks title, category, tag, summary, and one step. Spec: `Docs/specs/04-features.md` F5.
 
-6. **Custom section nodes.** Prerequisites, steps, verification, callouts, and code are real editor nodes, not only labeled fields.
+6. ✅ **Custom section nodes.** Checked 2026-10-27 on `/kb/reset-local-admin-password/edit`. Checklist items use the green mark; steps, callouts, and code blocks use TipTap nodes matching the read view.
 7. **Autosave.** A draft is kept while the author is typing, then written to Postgres. Leaving the page does not drop the last edit.
 8. **Read-view preview.** The author can see the article the way a reader will, without publishing.
 
