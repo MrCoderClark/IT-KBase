@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Calendar, Clock, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import type { Article } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
+import { DeleteArticleButton } from "@/components/kb/delete-article-button";
 import { ShareLinkButton } from "@/components/kb/share-link-button";
 import { StatusChip } from "@/components/kb/status-chip";
 
@@ -15,10 +16,12 @@ export function ArticleHeader({
   article,
   canEdit = false,
   canCreateChild = false,
+  canDelete = false,
 }: {
   article: Article;
   canEdit?: boolean;
   canCreateChild?: boolean;
+  canDelete?: boolean;
 }) {
   const formattedDate = new Date(article.createdAt).toLocaleDateString(
     "en-US",
@@ -116,6 +119,7 @@ export function ArticleHeader({
             </Link>
           ) : null}
           <ShareLinkButton />
+          {canDelete ? <DeleteArticleButton articleId={article.id} title={article.title} /> : null}
           <button
             type="button"
             aria-label="More actions"

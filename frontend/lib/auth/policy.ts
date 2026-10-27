@@ -16,6 +16,7 @@ export type Capability =
   | "article.publish"
   | "article.rollback"
   | "article.archive"
+  | "article.delete"
   | "article.makePublic"
   | "admin.manage";
 
@@ -31,6 +32,7 @@ const ALLOWED: Record<Capability, readonly Role[]> = {
   "article.publish": ["reviewer", "admin"],
   "article.rollback": ["admin"],
   "article.archive": ["admin"],
+  "article.delete": ["admin"],
   "article.makePublic": ["reviewer", "admin"],
   "admin.manage": ["admin"],
 };

@@ -4,7 +4,7 @@
 
 ## 0. First slice
 
-A `.docx` becomes a draft without S3 or a queue. Next.js sends the bytes to `POST /v1/parse/docx`. Python reads headings and numbered steps. When the file has no Overview, Verification, or Troubleshooting, and `AI_API_KEY` is set, the service writes those sections from the extracted steps. A section that is already in the file is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. PDF, the progress stepper, and the full structure call are still the flow in §2.
+A `.docx` or text `.pdf` becomes a draft without S3 or a queue. Next.js sends the bytes to `POST /v1/parse/docx` or `POST /v1/parse/pdf`. Python reads the text. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. Object storage and the progress stepper are still the flow in §2.
 
 ## 1. Goals
 

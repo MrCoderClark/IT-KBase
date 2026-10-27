@@ -109,6 +109,17 @@ def test_body_only_document_uses_the_filename_as_the_title() -> None:
     assert "displaydns" in draft.overview
 
 
+def test_a_sentence_that_mentions_a_step_stays_in_the_overview() -> None:
+    document = Document()
+    document.add_paragraph("First step is to save the excel file from the county.")
+    document.add_paragraph("Then click Import.")
+
+    draft = parse_docx(_bytes(document), "wfnj.docx")
+
+    assert draft.steps == []
+    assert "save the excel file" in f"{draft.summary} {draft.overview}"
+
+
 def test_empty_document_is_refused() -> None:
     document = Document()
     document.add_paragraph("   ")

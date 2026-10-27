@@ -43,6 +43,7 @@ Roles: `reader | author | reviewer | admin`.
 | Publish / unpublish                                   |        |        | ✅       | ✅    |
 | Rollback version                                      |        |        |          | ✅    |
 | Archive / unarchive                                   |        |        |          | ✅    |
+| Delete an article                                     |        |        |          | ✅    |
 | Mark a published article public                       |        |        | ✅       | ✅    |
 | Manage users / integrations / settings                |        |        |          | ✅    |
 

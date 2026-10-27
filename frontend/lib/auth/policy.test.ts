@@ -13,6 +13,8 @@ describe("role matrix", () => {
     assert.equal(can("reviewer", "article.publish"), true);
     assert.equal(can("reviewer", "article.archive"), false);
     assert.equal(can("admin", "article.archive"), true);
+    assert.equal(can("reviewer", "article.delete"), false);
+    assert.equal(can("admin", "article.delete"), true);
     assert.equal(canReadArticleHistory("author"), false);
     assert.equal(canReadArticleHistory("reviewer"), true);
     assert.equal(canReadArticleHistory("admin"), true);

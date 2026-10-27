@@ -23,27 +23,33 @@ export async function draftFromDocx(
   }
 
   const base = (process.env.INGESTION_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
+  const pdf = filename.toLowerCase().endsWith(".pdf");
   const body = new FormData();
   body.append(
     "file",
     new Blob([bytes], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      type: pdf
+        ? "application/pdf"
+        : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }),
     filename,
   );
 
   let response: Response;
   try {
-    response = await fetch(`${base}/v1/parse/docx`, {
+    response = await fetch(`${base}${pdf ? "/v1/parse/pdf" : "/v1/parse/docx"}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${assertion}` },
       body,
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(180_000),
     });
-  } catch {
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === "TimeoutError";
     return {
       ok: false,
-      error: "The ingestion service is not running. Start it from backend/ on port 8080.",
+      error: timedOut
+        ? "Reading that file took too long. Start the import again."
+        : "The ingestion service is not running. Start it from backend/ on port 8080.",
     };
   }
 
