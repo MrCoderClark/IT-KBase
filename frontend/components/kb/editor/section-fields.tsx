@@ -39,19 +39,24 @@ export function SectionCard({
     <section className="rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,.06)]">
       <div className="mb-4 flex items-center gap-3">
         <SectionIcon kind={section.kind} />
-        <input
-          value={section.title}
-          onChange={(event) => onChange({ ...section, title: event.target.value })}
-          aria-label="Section title"
-          className={`${fieldClass} min-w-0 text-[15px] font-semibold`}
-        />
+        <div className="min-w-0 flex-1">
+          <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
+            Section heading
+          </span>
+          <input
+            value={section.title}
+            onChange={(event) => onChange({ ...section, title: event.target.value })}
+            aria-label={`${section.kind} section heading`}
+            className={`${fieldClass} min-w-0 text-[14px] font-semibold`}
+          />
+        </div>
         <button
           type="button"
           onClick={() => {
             const name = section.title.trim() || "this section";
             if (window.confirm(`Remove “${name}” from this draft?`)) onRemove();
           }}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-muted hover:text-fg"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center self-end rounded-lg text-fg-subtle hover:bg-surface-muted hover:text-fg"
           aria-label={`Remove ${section.title}`}
         >
           <X size={14} aria-hidden />

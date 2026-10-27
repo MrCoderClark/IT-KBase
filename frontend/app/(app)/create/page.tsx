@@ -59,6 +59,7 @@ async function CreateEditor({
       categories={categories}
       tags={tags}
       role={session.role}
+      authorName={session.name}
       parentTitle={parentTitle}
     />
   );
