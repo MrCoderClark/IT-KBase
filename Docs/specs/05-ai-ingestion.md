@@ -4,7 +4,7 @@
 
 ## 0. First slice
 
-A `.docx` or text `.pdf` becomes a draft without S3 or a queue. Next.js sends the bytes to `POST /v1/parse/docx` or `POST /v1/parse/pdf`. Python reads the text. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. Object storage and the progress stepper are still the flow in §2.
+The browser PUTs a `.docx` or `.pdf` to object storage, then Next creates an `IngestionJob` and calls `POST /ingest`. Python downloads that object and reads the text. The file bytes do not go through the Next server action. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. There is still no queue and no progress stepper; those stay the flow in §2. `POST /v1/parse/docx` and `POST /v1/parse/pdf` remain and run the same reader. Storage uses `TB_S3_ENDPOINT`, `TB_S3_BUCKET`, `TB_S3_REGION`, `TB_S3_ACCESS_KEY`, and `TB_S3_SECRET_KEY` on the Python service. The bucket has to allow the browser to PUT.
 
 ## 1. Goals
 

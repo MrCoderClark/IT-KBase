@@ -138,12 +138,13 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Entry**: sidebar `Import from File`, bottom CTA, keyboard `g i`.
 
-**First slice** (one file, no queue):
+**Current slice** (one file, no queue, no stepper):
 1. `/import` accepts one `.docx` or `.pdf` up to 25MB.
-2. Next.js checks `article.create`, then sends the file to `POST /v1/parse/docx` or `POST /v1/parse/pdf` with the 60-second assertion.
-3. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview. A numbered procedure becomes steps. Word pictures stay on the step. A PDF page that is a picture with almost no text is noted in Overview and not read.
-4. When `AI_API_KEY` is set, the model structures the extracted text into the article through `AI_BASE_URL` and `AI_MODEL`. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
-5. The draft is saved and the editor opens. There is no S3 upload and no progress stepper in this slice.
+2. The browser asks `POST /api/upload/presign`, PUTs the file to object storage, then calls `POST /api/upload/complete`. The file bytes do not go through a Next server action.
+3. Complete creates an `IngestionJob` and calls `POST /ingest` with the 60-second assertion. Python downloads `uploads/{userId}/...` and reads it. The key has to belong to that user.
+4. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview. A numbered procedure becomes steps. Word pictures stay on the step. A PDF page that is a picture with almost no text is noted in Overview and not read.
+5. When `AI_API_KEY` is set, the model structures the extracted text into the article through `AI_BASE_URL` and `AI_MODEL`. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
+6. Next saves the draft, marks the job succeeded, and the editor opens. The progress stepper is still later.
 
 **Target flow** (after the first slice):
 1. Dropzone: accepts `.docx`, `.pdf` up to 25MB.

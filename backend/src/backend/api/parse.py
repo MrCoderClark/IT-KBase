@@ -66,6 +66,17 @@ async def _upload(
     return name, data
 
 
+def draft_from_bytes(data: bytes, name: str) -> ParsedDraft:
+    """Read a stored .docx or .pdf the same way the direct parse routes do."""
+    if name.lower().endswith(".pdf"):
+        if not data.startswith(b"%PDF"):
+            raise HTTPException(status_code=422, detail="That file is not a valid PDF.")
+        return _finish(parse_pdf, data, name, "parse.pdf")
+    if not data.startswith(b"PK"):
+        raise HTTPException(status_code=422, detail="That file is not a valid Word document.")
+    return _finish(parse_docx, data, name, "parse.docx")
+
+
 def _finish(
     parse: Callable[[bytes, str], ParsedDraft],
     data: bytes,

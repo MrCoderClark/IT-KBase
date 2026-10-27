@@ -117,7 +117,8 @@ POST /api/upload/presign
 
 POST /api/upload/complete
   body:     { key, originalFileName, sizeBytes, sourceKind }
-  response: { jobId }                             # enqueues the Python ingestion
+  response: { jobId, slug }                       # this slice saves the draft on the request
+                                                  # a queue returns { jobId } only, then the stepper opens the editor
 
 GET  /api/jobs/:jobId
   response: { jobId, status, stage, articleId?, errorMessage?, startedAt, finishedAt }
@@ -174,20 +175,28 @@ Service tokens are issued per environment, rotated every 30 days, and scoped min
 The service is reachable only from Next.js (private network / allowlist).
 
 ```
+POST /v1/uploads/presign
+  headers: Authorization: Bearer v1...   # author, reviewer, or admin
+  body:    { fileName, contentType, sizeBytes }
+  effect:  returns { key, url, headers } for a browser PUT. The key is uploads/{userId}/{id}/{fileName}.
+           Storage env is TB_S3_ENDPOINT, TB_S3_BUCKET, TB_S3_REGION, TB_S3_ACCESS_KEY, TB_S3_SECRET_KEY.
+           Missing storage returns 503.
+
 POST /ingest
   headers: Authorization: Bearer v1...   # user-triggered; 60s assertion
-           Authorization: Bearer sv_...   # worker; service credential
+           Authorization: Bearer sv_...   # worker; service credential, later
   body:    { jobId, s3Key, fileName, sourceKind, sizeBytes, hints?: { category?, tags? } }
-  effect:  enqueues the job inside the service; returns 202
+  effect:  local, no queue: downloads s3Key (must be that user's uploads/ prefix) and returns 200 { jobId, draft }.
+           A queue later returns 202 and does not include the draft.
 
 GET  /healthz
 GET  /readyz
 GET  /metrics          # Prometheus
 ```
 
-In Vercel-hosted mode, Next.js *does not* call `/ingest` synchronously; it writes a BullMQ job and the Python service consumes the queue. The HTTP endpoint exists for local dev where no queue is required.
+In Vercel-hosted mode, Next.js *does not* call `/ingest` synchronously; it writes a BullMQ job and the Python service consumes the queue. That queue is not built yet. Locally, Next calls `/ingest` on the request, saves the draft, and the editor opens.
 
-The first slice does not use that job. It parses one Word file on the request:
+The same reader is also available without storage:
 
 ```
 POST /v1/parse/docx

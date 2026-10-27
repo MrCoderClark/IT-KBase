@@ -88,3 +88,26 @@ def get_settings() -> Settings:
 @lru_cache(maxsize=1)
 def get_ai_settings() -> AiSettings:
     return AiSettings()
+
+
+class StorageSettings(BaseSettings):
+    """S3-compatible uploads. Env names are `TB_S3_*`. Empty means storage is off."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="TB_S3_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    endpoint: str = ""
+    bucket: str = ""
+    region: str = "us-east-1"
+    access_key: str = ""
+    secret_key: str = ""
+
+
+@lru_cache(maxsize=1)
+def get_storage_settings() -> StorageSettings:
+    return StorageSettings()
