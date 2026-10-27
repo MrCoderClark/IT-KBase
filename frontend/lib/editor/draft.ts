@@ -1,6 +1,6 @@
 /**
  * Editor draft shape. Plain JSON so it can cross the server-action boundary.
- * TipTap comes later; this slice edits the five template section kinds with fields.
+ * Section bodies use TipTap custom nodes (checklist, step, callout, code) in the UI.
  */
 
 import type {
