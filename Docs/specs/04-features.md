@@ -121,7 +121,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Behavior**:
 - Starting a new article presents the **template** (empty sections for Overview, Prerequisites, Steps, Verification, Troubleshooting). The author can delete sections but can't invent new section kinds beyond `custom`.
-- Autosave to Redis every 10s (debounced), persisted draft to Postgres every 60s or on blur.
+- Autosave to Postgres every 10s while idle (debounced) or on window blur / tab hide. A `localStorage` mirror covers refresh before the server write finishes. Draft and in-review articles rewrite the current version in place (no version flood). Published edits write a single `wip` `draftVersion` until Save or Publish. Redis buffer is later. Status line shows Unsaved / Saving… / Saved.
 - `Publish` opens a checklist dialog:
   - Title ✔
   - Category ✔

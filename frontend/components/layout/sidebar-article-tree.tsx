@@ -375,8 +375,9 @@ function applyMove(
     return next;
   };
   const stripped = remove(nodes);
-  if (!moved) return nodes;
-  const placed: ArticleTreeNode = { ...moved, parentId };
+  const relocated = moved as ArticleTreeNode | null;
+  if (!relocated) return nodes;
+  const placed: ArticleTreeNode = { ...relocated, parentId };
 
   const insert = (list: ArticleTreeNode[], pid: string | null): ArticleTreeNode[] => {
     if (pid === null) {

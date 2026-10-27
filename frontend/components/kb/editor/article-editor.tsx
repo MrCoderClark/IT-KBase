@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Check, CloudOff, Loader2, Plus } from "lucide-react";
 import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 import {
@@ -15,7 +21,12 @@ import {
   defaultSection,
   slugifyTitle,
 } from "@/lib/editor/draft";
-import { saveArticle } from "@/lib/actions/save-article";
+import { autosaveArticle, saveArticle } from "@/lib/actions/save-article";
+import {
+  clearLocalDraft,
+  readLocalDraft,
+  writeLocalDraft,
+} from "@/lib/editor/local-draft";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
 import { Button } from "@/components/ui/button";
@@ -23,6 +34,12 @@ import type { VersionBump } from "@/lib/editor/draft";
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] leading-5 text-fg focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30";
+
+/**
+ * Persist to Postgres after idle typing (Redis 10s buffer is later).
+ * localStorage mirrors every change so refresh does not drop the last edit.
+ */
+const AUTOSAVE_MS = 10_000;
 
 const STATUS_OPTIONS: { value: ArticleStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
@@ -47,6 +64,8 @@ function statusChoices(role: Role, current: ArticleStatus) {
   });
 }
 
+type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+
 export function ArticleEditor({
   draft: initial,
   categories,
@@ -64,17 +83,139 @@ export function ArticleEditor({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
-  const [savedJson] = useState(() => JSON.stringify(initial));
+  const [savedJson, setSavedJson] = useState(() => JSON.stringify(initial));
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
-  const dirty = JSON.stringify(draft) !== savedJson;
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const [localReady, setLocalReady] = useState(false);
 
+  const draftRef = useRef(draft);
+  const savedJsonRef = useRef(savedJson);
+  const flushingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  draftRef.current = draft;
+  savedJsonRef.current = savedJson;
+
+  const dirty = JSON.stringify(draft) !== savedJson;
   const used = new Set(draft.sections.map((section) => section.kind));
   const available = EDITABLE_KINDS.filter((kind) => !used.has(kind));
   const slugPreview = draft.slug ?? slugifyTitle(draft.title);
+
+  // Restore a browser mirror left by a refresh before Postgres flush finished.
+  useEffect(() => {
+    const local = readLocalDraft(initial.slug);
+    const initialJson = JSON.stringify(initial);
+    if (local && JSON.stringify(local) !== initialJson) {
+      setDraft(local);
+      draftRef.current = local;
+      setSaveStatus("dirty");
+    }
+    setLocalReady(true);
+    // Only on mount for this article.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial.slug]);
+
+  useEffect(() => {
+    if (!localReady) return;
+    writeLocalDraft(draft);
+  }, [draft, localReady]);
+
+  const flushAutosave = useCallback(async () => {
+    const current = draftRef.current;
+    const snapshot = JSON.stringify(current);
+    if (snapshot === savedJsonRef.current) return;
+    if (flushingRef.current || pending || publishOpen) return;
+    if (!current.title.trim()) {
+      setSaveStatus("dirty");
+      return;
+    }
+
+    flushingRef.current = true;
+    setSaveStatus("saving");
+    setAutosaveError(null);
+    writeLocalDraft(current);
+    try {
+      const result = await autosaveArticle(current);
+      if (!result.ok) {
+        setAutosaveError(result.error);
+        setSaveStatus("error");
+        return;
+      }
+      if (result.skipped) {
+        setSaveStatus("dirty");
+        return;
+      }
+
+      const nextDraft =
+        result.created || !current.slug
+          ? { ...current, slug: result.slug, version: current.version ?? "1.0" }
+          : current;
+      if (result.created || nextDraft !== current) {
+        setDraft(nextDraft);
+        draftRef.current = nextDraft;
+      }
+      const nextJson = JSON.stringify(nextDraft);
+      setSavedJson(nextJson);
+      savedJsonRef.current = nextJson;
+      setSaveStatus("saved");
+      clearLocalDraft(nextDraft.slug);
+      writeLocalDraft(nextDraft);
+
+      if (result.created) {
+        clearLocalDraft(null);
+        router.replace(`/kb/${result.slug}/edit`);
+      }
+    } catch {
+      setAutosaveError("Autosave failed. Your edits are still in this tab.");
+      setSaveStatus("error");
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [pending, publishOpen, router]);
+
+  useEffect(() => {
+    if (!localReady || !dirty) return;
+    setSaveStatus((current) => (current === "saving" ? current : "dirty"));
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      void flushAutosave();
+    }, AUTOSAVE_MS);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [dirty, draft, flushAutosave, localReady]);
+
+  useEffect(() => {
+    function stashAndFlush() {
+      writeLocalDraft(draftRef.current);
+      void flushAutosave();
+    }
+    function onHide() {
+      if (document.visibilityState === "hidden") stashAndFlush();
+    }
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      writeLocalDraft(draftRef.current);
+      const snapshot = JSON.stringify(draftRef.current);
+      if (snapshot === savedJsonRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("blur", stashAndFlush);
+    window.addEventListener("pagehide", stashAndFlush);
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("blur", stashAndFlush);
+      window.removeEventListener("pagehide", stashAndFlush);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [flushAutosave]);
 
   function updateSection(index: number, section: EditorSection) {
     setDraft((current) => {
@@ -108,6 +249,8 @@ export function ArticleEditor({
         setError(result.error);
         return;
       }
+      setSavedJson(JSON.stringify(draft));
+      clearLocalDraft(result.slug);
       router.push(`/kb/${result.slug}`);
       router.refresh();
     });
@@ -129,10 +272,41 @@ export function ArticleEditor({
         return;
       }
       setPublishOpen(false);
+      setSavedJson(JSON.stringify(draft));
+      clearLocalDraft(result.slug);
       router.push(`/kb/${result.slug}`);
       router.refresh();
     });
   }
+
+  const autosaveChip =
+    saveStatus === "saving"
+      ? {
+          label: "Autosaving…",
+          className: "border-border bg-surface-muted text-fg-muted",
+          icon: <Loader2 size={12} className="animate-spin" aria-hidden />,
+        }
+      : saveStatus === "saved"
+        ? {
+            label: "Autosaved",
+            className: "border-success/30 bg-success-soft text-success",
+            icon: <Check size={12} strokeWidth={2.5} aria-hidden />,
+          }
+        : saveStatus === "error"
+          ? {
+              label: "Autosave failed",
+              className: "border-warning/40 bg-warning-soft text-warning",
+              icon: <CloudOff size={12} aria-hidden />,
+            }
+          : saveStatus === "dirty"
+            ? {
+                label: draft.title.trim()
+                  ? "Unsaved · autosaves in ~10s"
+                  : "Add a title to autosave",
+                className: "border-border bg-surface text-fg-muted",
+                icon: null,
+              }
+            : null;
 
   return (
     <form onSubmit={onSubmit} className="mx-auto w-full max-w-[1200px] px-6 py-5">
@@ -145,8 +319,22 @@ export function ArticleEditor({
             {parentTitle ? `Child of ${parentTitle} · ` : null}/kb/{slugPreview}
           </p>
           {notice ? <p className="mt-1 text-[13px] text-fg">{notice}</p> : null}
+          {autosaveError ? (
+            <p className="mt-1 text-[12px] font-medium text-warning" role="alert">
+              {autosaveError}
+            </p>
+          ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {autosaveChip ? (
+            <span
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-semibold ${autosaveChip.className}`}
+              aria-live="polite"
+            >
+              {autosaveChip.icon}
+              {autosaveChip.label}
+            </span>
+          ) : null}
           <Link
             href={draft.slug ? `/kb/${draft.slug}` : "/kb"}
             onClick={(event) => {

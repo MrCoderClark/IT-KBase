@@ -27,7 +27,7 @@ export async function draftFromDocx(
   const body = new FormData();
   body.append(
     "file",
-    new Blob([bytes], {
+    new Blob([Uint8Array.from(bytes)], {
       type: pdf
         ? "application/pdf"
         : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

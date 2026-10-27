@@ -162,7 +162,10 @@ export function PaletteProvider({ children, role }: { children: ReactNode; role:
     canReadArticleAnalytics(role)
       ? { id: "analytics", label: "Analytics", icon: ChartColumn, run: () => go("/analytics") }
       : null,
-  ].filter((item) => item !== null && matches(item.label));
+  ].filter(
+    (item): item is { id: string; label: string; icon: typeof Plus; run: () => void } =>
+      item !== null && matches(item.label),
+  );
   const pages = NAV.filter((item) => matches(item.label));
 
   return (

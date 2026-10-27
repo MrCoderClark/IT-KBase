@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { canReadArticle, type Role } from "@/lib/auth/policy";
+import { canReadArticle, type ArticleStatus, type Role } from "@/lib/auth/policy";
 import { prisma } from "@/lib/db";
 import { readableWhere } from "@/lib/queries/articles";
 
@@ -103,7 +103,14 @@ export const getArticleAncestors = cache(
       if (visited.has(currentId)) break; // cycle protection
       visited.add(currentId);
 
-      const article = await prisma.article.findUnique({
+      const article: {
+        id: string;
+        slug: string;
+        title: string;
+        parentId: string | null;
+        status: ArticleStatus;
+        authorId: string;
+      } | null = await prisma.article.findUnique({
         where: { id: currentId },
         select: { id: true, slug: true, title: true, parentId: true, status: true, authorId: true },
       });
@@ -141,7 +148,7 @@ export async function wouldCreateCycle(
     if (currentId === articleId) return true;
     visited.add(currentId);
 
-    const article = await prisma.article.findUnique({
+    const article: { parentId: string | null } | null = await prisma.article.findUnique({
       where: { id: currentId },
       select: { parentId: true },
     });
