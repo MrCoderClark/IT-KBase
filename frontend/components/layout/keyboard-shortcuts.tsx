@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SHARE_EVENT } from "@/components/kb/share-link-button";
 
 const CHORD_MS = 1000;
 
@@ -18,6 +19,10 @@ const SHORTCUTS = [
   { keys: ["Ctrl", "K"], sequence: false, label: "Search" },
   { keys: ["?"], sequence: false, label: "Show this list" },
   { keys: ["E"], sequence: false, label: "Edit this article" },
+  { keys: ["S"], sequence: false, label: "Share this article" },
+  { keys: ["P"], sequence: false, label: "Print this article" },
+  { keys: ["J"], sequence: false, label: "Next section" },
+  { keys: ["K"], sequence: false, label: "Previous section" },
   { keys: ["G", "A"], sequence: true, label: "All articles" },
   { keys: ["G", "H"], sequence: true, label: "Home" },
   { keys: ["G", "I"], sequence: true, label: "Import from file" },
@@ -96,11 +101,39 @@ export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }
         return;
       }
 
+      const onArticle = Boolean(articleSlug(pathname));
+
       if (key === "e") {
         const slug = articleSlug(pathname);
         if (!slug) return;
         event.preventDefault();
         router.push(`/kb/${slug}/edit`);
+        return;
+      }
+
+      if (key === "s") {
+        if (!onArticle) return;
+        event.preventDefault();
+        // Prefer the Share button listener (updates its label). Fall back to clipboard.
+        if (document.querySelector("[data-share-link]")) {
+          window.dispatchEvent(new Event(SHARE_EVENT));
+        } else {
+          void navigator.clipboard.writeText(window.location.href).catch(() => undefined);
+        }
+        return;
+      }
+
+      if (key === "p") {
+        if (!onArticle) return;
+        event.preventDefault();
+        window.print();
+        return;
+      }
+
+      if (key === "j" || key === "k") {
+        if (!onArticle) return;
+        const moved = goToSection(key === "j" ? 1 : -1);
+        if (moved) event.preventDefault();
       }
     }
 
@@ -117,7 +150,8 @@ export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
           <DialogDescription>
-            These stay off while you are typing in a field.
+            These stay off while you are typing in a field. Share, print, and
+            section keys work on an article page.
           </DialogDescription>
         </DialogHeader>
         <ul className="flex flex-col gap-2">
@@ -157,6 +191,32 @@ function articleSlug(pathname: string): string | null {
     return null;
   }
   return slug;
+}
+
+/** Scroll to the next (+1) or previous (−1) article section heading. */
+function goToSection(delta: 1 | -1): boolean {
+  const headings = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-article-sections] section[aria-labelledby] > div[id]"),
+  );
+  if (headings.length === 0) return false;
+
+  const y = window.scrollY + 100;
+  let index = headings.findIndex((el, i) => {
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const next = headings[i + 1];
+    const nextTop = next
+      ? next.getBoundingClientRect().top + window.scrollY
+      : Number.POSITIVE_INFINITY;
+    return y >= top - 4 && y < nextTop - 4;
+  });
+  if (index < 0) {
+    index = delta > 0 ? -1 : headings.length;
+  }
+
+  const target = headings[index + delta];
+  if (!target) return false;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {

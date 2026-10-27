@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/editor-preview)
+Last updated: 2026-10-27 (feat/article-shortcuts)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -15,7 +15,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
+| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view + article shortcuts done; avatar menu / notifications remain) |
 | M2 | Create / edit article (manual)     | Week 4        | ✅ (nodes, autosave, reader preview) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -86,8 +86,8 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Right rail: Article Details, Related Articles (same category, then other published articles), Quick Actions, Was-this-helpful (sticky, 300px)
 - ✅ Article types (`lib/types/article.ts`) and seed data (`lib/seed/articles.ts`)
 - ✅ Minimal All Articles page (`/kb`) linking to seed article
-- ✅ Keyboard shortcuts: `e` edits the open article, `g` then `a` opens all articles, `g` then `h` goes home, `?` lists them. Ignored while typing or a dialog is open
-- ⬜ Remaining shortcuts (`s` share, `p` print, `g i`, `g n`, `j`/`k`)
+- ✅ Keyboard shortcuts: `e` edits, `g a` / `g h` / `g i`, `?` lists them. Ignored while typing or a dialog is open
+- ✅ Article shortcuts: `s` share (copy link), `p` print, `j`/`k` next/prev section. Checked 2026-10-27. `g n`, `t`, `[`/`]` remain later
 
 ### Browse / list
 - ✅ All Articles table (compact density, sortable columns, dropdown filters, search, 11 seed articles)
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 9 in [Docs/suggested-order.md](Docs/suggested-order.md), remaining shortcuts. A scanned page was not tried. Redis queue remains later.
+Next: item 10 in [Docs/suggested-order.md](Docs/suggested-order.md), avatar menu. A scanned page was not tried. Redis queue remains later.
 
 ---
 
