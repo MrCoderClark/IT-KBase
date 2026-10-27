@@ -1,19 +1,23 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import { importDocx, type ImportState } from "@/lib/actions/import-docx";
+import { useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+
+const MAX_BYTES = 25 * 1024 * 1024;
 
 export function ImportForm() {
-  const [state, action, pending] = useActionState<ImportState, FormData>(importDocx, null);
+  const router = useRouter();
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "uploading" | "reading">("idle");
+  const busyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function reject(message: string) {
     if (inputRef.current) inputRef.current.value = "";
     setFileName(null);
-    setLocalError(message);
+    setError(message);
   }
 
   function accept(file: File) {
@@ -22,18 +26,94 @@ export function ImportForm() {
       reject("Only a .docx or .pdf file can be imported.");
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
+    if (file.size > MAX_BYTES) {
       reject("That file is larger than 25 MB.");
       return;
     }
     setFileName(file.name);
-    setLocalError(null);
+    setError(null);
   }
 
-  const error = localError ?? state?.error ?? null;
+  async function start(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busyRef.current) return;
+    const file = inputRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a Word document or a PDF.");
+      return;
+    }
+    accept(file);
+    if (!file.name.toLowerCase().endsWith(".docx") && !file.name.toLowerCase().endsWith(".pdf")) return;
+    if (file.size > MAX_BYTES) return;
+
+    setPhase("uploading");
+    setError(null);
+    busyRef.current = true;
+    try {
+      const presign = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          sizeBytes: file.size,
+        }),
+      });
+      const signed = (await presign.json()) as {
+        key?: string;
+        url?: string;
+        headers?: Record<string, string>;
+        error?: string;
+      };
+      if (!presign.ok || !signed.url || !signed.key || !signed.headers) {
+        setError(signed.error ?? "Object storage did not return an upload URL.");
+        setPhase("idle");
+        busyRef.current = false;
+        return;
+      }
+
+      const stored = await fetch(signed.url, { method: "PUT", headers: signed.headers, body: file });
+      if (!stored.ok) {
+        setError("The file could not be stored. Check that the bucket allows this site to upload.");
+        setPhase("idle");
+        busyRef.current = false;
+        return;
+      }
+
+      setPhase("reading");
+      const done = await fetch("/api/upload/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: signed.key,
+          originalFileName: file.name,
+          sizeBytes: file.size,
+          sourceKind: file.name.toLowerCase().endsWith(".pdf") ? "pdf" : "docx",
+        }),
+      });
+      const result = (await done.json()) as { slug?: string; error?: string };
+      if (!done.ok || !result.slug) {
+        setError(result.error ?? "The document could not be read.");
+        setPhase("idle");
+        busyRef.current = false;
+        return;
+      }
+      router.push(`/kb/${result.slug}/edit?notice=imported`);
+    } catch {
+      setError("The file could not be stored. Check that the bucket allows this site to upload.");
+      setPhase("idle");
+      busyRef.current = false;
+    }
+  }
+
+  const busy = phase !== "idle";
+  const label = phase === "uploading" ? "Uploading…" : phase === "reading" ? "Reading document…" : "Create draft";
 
   return (
-    <form action={action} className="max-w-[640px] rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,.06),0_8px_24px_rgba(15,23,42,.04)]">
+    <form
+      onSubmit={start}
+      className="max-w-[640px] rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,.06),0_8px_24px_rgba(15,23,42,.04)]"
+    >
       <label
         onDragOver={(event) => {
           event.preventDefault();
@@ -48,7 +128,7 @@ export function ImportForm() {
           if (!file || !input) return;
           const lower = file.name.toLowerCase();
           const allowed = lower.endsWith(".docx") || lower.endsWith(".pdf");
-          if (!allowed || file.size > 25 * 1024 * 1024) {
+          if (!allowed || file.size > MAX_BYTES) {
             accept(file);
             return;
           }
@@ -92,10 +172,10 @@ export function ImportForm() {
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={busy}
         className="mt-4 inline-flex h-9 items-center rounded-lg bg-accent px-3.5 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
-        {pending ? "Reading document…" : "Create draft"}
+        {label}
       </button>
     </form>
   );

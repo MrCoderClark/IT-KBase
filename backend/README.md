@@ -75,6 +75,13 @@ in the current working directory is picked up in dev. See
 | `TB_RELOAD`      | `false`               | `main()` sets this true for `uv run backend` |
 | `TB_LOG_LEVEL`   | `INFO`                | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR`   |
 | `TB_DOCS_ENABLED`| `true`                | Set `false` in prod to hide /docs           |
+| `TB_S3_ENDPOINT` | empty                 | S3-compatible URL, path-style (SeaweedFS or MinIO) |
+| `TB_S3_BUCKET`   | empty                 | Upload bucket. Empty storage refuses an import with a clear error |
+| `TB_S3_REGION`   | `us-east-1`           |                                             |
+| `TB_S3_ACCESS_KEY` | empty               |                                             |
+| `TB_S3_SECRET_KEY` | empty               |                                             |
+
+The browser PUTs the file, so the bucket has to allow this site (`Access-Control-Allow-Origin` for the Next origin, method `PUT`, and the `Content-Type` header). Restart this process after changing `.env`. Restarting Next.js does not reload it.
 
 ## Layout
 

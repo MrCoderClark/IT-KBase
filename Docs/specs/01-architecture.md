@@ -127,6 +127,8 @@ Three roles, one dependency:
 9. Next.js persists the draft, returns the article id.
 10. Python emits a final `done` event with the slug; UI navigates to the draft.
 
+The current slice does steps 1–3, then Next calls `POST /ingest` on the request. Python downloads the object and returns the draft. Next saves it and the editor opens. Steps 4–10 (the queue, Redis events, and SSE) are later. The file bytes do not go through a Next server action.
+
 ## 4. Data flow — read
 
 1. Request to `/kb/{slug}` hits Next.js.

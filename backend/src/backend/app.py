@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 from auth_py import parse_assertion_keys, require_principal
 from backend.api.health import router as health_router
+from backend.api.ingest import build_ingest_router
 from backend.api.parse import build_parse_router
 from backend.api.principal import build_principal_router
 from backend.config import get_settings
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     principal = require_principal(keys, service_tokens)
     app.include_router(build_principal_router(principal))
     app.include_router(build_parse_router(principal))
+    app.include_router(build_ingest_router(principal))
 
     return app
 
