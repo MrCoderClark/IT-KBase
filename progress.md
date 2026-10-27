@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/ingest-job)
+Last updated: 2026-10-27 (feat/ingest-progress)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (Word and text PDF → structured draft via a stored file and a job; the stepper remains) |
+| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + live stepper; Redis queue/trace remain) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
@@ -116,7 +116,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 `/import` accepts one `.docx` or `.pdf` up to 25MB. A scanned PDF page is noted and not read. OCR is later.
 - ✅ S3 presigned-upload flow. The browser PUTs the file. `TB_S3_*` lives on the Python service. Checked 2026-10-27: `Scan_To_Network_Share.docx` landed in the `uploads` bucket.
 - ✅ `POST /ingest` reads that object, returns `jobId` and the draft. Next saves the article and links the job. No queue yet. Checked on `/kb/scan-to-network-share` (draft, overview, eight steps).
-- ⬜ Live progress via SSE (parse → extract → structure → validate)
+- ✅ Live progress via SSE (parse → segment → extract → validate → draft ready). Stream route runs the job and proxies Python. Checked 2026-10-27 on Reset Local Admin Password. Redis stream persistence is later.
 - 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
 - 🟡 Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber). A picture page is noted. A text PDF was checked in the browser. A scan was not. Unstructured fallback is later.
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 4 in [Docs/suggested-order.md](Docs/suggested-order.md), live progress while the job runs. A text PDF import was checked on the previous path. A scanned page was not.
+Next: item 5 in [Docs/suggested-order.md](Docs/suggested-order.md), one traced run with timing per stage. A scanned page was not tried.
 
 ---
 

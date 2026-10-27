@@ -134,6 +134,31 @@ def test_ingest_reads_the_stored_docx(authed: TestClient, monkeypatch: pytest.Mo
     assert body["draft"]["title"] == "Stored Runbook"
 
 
+def test_ingest_stream_emits_stage_events(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = _docx()
+    monkeypatch.setattr("backend.api.ingest.download_object", lambda _key: data)
+    monkeypatch.setattr("backend.api.parse.get_ai_settings", lambda: _EmptyAi())
+    response = authed.post(
+        "/ingest",
+        headers={**_headers(monkeypatch), "Accept": "text/event-stream"},
+        json={
+            "jobId": "job1",
+            "s3Key": "uploads/user1/abc/runbook.docx",
+            "fileName": "runbook.docx",
+            "sourceKind": "docx",
+            "sizeBytes": len(data),
+        },
+    )
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]
+    body = response.text
+    assert "event: progress" in body
+    assert '"stage": "parsing"' in body
+    assert '"stage": "extracting"' in body
+    assert "event: done" in body
+    assert "Stored Runbook" in body
+
+
 def test_presign_returns_a_put_url(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "backend.api.ingest.presign_put",
