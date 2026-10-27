@@ -117,15 +117,15 @@ POST /api/upload/presign
 
 POST /api/upload/complete
   body:     { key, originalFileName, sizeBytes, sourceKind }
-  response: { jobId, slug }                       # this slice saves the draft on the request
-                                                  # a queue returns { jobId } only, then the stepper opens the editor
+  response: { jobId }                             # creates a queued IngestionJob; the stream route runs it
 
 GET  /api/jobs/:jobId
   response: { jobId, status, stage, articleId?, errorMessage?, startedAt, finishedAt }
 
 GET  /api/jobs/:jobId/stream   (text/event-stream)
+  effect:  claims the job, calls Python /ingest with Accept: text/event-stream, saves the draft
   events:
-    event: progress  data: { stage, status, detail, progress }
+    event: progress  data: { jobId, stage, status, detail, progress }
     event: done      data: { jobId, articleId, slug }
     event: failed    data: { jobId, code, message }
 ```
@@ -186,7 +186,9 @@ POST /ingest
   headers: Authorization: Bearer v1...   # user-triggered; 60s assertion
            Authorization: Bearer sv_...   # worker; service credential, later
   body:    { jobId, s3Key, fileName, sourceKind, sizeBytes, hints?: { category?, tags? } }
-  effect:  local, no queue: downloads s3Key (must be that user's uploads/ prefix) and returns 200 { jobId, draft }.
+  effect:  local, no queue: downloads s3Key (must be that user's uploads/ prefix).
+           Accept: application/json → 200 { jobId, draft }.
+           Accept: text/event-stream → SSE progress events, then event: done with { jobId, draft }, or event: failed.
            A queue later returns 202 and does not include the draft.
 
 GET  /healthz

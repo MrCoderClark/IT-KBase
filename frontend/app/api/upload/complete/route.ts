@@ -1,11 +1,7 @@
-import { saveArticle } from "@/lib/actions/save-article";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
-import { draftFromStored } from "@/lib/ingestion/parse-docx";
 import { keyOwnedBy, safeFileName, sourceKindOf, withinUploadLimit } from "@/lib/ingestion/object-key";
-
-export const maxDuration = 180;
 
 export async function POST(request: Request): Promise<Response> {
   const session = await getSession();
@@ -40,48 +36,10 @@ export async function POST(request: Request): Promise<Response> {
       sourceFileKey: key,
       sourceFileName: filename,
       sizeBytes,
-      status: "parsing",
-      startedAt: new Date(),
+      status: "queued",
       createdById: session.userId,
     },
   });
 
-  const parsed = await draftFromStored(session, {
-    jobId: job.id,
-    s3Key: key,
-    fileName: filename,
-    sourceKind,
-    sizeBytes,
-  });
-  if (!parsed.ok) {
-    await prisma.ingestionJob.update({
-      where: { id: job.id },
-      data: { status: "failed", errorMessage: parsed.error.slice(0, 500), finishedAt: new Date() },
-    });
-    return Response.json({ error: parsed.error, jobId: job.id }, { status: 422 });
-  }
-
-  const saved = await saveArticle(parsed.draft, "patch", `Imported from ${filename}`);
-  if (!saved.ok) {
-    await prisma.ingestionJob.update({
-      where: { id: job.id },
-      data: { status: "failed", errorMessage: saved.error.slice(0, 500), finishedAt: new Date() },
-    });
-    return Response.json({ error: saved.error, jobId: job.id }, { status: 422 });
-  }
-
-  const article = await prisma.article.findUnique({
-    where: { slug: saved.slug },
-    select: { id: true },
-  });
-  await prisma.ingestionJob.update({
-    where: { id: job.id },
-    data: {
-      status: "succeeded",
-      articleId: article?.id,
-      finishedAt: new Date(),
-    },
-  });
-
-  return Response.json({ jobId: job.id, slug: saved.slug });
+  return Response.json({ jobId: job.id });
 }

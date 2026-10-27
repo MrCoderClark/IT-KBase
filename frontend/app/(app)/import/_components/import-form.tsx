@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { IMPORT_STAGES, stageIndex, type ImportStageId } from "@/lib/ingestion/stages";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -10,7 +11,9 @@ export function ImportForm() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "uploading" | "reading">("idle");
+  const [phase, setPhase] = useState<"idle" | "uploading" | "running">("idle");
+  const [activeStage, setActiveStage] = useState<ImportStageId | null>(null);
+  const [doneStages, setDoneStages] = useState<Set<string>>(new Set());
   const busyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +37,67 @@ export function ImportForm() {
     setError(null);
   }
 
+  function resetBusy() {
+    setPhase("idle");
+    busyRef.current = false;
+  }
+
+  function watchJob(jobId: string) {
+    setPhase("running");
+    setActiveStage("parsing");
+    setDoneStages(new Set());
+    let settled = false;
+    const source = new EventSource(`/api/jobs/${jobId}/stream`);
+
+    source.addEventListener("progress", (message) => {
+      const data = JSON.parse((message as MessageEvent).data) as {
+        stage?: string;
+        status?: string;
+      };
+      if (!data.stage) return;
+      if (data.status === "succeeded" || data.stage === "done") {
+        setDoneStages((prev) => new Set(prev).add(data.stage!));
+      }
+      if (data.stage !== "done") {
+        setActiveStage(data.stage as ImportStageId);
+      } else {
+        setActiveStage("done");
+      }
+    });
+
+    source.addEventListener("done", (message) => {
+      if (settled) return;
+      settled = true;
+      const data = JSON.parse((message as MessageEvent).data) as { slug?: string };
+      source.close();
+      setDoneStages(new Set(IMPORT_STAGES.map((stage) => stage.id)));
+      setActiveStage("done");
+      if (!data.slug) {
+        setError("The document could not be read.");
+        resetBusy();
+        return;
+      }
+      router.push(`/kb/${data.slug}/edit?notice=imported`);
+    });
+
+    source.addEventListener("failed", (message) => {
+      if (settled) return;
+      settled = true;
+      const data = JSON.parse((message as MessageEvent).data) as { message?: string };
+      source.close();
+      setError(data.message ?? "The document could not be read.");
+      resetBusy();
+    });
+
+    source.onerror = () => {
+      if (settled) return;
+      settled = true;
+      source.close();
+      setError("The import connection closed before the draft was ready. Start the import again.");
+      resetBusy();
+    };
+  }
+
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busyRef.current) return;
@@ -48,6 +112,8 @@ export function ImportForm() {
 
     setPhase("uploading");
     setError(null);
+    setActiveStage(null);
+    setDoneStages(new Set());
     busyRef.current = true;
     try {
       const presign = await fetch("/api/upload/presign", {
@@ -67,20 +133,17 @@ export function ImportForm() {
       };
       if (!presign.ok || !signed.url || !signed.key || !signed.headers) {
         setError(signed.error ?? "Object storage did not return an upload URL.");
-        setPhase("idle");
-        busyRef.current = false;
+        resetBusy();
         return;
       }
 
       const stored = await fetch(signed.url, { method: "PUT", headers: signed.headers, body: file });
       if (!stored.ok) {
         setError("The file could not be stored. Check that the bucket allows this site to upload.");
-        setPhase("idle");
-        busyRef.current = false;
+        resetBusy();
         return;
       }
 
-      setPhase("reading");
       const done = await fetch("/api/upload/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,23 +154,22 @@ export function ImportForm() {
           sourceKind: file.name.toLowerCase().endsWith(".pdf") ? "pdf" : "docx",
         }),
       });
-      const result = (await done.json()) as { slug?: string; error?: string };
-      if (!done.ok || !result.slug) {
+      const result = (await done.json()) as { jobId?: string; error?: string };
+      if (!done.ok || !result.jobId) {
         setError(result.error ?? "The document could not be read.");
-        setPhase("idle");
-        busyRef.current = false;
+        resetBusy();
         return;
       }
-      router.push(`/kb/${result.slug}/edit?notice=imported`);
+      watchJob(result.jobId);
     } catch {
       setError("The file could not be stored. Check that the bucket allows this site to upload.");
-      setPhase("idle");
-      busyRef.current = false;
+      resetBusy();
     }
   }
 
   const busy = phase !== "idle";
-  const label = phase === "uploading" ? "Uploading…" : phase === "reading" ? "Reading document…" : "Create draft";
+  const label = phase === "uploading" ? "Uploading…" : phase === "running" ? "Working…" : "Create draft";
+  const activeIndex = activeStage ? stageIndex(activeStage) : -1;
 
   return (
     <form
@@ -155,14 +217,46 @@ export function ImportForm() {
           name="file"
           accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           required
+          disabled={busy}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) accept(file);
             else setFileName(null);
           }}
-          className="text-[12px] text-fg-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-2.5 file:py-1 file:text-[12px] file:font-semibold file:text-fg"
+          className="text-[12px] text-fg-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-2.5 file:py-1 file:text-[12px] file:font-semibold file:text-fg disabled:opacity-60"
         />
       </label>
+
+      {phase === "running" || doneStages.size > 0 ? (
+        <ol className="mt-4 space-y-2" aria-live="polite" aria-label="Import progress">
+          {IMPORT_STAGES.map((stage, index) => {
+            const complete = doneStages.has(stage.id) || (activeIndex > index && stage.id !== "done");
+            const current = activeStage === stage.id && !doneStages.has(stage.id);
+            return (
+              <li
+                key={stage.id}
+                className={`flex items-center gap-2 text-[13px] ${
+                  complete ? "text-fg" : current ? "font-semibold text-accent" : "text-fg-subtle"
+                }`}
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${
+                    complete
+                      ? "bg-accent text-white"
+                      : current
+                        ? "border border-accent text-accent"
+                        : "border border-border text-fg-subtle"
+                  }`}
+                  aria-hidden
+                >
+                  {complete ? "✓" : index + 1}
+                </span>
+                {stage.label}
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-3 text-[13px] text-danger">

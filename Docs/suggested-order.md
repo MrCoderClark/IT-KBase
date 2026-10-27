@@ -13,7 +13,7 @@ Word import already lands a draft, keeps pictures on numbered steps, and fills a
 1. **PDF into the same draft.** Accept one `.pdf` on Import the way `.docx` works now. `pdfplumber` first. No object storage and no progress stepper in this step. A scanned page with no text stays a noted gap. OCR is post-pilot.
 2. **Structure call with one repair.** Replace the "fill the blank sections" call with the `KBExtractor` step in the spec. Invalid model output gets one repair, then a draft a person can fix. A section already in the file is still kept.
 3. ✅ **Store the file, then start a job.** Checked 2026-10-27. `Scan_To_Network_Share.docx` was stored, `POST /ingest` returned the job, and `/kb/scan-to-network-share` opened as a draft with an overview and eight steps. The stepper is item 4.
-4. **Live progress.** The import screen shows parse, extract, structure, and validate while the job runs. Events come from the Redis stream in the spec.
+4. ✅ **Live progress.** Checked 2026-10-27. `Reset Local Computer Account Passwordv2.docx` moved through the stepper and opened `/kb/reset-local-admin-password` as a draft. Redis streams wait for the queue.
 5. **One traced run.** A single Word or PDF import can be followed from the upload to the draft, with a timing per stage.
 
 ## 2. Finish the editor
