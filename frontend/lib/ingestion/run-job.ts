@@ -1,8 +1,10 @@
+import { Prisma } from "@prisma/client";
 import { saveArticle } from "@/lib/actions/save-article";
 import { mintIngestionAssertion } from "@/lib/auth/assertion";
 import type { AppSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { jobStatusForStage } from "@/lib/ingestion/stages";
+import { emptyTrace, recordStage, type IngestTrace } from "@/lib/ingestion/trace";
 import { parsedToDraft, type ParsedDraft } from "@/lib/ingestion/to-draft";
 
 export type JobProgress = {
@@ -11,11 +13,15 @@ export type JobProgress = {
   status: string;
   detail: string;
   progress: number;
+  durationMs?: number | null;
 };
 
 export type JobStreamEvent =
   | { type: "progress"; data: JobProgress }
-  | { type: "done"; data: { jobId: string; articleId: string; slug: string } }
+  | {
+      type: "done";
+      data: { jobId: string; articleId: string; slug: string; trace: IngestTrace };
+    }
   | { type: "failed"; data: { jobId: string; code: string; message: string } };
 
 /** Run the stored file through Python, emit stage events, and save the draft. */
@@ -37,7 +43,12 @@ export async function* runIngestionJob(
     if (article) {
       yield {
         type: "done",
-        data: { jobId, articleId: job.articleId, slug: article.slug },
+        data: {
+          jobId,
+          articleId: job.articleId,
+          slug: article.slug,
+          trace: (job.trace as IngestTrace | null) ?? emptyTrace(),
+        },
       };
       return;
     }
@@ -61,7 +72,7 @@ export async function* runIngestionJob(
       createdById: session.userId,
       status: { in: ["queued", "failed", "parsing", "extracting", "structuring", "validating"] },
     },
-    data: { status: "parsing", startedAt: new Date(), errorMessage: null, finishedAt: null },
+    data: { status: "parsing", startedAt: new Date(), errorMessage: null, finishedAt: null, trace: Prisma.DbNull },
   });
   if (claimed.count === 0) {
     yield {
@@ -129,6 +140,7 @@ export async function* runIngestionJob(
   let buffer = "";
   let draft: ParsedDraft | null = null;
   let failed: { code: string; message: string } | null = null;
+  let trace = emptyTrace();
 
   while (true) {
     const { done, value } = await reader.read();
@@ -141,14 +153,23 @@ export async function* runIngestionJob(
       if (!parsed) continue;
       if (parsed.event === "progress") {
         const data = parsed.data as JobProgress;
+        if (typeof data.durationMs === "number") {
+          trace = recordStage(trace, data.stage, data.durationMs, data.detail ?? "");
+        }
         await prisma.ingestionJob.update({
           where: { id: jobId },
-          data: { status: jobStatusForStage(data.stage) },
+          data: { status: jobStatusForStage(data.stage), trace },
         });
         yield { type: "progress", data };
       } else if (parsed.event === "done") {
-        const payload = parsed.data as { draft?: ParsedDraft };
+        const payload = parsed.data as { draft?: ParsedDraft; trace?: IngestTrace };
         if (payload.draft) draft = payload.draft;
+        if (payload.trace?.stages?.length) {
+          trace = {
+            stages: payload.trace.stages,
+            totalMs: payload.trace.totalMs ?? payload.trace.stages.reduce((sum, row) => sum + row.durationMs, 0),
+          };
+        }
       } else if (parsed.event === "failed") {
         const payload = parsed.data as { code?: string; message?: string };
         failed = {
@@ -160,24 +181,37 @@ export async function* runIngestionJob(
   }
 
   if (failed) {
-    await failJob(jobId, failed.message);
+    await failJob(jobId, failed.message, trace);
     yield { type: "failed", data: { jobId, code: failed.code, message: failed.message } };
     return;
   }
 
   if (!draft?.title?.trim()) {
     const message = "That document has no text to import.";
-    await failJob(jobId, message);
+    await failJob(jobId, message, trace);
     yield { type: "failed", data: { jobId, code: "empty", message } };
     return;
   }
 
+  const persistStarted = Date.now();
+  yield {
+    type: "progress",
+    data: {
+      jobId,
+      stage: "done",
+      status: "started",
+      detail: "Saving the draft",
+      progress: 0.98,
+    },
+  };
   const saved = await saveArticle(parsedToDraft(draft), "patch", `Imported from ${job.sourceFileName}`);
   if (!saved.ok) {
-    await failJob(jobId, saved.error);
+    await failJob(jobId, saved.error, trace);
     yield { type: "failed", data: { jobId, code: "save", message: saved.error } };
     return;
   }
+  const persistMs = Date.now() - persistStarted;
+  trace = recordStage(trace, "persisting", persistMs, "Saved draft");
 
   const article = await prisma.article.findUnique({
     where: { slug: saved.slug },
@@ -189,8 +223,19 @@ export async function* runIngestionJob(
       status: "succeeded",
       articleId: article?.id,
       finishedAt: new Date(),
+      trace,
     },
   });
+
+  console.info(
+    JSON.stringify({
+      event: "ingest.trace",
+      jobId,
+      slug: saved.slug,
+      totalMs: trace.totalMs,
+      stages: trace.stages,
+    }),
+  );
 
   yield {
     type: "progress",
@@ -200,21 +245,23 @@ export async function* runIngestionJob(
       status: "succeeded",
       detail: "Draft ready",
       progress: 1,
+      durationMs: persistMs,
     },
   };
   yield {
     type: "done",
-    data: { jobId, articleId: article?.id ?? "", slug: saved.slug },
+    data: { jobId, articleId: article?.id ?? "", slug: saved.slug, trace },
   };
 }
 
-async function failJob(jobId: string, message: string): Promise<void> {
+async function failJob(jobId: string, message: string, trace?: IngestTrace): Promise<void> {
   await prisma.ingestionJob.update({
     where: { id: jobId },
     data: {
       status: "failed",
       errorMessage: message.slice(0, 500),
       finishedAt: new Date(),
+      ...(trace ? { trace } : {}),
     },
   });
 }

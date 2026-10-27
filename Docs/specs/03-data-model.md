@@ -286,6 +286,7 @@ model IngestionJob {
   sizeBytes       Int
   status          JobStatus   @default(queued)
   errorMessage    String?
+  trace           Json?       // { stages: [{ stage, durationMs, detail }], totalMs }
   startedAt       DateTime?
   finishedAt      DateTime?
   createdById     String

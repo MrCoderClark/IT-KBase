@@ -4,7 +4,7 @@
 
 ## 0. First slice
 
-The browser PUTs a `.docx` or `.pdf` to object storage, then Next creates an `IngestionJob` and returns the job id. The import page opens `GET /api/jobs/{id}/stream`. That route calls `POST /ingest` with `Accept: text/event-stream`, forwards parse → segment → extract → validate events, saves the draft, and emits `done` with the slug. The file bytes do not go through a Next server action. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. There is still no BullMQ worker and no Redis event stream; those stay the flow in §2 and §4. `POST /v1/parse/docx` and `POST /v1/parse/pdf` remain and run the same reader. Storage uses `TB_S3_ENDPOINT`, `TB_S3_BUCKET`, `TB_S3_REGION`, `TB_S3_ACCESS_KEY`, and `TB_S3_SECRET_KEY` on the Python service. The bucket has to allow the browser to PUT.
+The browser PUTs a `.docx` or `.pdf` to object storage, then Next creates an `IngestionJob` and returns the job id. The import page opens `GET /api/jobs/{id}/stream`. That route calls `POST /ingest` with `Accept: text/event-stream`, forwards parse → segment → extract → validate events with `durationMs`, saves the draft, and emits `done` with the slug and a `trace` of stage timings. The same trace is stored on `IngestionJob.trace` and returned by `GET /api/jobs/{id}`. The file bytes do not go through a Next server action. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. There is still no BullMQ worker and no Redis event stream; those stay the flow in §2 and §4. The full S3 artifact bundle in §5 is later. `POST /v1/parse/docx` and `POST /v1/parse/pdf` remain and run the same reader. Storage uses `TB_S3_ENDPOINT`, `TB_S3_BUCKET`, `TB_S3_REGION`, `TB_S3_ACCESS_KEY`, and `TB_S3_SECRET_KEY` on the Python service. The bucket has to allow the browser to PUT.
 
 ## 1. Goals
 
@@ -135,10 +135,11 @@ Each stage emits exactly one `started` event and one `succeeded`/`failed` event.
 {
   "jobId": "ckx...",
   "ts": "2026-10-12T15:04:05.123Z",
-  "stage": "extracting",            // parse | normalize | segment | extracting | validating | persisting | done
+  "stage": "extracting",            // parsing | segmenting | extracting | validating | done
   "status": "started",              // started | succeeded | failed
-  "detail": "GPT-4.1, 3 segments",
-  "progress": 0.42                  // 0..1, best effort
+  "detail": "Structuring the article",
+  "progress": 0.42,                 // 0..1, best effort
+  "durationMs": 91234               // set on succeeded/failed for that stage
 }
 ```
 

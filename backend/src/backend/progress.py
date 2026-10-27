@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 from typing import Literal
 
@@ -18,6 +19,7 @@ class ProgressEvent(BaseModel):
     status: Status
     detail: str = ""
     progress: float = Field(ge=0, le=1, default=0)
+    durationMs: int | None = None
 
 
 def event(
@@ -27,6 +29,7 @@ def event(
     *,
     detail: str = "",
     progress: float = 0,
+    duration_ms: int | None = None,
 ) -> ProgressEvent:
     return ProgressEvent(
         jobId=job_id,
@@ -34,4 +37,36 @@ def event(
         status=status,
         detail=detail,
         progress=progress,
+        durationMs=duration_ms,
     )
+
+
+class StageClock:
+    """Times each stage from started to succeeded/failed."""
+
+    def __init__(self, job_id: str) -> None:
+        self.job_id = job_id
+        self._started: dict[str, float] = {}
+
+    def start(self, stage: Stage, *, detail: str = "", progress: float = 0) -> ProgressEvent:
+        self._started[stage] = time.perf_counter()
+        return event(self.job_id, stage, "started", detail=detail, progress=progress)
+
+    def finish(
+        self,
+        stage: Stage,
+        status: Status,
+        *,
+        detail: str = "",
+        progress: float = 0,
+    ) -> ProgressEvent:
+        began = self._started.pop(stage, None)
+        duration_ms = int((time.perf_counter() - began) * 1000) if began is not None else 0
+        return event(
+            self.job_id,
+            stage,
+            status,
+            detail=detail,
+            progress=progress,
+            duration_ms=max(duration_ms, 0),
+        )
