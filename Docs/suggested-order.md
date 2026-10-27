@@ -26,7 +26,7 @@ The field editor already saves versions. Publish already checks title, category,
 
 ## 3. Finish the article page and the shell
 
-9. **Remaining shortcuts.** `s` shares, `p` prints, `j` and `k` move between sections. `e`, `g a`, `g h`, `g i`, and `?` already exist.
+9. ✅ **Remaining shortcuts.** Checked 2026-10-27. `s` shares, `p` prints, `j`/`k` move between sections. `e`, `g a`, `g h`, `g i`, and `?` already existed.
 10. **Avatar menu.** Profile and the shortcut list live next to Sign out.
 11. **Notifications.** The bell opens real items. Until this exists it stays a stub.
 

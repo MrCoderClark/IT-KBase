@@ -13,7 +13,7 @@ import { Checklist } from "@/components/kb/checklist";
  */
 export function ArticleContent({ article }: { article: Article }) {
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1" data-article-sections>
       {article.sections.map((section) => (
         <SectionRenderer key={section.id} section={section} />
       ))}
