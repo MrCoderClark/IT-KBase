@@ -33,7 +33,7 @@ Deliverable-oriented. Dates are relative to kickoff (Week 1). Each milestone has
 
 - TipTap editor with custom nodes matching the read-view styling.
 - Structure sidebar (section list, drag reorder, add section).
-- Autosave to Redis + persist to Postgres.
+- Autosave to Postgres (60s / blur); Redis buffer later.
 - Publish flow with validation checklist and version bump.
 - `ArticleVersion` creation on each publish.
 

@@ -8,7 +8,7 @@ import { articleToDraft } from "@/lib/editor/draft";
 import {
   getAllCategories,
   getAllTags,
-  getArticleBySlug,
+  getArticleForEdit,
 } from "@/lib/queries/articles";
 
 export default function EditArticlePage({
@@ -38,7 +38,7 @@ async function EditEditor({
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [article, categories, tags, session] = await Promise.all([
-    getArticleBySlug(slug),
+    getArticleForEdit(slug),
     getAllCategories(),
     getAllTags(),
     getSession(),

@@ -43,24 +43,31 @@ const articleListSelect = {
   author: { select: { id: true, name: true, avatarUrl: true } },
 } as const;
 
+const versionWithSections = {
+  include: {
+    sections: {
+      orderBy: { order: "asc" as const },
+      include: {
+        blocks: {
+          orderBy: { order: "asc" as const },
+        },
+      },
+    },
+  },
+} as const;
+
 const articleDetailInclude = {
   category: { select: { name: true, slug: true, color: true } },
   tags: {
     select: { tag: { select: { name: true, slug: true } } },
   },
   author: { select: { id: true, name: true, avatarUrl: true } },
-  currentVersion: {
-    include: {
-      sections: {
-        orderBy: { order: "asc" as const },
-        include: {
-          blocks: {
-            orderBy: { order: "asc" as const },
-          },
-        },
-      },
-    },
-  },
+  currentVersion: versionWithSections,
+} as const;
+
+const articleEditInclude = {
+  ...articleDetailInclude,
+  draftVersion: versionWithSections,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -326,14 +333,62 @@ export async function getArticleBySlug(
 
   if (!row) return null;
 
-  const sections: Section[] =
-    row.currentVersion?.sections.map(mapSection) ?? [];
+  return mapDetailArticle(row, row.currentVersion);
+}
 
+/**
+ * Editor load: prefer the WIP draftVersion when present so autosaved edits
+ * to a published article come back after refresh.
+ */
+export async function getArticleForEdit(
+  slug: string,
+): Promise<Article | null> {
+  const row = await prisma.article.findUnique({
+    where: { slug },
+    include: articleEditInclude,
+  });
+
+  if (!row) return null;
+
+  const source = row.draftVersion ?? row.currentVersion;
+  return mapDetailArticle(row, source, {
+    title: source?.title ?? row.title,
+    summary: source?.summary ?? row.summary,
+  });
+}
+
+function mapDetailArticle(
+  row: {
+    id: string;
+    slug: string;
+    title: string;
+    summary: string | null;
+    heroImageUrl: string | null;
+    status: string;
+    visibility: "private" | "public";
+    readingTimeMinutes: number;
+    version: string;
+    category: { name: string; slug: string; color: string | null } | null;
+    tags: { tag: { name: string; slug: string } }[];
+    author: { id: string; name: string; avatarUrl: string | null };
+    views: number;
+    helpful: number;
+    notHelpful: number;
+    createdAt: Date;
+    updatedAt: Date;
+    publishedAt: Date | null;
+    parentId: string | null;
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  version: { sections: any[] } | null,
+  override?: { title?: string; summary?: string | null },
+): Article {
+  const sections: Section[] = version?.sections.map(mapSection) ?? [];
   return {
     id: row.id,
     slug: row.slug,
-    title: row.title,
-    summary: row.summary,
+    title: override?.title ?? row.title,
+    summary: override?.summary !== undefined ? override.summary : row.summary,
     heroImageUrl: row.heroImageUrl,
     status: row.status as ArticleStatus,
     visibility: row.visibility,
@@ -378,6 +433,7 @@ export async function listArticleVersions(slug: string): Promise<{
       title: true,
       version: true,
       currentVersionId: true,
+      draftVersionId: true,
       versions: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -395,14 +451,19 @@ export async function listArticleVersions(slug: string): Promise<{
     slug: article.slug,
     title: article.title,
     currentVersion: article.version,
-    versions: article.versions.map((row) => ({
-      id: row.id,
-      version: row.version,
-      notes: row.notes,
-      authorName: row.author.name,
-      createdAt: row.createdAt.toISOString(),
-      current: row.id === article.currentVersionId,
-    })),
+    versions: article.versions
+      .filter(
+        (row) =>
+          row.version !== "wip" && row.id !== article.draftVersionId,
+      )
+      .map((row) => ({
+        id: row.id,
+        version: row.version,
+        notes: row.notes,
+        authorName: row.author.name,
+        createdAt: row.createdAt.toISOString(),
+        current: row.id === article.currentVersionId,
+      })),
   };
 }
 

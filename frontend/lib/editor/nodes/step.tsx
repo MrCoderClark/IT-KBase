@@ -43,7 +43,8 @@ function KbStepView({ node, updateAttributes, deleteNode, getPos, editor }: Node
   const images = Array.isArray(node.attrs.images)
     ? (node.attrs.images as string[])
     : [];
-  const number = stepNumber(editor.state.doc, typeof getPos === "function" ? getPos() : null);
+  const pos = typeof getPos === "function" ? getPos() : null;
+  const number = stepNumber(editor.state.doc, pos ?? null);
 
   return (
     <NodeViewWrapper className="flex gap-4 py-1">

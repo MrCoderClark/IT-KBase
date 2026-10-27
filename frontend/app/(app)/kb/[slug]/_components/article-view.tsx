@@ -47,7 +47,7 @@ export async function ArticleView({
   const query = searchParams ? await searchParams : {};
   const [article, session] = await Promise.all([getArticleBySlug(slug), getSession()]);
 
-  if (!article || !session) notFound();
+  if (!article || !session || !article.author.id) notFound();
   if (
     !canReadArticle(session.role, session.userId, {
       authorId: article.author.id,

@@ -25,8 +25,15 @@ import {
 
 const STATUSES: ArticleStatus[] = ["draft", "in_review", "published", "archived"];
 
+/** Working copy for published edits. Not shown in version history. */
+const WIP_VERSION = "wip";
+
 export type SaveResult =
   | { ok: true; slug: string }
+  | { ok: false; error: string };
+
+export type AutosaveResult =
+  | { ok: true; slug: string; created: boolean; skipped?: boolean }
   | { ok: false; error: string };
 
 type BlockWrite = {
@@ -104,6 +111,7 @@ export async function saveArticle(
               },
             },
           },
+          draftVersion: { select: { id: true, version: true } },
         },
       })
     : null;
@@ -224,15 +232,263 @@ export async function saveArticle(
       },
     });
 
+    const draftId = existing?.draftVersionId ?? null;
     await tx.article.update({
       where: { id: article.id },
-      data: { currentVersionId: created.id },
+      data: {
+        currentVersionId: created.id,
+        draftVersionId: null,
+      },
     });
+    if (draftId && draftId !== created.id) {
+      await tx.articleVersion.delete({ where: { id: draftId } });
+    }
   });
 
   revalidatePath("/kb");
   revalidatePath(`/kb/${slug}`);
+  revalidatePath(`/kb/${slug}/edit`);
   return { ok: true, slug };
+}
+
+/**
+ * Persist the editor draft without creating a new ArticleVersion row on every
+ * keystroke. Drafts rewrite the current version in place. Published articles
+ * write a single `wip` draftVersion so the live page stays unchanged until Save.
+ */
+export async function autosaveArticle(input: EditorDraft): Promise<AutosaveResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Sign in to continue." };
+
+  const title = input.title.trim();
+  if (!title) {
+    return { ok: true, slug: input.slug ?? "", created: false, skipped: true };
+  }
+
+  const category = input.categorySlug
+    ? await prisma.category.findUnique({
+        where: { slug: input.categorySlug },
+        select: { id: true },
+      })
+    : null;
+  if (input.categorySlug && !category) {
+    return { ok: false, error: "Unknown category." };
+  }
+
+  const tagSlugs = [...new Set(input.tagSlugs)];
+  const tags =
+    tagSlugs.length > 0
+      ? await prisma.tag.findMany({
+          where: { slug: { in: tagSlugs } },
+          select: { id: true, slug: true },
+        })
+      : [];
+  if (tags.length !== tagSlugs.length) {
+    return { ok: false, error: "One or more tags no longer exist." };
+  }
+
+  const existing = input.slug
+    ? await prisma.article.findUnique({
+        where: { slug: input.slug },
+        include: {
+          currentVersion: {
+            include: {
+              sections: {
+                orderBy: { order: "asc" },
+                include: { blocks: { orderBy: { order: "asc" } } },
+              },
+            },
+          },
+          draftVersion: {
+            include: {
+              sections: {
+                orderBy: { order: "asc" },
+                include: { blocks: { orderBy: { order: "asc" } } },
+              },
+            },
+          },
+        },
+      })
+    : null;
+
+  if (input.slug && !existing) {
+    return { ok: false, error: "Article not found." };
+  }
+
+  const nextStatus: ArticleStatus = !existing
+    ? "draft"
+    : existing.status === "published" || existing.status === "archived"
+      ? existing.status
+      : input.status === "draft" || input.status === "in_review"
+        ? input.status
+        : existing.status;
+
+  const denied = articleSaveError({
+    role: session.role,
+    userId: session.userId,
+    existing: existing
+      ? { authorId: existing.authorId, status: existing.status }
+      : null,
+    nextStatus,
+    publishing: false,
+  });
+  if (denied) return { ok: false, error: denied };
+
+  const visibility = can(session.role, "article.makePublic")
+    ? input.visibility === "public"
+      ? "public"
+      : "private"
+    : (existing?.visibility ?? "private");
+
+  const summary = input.summary.trim() || null;
+  const minutes = readingMinutes(input.sections);
+
+  if (!existing) {
+    const slug = await uniqueSlug(slugifyTitle(title));
+    const version = nextArticleVersion(null, "patch");
+    let newOrder = 0;
+    if (input.parentId !== undefined) {
+      const maxOrder = await prisma.article.aggregate({
+        where: { parentId: input.parentId },
+        _max: { order: true },
+      });
+      newOrder = (maxOrder._max.order ?? -1) + 1;
+    }
+    const sections = draftSections(input.sections).map((section, order) => ({
+      ...section,
+      order,
+    }));
+
+    await prisma.$transaction(async (tx) => {
+      const article = await tx.article.create({
+        data: {
+          slug,
+          title,
+          summary,
+          status: "draft",
+          visibility,
+          categoryId: category?.id ?? null,
+          authorId: session.userId,
+          version,
+          readingTimeMinutes: minutes,
+          parentId: input.parentId ?? null,
+          order: newOrder,
+        },
+      });
+      if (tags.length > 0) {
+        await tx.articleTag.createMany({
+          data: tags.map((tag) => ({ articleId: article.id, tagId: tag.id })),
+        });
+      }
+      const created = await createVersionRow(tx, {
+        articleId: article.id,
+        authorId: session.userId,
+        version,
+        title,
+        summary,
+        notes: "Autosaved from the editor",
+        sections,
+      });
+      await tx.article.update({
+        where: { id: article.id },
+        data: { currentVersionId: created.id },
+      });
+    });
+
+    revalidatePath("/kb");
+    revalidatePath(`/kb/${slug}`);
+    revalidatePath(`/kb/${slug}/edit`);
+    return { ok: true, slug, created: true };
+  }
+
+  const liveSections = [
+    ...draftSections(input.sections),
+    ...preservedFrom(existing.currentVersion?.sections ?? []),
+  ].map((section, order) => ({ ...section, order }));
+
+  const workingPublished =
+    existing.status === "published" || existing.status === "archived";
+
+  await prisma.$transaction(async (tx) => {
+    if (!workingPublished) {
+      await tx.article.update({
+        where: { id: existing.id },
+        data: {
+          title,
+          summary,
+          status: nextStatus,
+          visibility,
+          categoryId: category?.id ?? null,
+          readingTimeMinutes: minutes,
+        },
+      });
+      await tx.articleTag.deleteMany({ where: { articleId: existing.id } });
+      if (tags.length > 0) {
+        await tx.articleTag.createMany({
+          data: tags.map((tag) => ({ articleId: existing.id, tagId: tag.id })),
+        });
+      }
+      const versionId = existing.currentVersionId;
+      if (!versionId) {
+        const version = existing.version || nextArticleVersion(null, "patch");
+        const created = await createVersionRow(tx, {
+          articleId: existing.id,
+          authorId: session.userId,
+          version,
+          title,
+          summary,
+          notes: "Autosaved from the editor",
+          sections: liveSections,
+        });
+        await tx.article.update({
+          where: { id: existing.id },
+          data: { currentVersionId: created.id, version },
+        });
+        return;
+      }
+      await rewriteVersion(tx, versionId, {
+        title,
+        summary,
+        notes: "Autosaved from the editor",
+        sections: liveSections,
+      });
+      return;
+    }
+
+    // Published/archived: keep the live page on currentVersion; stash WIP.
+    const wipSections = [
+      ...draftSections(input.sections),
+      ...preservedFrom(
+        existing.draftVersion?.sections ?? existing.currentVersion?.sections ?? [],
+      ),
+    ].map((section, order) => ({ ...section, order }));
+
+    if (existing.draftVersionId) {
+      await rewriteVersion(tx, existing.draftVersionId, {
+        title,
+        summary,
+        notes: "Autosaved from the editor",
+        sections: wipSections,
+      });
+    } else {
+      const created = await createVersionRow(tx, {
+        articleId: existing.id,
+        authorId: session.userId,
+        version: WIP_VERSION,
+        title,
+        summary,
+        notes: "Autosaved from the editor",
+        sections: wipSections,
+      });
+      await tx.article.update({
+        where: { id: existing.id },
+        data: { draftVersionId: created.id },
+      });
+    }
+  });
+
+  revalidatePath(`/kb/${existing.slug}/edit`);
+  return { ok: true, slug: existing.slug, created: false };
 }
 
 function draftSections(sections: EditorSection[]): SectionWrite[] {
@@ -321,25 +577,28 @@ function calloutBlock(callout: EditorCallout): Omit<BlockWrite, "order"> {
   };
 }
 
+type StoredSection = {
+  kind: SectionKind;
+  title: string;
+  blocks: {
+    kind: BlockKind;
+    content: Prisma.JsonValue;
+    stepNumber: number | null;
+    calloutVariant: CalloutVariant | null;
+    language: string | null;
+    code: string | null;
+    imageUrl?: string | null;
+    imageAlt?: string | null;
+  }[];
+};
+
 function preservedSections(
-  existing: {
-    currentVersion: {
-      sections: {
-        kind: SectionKind;
-        title: string;
-        blocks: {
-          kind: BlockKind;
-          content: Prisma.JsonValue;
-          stepNumber: number | null;
-          calloutVariant: CalloutVariant | null;
-          language: string | null;
-          code: string | null;
-        }[];
-      }[];
-    } | null;
-  } | null,
+  existing: { currentVersion: { sections: StoredSection[] } | null } | null,
 ): SectionWrite[] {
-  const sections = existing?.currentVersion?.sections ?? [];
+  return preservedFrom(existing?.currentVersion?.sections ?? []);
+}
+
+function preservedFrom(sections: StoredSection[]): SectionWrite[] {
   return sections
     .filter((section) => section.kind === "related" || section.kind === "custom")
     .map((section) => ({
@@ -354,8 +613,97 @@ function preservedSections(
         calloutVariant: block.calloutVariant ?? undefined,
         language: block.language ?? undefined,
         code: block.code ?? undefined,
+        imageUrl: block.imageUrl ?? undefined,
+        imageAlt: block.imageAlt ?? undefined,
       })),
     }));
+}
+
+type Tx = Prisma.TransactionClient;
+
+async function createVersionRow(
+  tx: Tx,
+  input: {
+    articleId: string;
+    authorId: string;
+    version: string;
+    title: string;
+    summary: string | null;
+    notes: string;
+    sections: SectionWrite[];
+  },
+) {
+  return tx.articleVersion.create({
+    data: {
+      articleId: input.articleId,
+      authorId: input.authorId,
+      version: input.version,
+      title: input.title,
+      summary: input.summary,
+      notes: input.notes,
+      sections: {
+        create: input.sections.map((section) => ({
+          kind: section.kind,
+          title: section.title,
+          order: section.order,
+          blocks: {
+            create: section.blocks.map((block) => ({
+              kind: block.kind,
+              order: block.order,
+              ...(block.content !== undefined ? { content: block.content } : {}),
+              stepNumber: block.stepNumber ?? null,
+              calloutVariant: block.calloutVariant ?? null,
+              language: block.language ?? null,
+              code: block.code ?? null,
+              imageUrl: block.imageUrl ?? null,
+              imageAlt: block.imageAlt ?? null,
+            })),
+          },
+        })),
+      },
+    },
+  });
+}
+
+async function rewriteVersion(
+  tx: Tx,
+  versionId: string,
+  input: {
+    title: string;
+    summary: string | null;
+    notes: string;
+    sections: SectionWrite[];
+  },
+) {
+  await tx.section.deleteMany({ where: { versionId } });
+  await tx.articleVersion.update({
+    where: { id: versionId },
+    data: {
+      title: input.title,
+      summary: input.summary,
+      notes: input.notes,
+      sections: {
+        create: input.sections.map((section) => ({
+          kind: section.kind,
+          title: section.title,
+          order: section.order,
+          blocks: {
+            create: section.blocks.map((block) => ({
+              kind: block.kind,
+              order: block.order,
+              ...(block.content !== undefined ? { content: block.content } : {}),
+              stepNumber: block.stepNumber ?? null,
+              calloutVariant: block.calloutVariant ?? null,
+              language: block.language ?? null,
+              code: block.code ?? null,
+              imageUrl: block.imageUrl ?? null,
+              imageAlt: block.imageAlt ?? null,
+            })),
+          },
+        })),
+      },
+    },
+  });
 }
 
 function jsonInput(value: Prisma.JsonValue): Prisma.InputJsonValue | undefined {
