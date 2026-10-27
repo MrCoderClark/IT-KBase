@@ -120,13 +120,14 @@ POST /api/upload/complete
   response: { jobId }                             # creates a queued IngestionJob; the stream route runs it
 
 GET  /api/jobs/:jobId
-  response: { jobId, status, stage, articleId?, errorMessage?, startedAt, finishedAt }
+  response: { jobId, status, sourceFileName, articleId?, slug?, errorMessage?, startedAt, finishedAt,
+              trace?: { stages: [{ stage, durationMs, detail }], totalMs } }
 
 GET  /api/jobs/:jobId/stream   (text/event-stream)
   effect:  claims the job, calls Python /ingest with Accept: text/event-stream, saves the draft
   events:
-    event: progress  data: { jobId, stage, status, detail, progress }
-    event: done      data: { jobId, articleId, slug }
+    event: progress  data: { jobId, stage, status, detail, progress, durationMs? }
+    event: done      data: { jobId, articleId, slug, trace }
     event: failed    data: { jobId, code, message }
 ```
 

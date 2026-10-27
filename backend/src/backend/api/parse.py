@@ -12,7 +12,7 @@ from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
 from backend.parse.overview import structure_draft
 from backend.parse.pdf import PdfError, parse_pdf
-from backend.progress import ProgressEvent, event as progress_event
+from backend.progress import ProgressEvent, StageClock
 from backend.telemetry import get_logger
 
 log = get_logger(__name__)
@@ -112,45 +112,64 @@ def _iter_finish(
     *,
     job_id: str,
 ) -> Iterator[ProgressEvent | ParsedDraft]:
-    yield progress_event(job_id, "parsing", "started", detail="Reading the document", progress=0.08)
+    clock = StageClock(job_id)
+    timings: list[dict[str, object]] = []
+
+    def record(item: ProgressEvent) -> ProgressEvent:
+        if item.durationMs is not None:
+            timings.append(
+                {"stage": item.stage, "durationMs": item.durationMs, "detail": item.detail}
+            )
+        return item
+
+    yield clock.start("parsing", detail="Reading the document", progress=0.08)
     try:
         draft = parse(data, name)
     except (DocxError, PdfError) as exc:
-        yield progress_event(job_id, "parsing", "failed", detail=str(exc), progress=0.08)
+        yield record(clock.finish("parsing", "failed", detail=str(exc), progress=0.08))
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    yield progress_event(job_id, "parsing", "succeeded", detail=name, progress=0.28)
+    yield record(clock.finish("parsing", "succeeded", detail=name, progress=0.28))
 
-    yield progress_event(job_id, "segmenting", "started", detail="Mapping headings", progress=0.32)
-    yield progress_event(job_id, "segmenting", "succeeded", detail="Sections ready", progress=0.4)
+    yield clock.start("segmenting", detail="Mapping headings", progress=0.32)
+    yield record(clock.finish("segmenting", "succeeded", detail="Sections ready", progress=0.4))
 
     ai = get_ai_settings()
-    yield progress_event(
-        job_id, "extracting", "started", detail="Structuring the article", progress=0.45
-    )
+    yield clock.start("extracting", detail="Structuring the article", progress=0.45)
     draft = structure_draft(
         draft,
         api_key=ai.api_key,
         model=ai.model,
         base_url=ai.base_url,
     )
-    yield progress_event(
-        job_id, "extracting", "succeeded", detail=draft.title or name, progress=0.82
+    yield record(
+        clock.finish("extracting", "succeeded", detail=draft.title or name, progress=0.82)
     )
 
-    yield progress_event(job_id, "validating", "started", detail="Checking the draft", progress=0.88)
+    yield clock.start("validating", detail="Checking the draft", progress=0.88)
     if draft.readingNotes:
         overview = f"{draft.overview}\n\n{draft.readingNotes}".strip()
         draft = draft.model_copy(update={"overview": overview, "readingNotes": ""})
     if not draft.title.strip():
-        yield progress_event(
-            job_id,
-            "validating",
-            "failed",
-            detail="That document has no text to import.",
-            progress=0.88,
+        yield record(
+            clock.finish(
+                "validating",
+                "failed",
+                detail="That document has no text to import.",
+                progress=0.88,
+            )
         )
         raise HTTPException(status_code=422, detail="That document has no text to import.")
-    yield progress_event(job_id, "validating", "succeeded", detail="Draft ready", progress=0.96)
+    yield record(clock.finish("validating", "succeeded", detail="Draft ready", progress=0.96))
 
+    total_ms = sum(int(item["durationMs"]) for item in timings)
+    log.info(
+        "ingest.trace",
+        job_id=job_id,
+        filename=name,
+        bytes=len(data),
+        title=draft.title,
+        total_ms=total_ms,
+        stages=timings,
+    )
     log.info(event, filename=name, bytes=len(data), title=draft.title)
     yield draft

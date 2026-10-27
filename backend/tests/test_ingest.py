@@ -155,8 +155,10 @@ def test_ingest_stream_emits_stage_events(authed: TestClient, monkeypatch: pytes
     assert "event: progress" in body
     assert '"stage": "parsing"' in body
     assert '"stage": "extracting"' in body
+    assert '"durationMs"' in body
     assert "event: done" in body
     assert "Stored Runbook" in body
+    assert '"trace"' in body
 
 
 def test_presign_returns_a_put_url(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:

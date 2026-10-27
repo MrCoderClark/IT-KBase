@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/ingest-progress)
+Last updated: 2026-10-27 (feat/ingest-trace)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + live stepper; Redis queue/trace remain) |
+| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
@@ -124,7 +124,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 The model structures the extracted text into the article. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
 - ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.
 - ⬜ Python: emit progress events to Redis stream
-- ⬜ Observability: trace a full ingestion end-to-end
+- ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. Full S3 artifact bundle and OpenTelemetry are later.
 
 ---
 
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 5 in [Docs/suggested-order.md](Docs/suggested-order.md), one traced run with timing per stage. A scanned page was not tried.
+Next: finish the editor in [Docs/suggested-order.md](Docs/suggested-order.md) (custom section nodes). Ingestion items 1–5 in that file are done for this path. A scanned page was not tried. Redis queue remains later.
 
 ---
 

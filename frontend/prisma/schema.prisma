@@ -306,6 +306,8 @@ model IngestionJob {
   sizeBytes      Int
   status         JobStatus  @default(queued)
   errorMessage   String?
+  /// Per-stage timings for one import: { stages: [{ stage, durationMs, detail }], totalMs }
+  trace          Json?
   startedAt      DateTime?
   finishedAt     DateTime?
   createdById    String

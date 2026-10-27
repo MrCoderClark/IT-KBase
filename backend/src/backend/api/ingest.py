@@ -107,13 +107,33 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
         yield _sse("failed", {"jobId": body.jobId, "code": "too_large", "message": message})
         return
 
+    stages: list[dict] = []
     try:
         for item in iter_draft_from_bytes(data, body.fileName, job_id=body.jobId):
             if isinstance(item, ProgressEvent):
-                yield _sse("progress", item.model_dump())
+                payload = item.model_dump()
+                if item.durationMs is not None:
+                    stages.append(
+                        {
+                            "stage": item.stage,
+                            "durationMs": item.durationMs,
+                            "detail": item.detail,
+                        }
+                    )
+                yield _sse("progress", payload)
                 continue
             log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=item.title)
-            yield _sse("done", {"jobId": body.jobId, "draft": item.model_dump()})
+            yield _sse(
+                "done",
+                {
+                    "jobId": body.jobId,
+                    "draft": item.model_dump(),
+                    "trace": {
+                        "stages": stages,
+                        "totalMs": sum(int(row["durationMs"]) for row in stages),
+                    },
+                },
+            )
             return
     except HTTPException as exc:
         message = str(exc.detail) if isinstance(exc.detail, str) else "The document could not be read."

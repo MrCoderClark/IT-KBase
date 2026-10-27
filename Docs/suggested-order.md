@@ -14,7 +14,7 @@ Word import already lands a draft, keeps pictures on numbered steps, and fills a
 2. **Structure call with one repair.** Replace the "fill the blank sections" call with the `KBExtractor` step in the spec. Invalid model output gets one repair, then a draft a person can fix. A section already in the file is still kept.
 3. ✅ **Store the file, then start a job.** Checked 2026-10-27. `Scan_To_Network_Share.docx` was stored, `POST /ingest` returned the job, and `/kb/scan-to-network-share` opened as a draft with an overview and eight steps. The stepper is item 4.
 4. ✅ **Live progress.** Checked 2026-10-27. `Reset Local Computer Account Passwordv2.docx` moved through the stepper and opened `/kb/reset-local-admin-password` as a draft. Redis streams wait for the queue.
-5. **One traced run.** A single Word or PDF import can be followed from the upload to the draft, with a timing per stage.
+5. ✅ **One traced run.** Checked 2026-10-27. Stage durations show on the import stepper, land on `IngestionJob.trace`, and return from `GET /api/jobs/{id}`. Full S3 artifact and OpenTelemetry wait.
 
 ## 2. Finish the editor
 

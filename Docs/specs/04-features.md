@@ -145,7 +145,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 4. The stream route claims the job, calls `POST /ingest` with `Accept: text/event-stream`, and forwards stage events. Python downloads `uploads/{userId}/...` and reads it. The key has to belong to that user.
 5. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview. A numbered procedure becomes steps. Word pictures stay on the step. A PDF page that is a picture with almost no text is noted in Overview and not read.
 6. When `AI_API_KEY` is set, the model structures the extracted text into the article through `AI_BASE_URL` and `AI_MODEL`. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
-7. Next saves the draft, marks the job succeeded, emits `done` with the slug, and the editor opens. Redis streams and BullMQ are still later. On failure the page shows the reason; retry is starting the import again.
+7. Next saves the draft, marks the job succeeded, emits `done` with the slug and per-stage timings, and the editor opens. The stepper shows each stage duration. `GET /api/jobs/{id}` returns the same trace. Redis streams and BullMQ are still later. On failure the page shows the reason; retry is starting the import again.
 
 **Later** (queue + Redis stream):
 1. Optional category and tags on the dropzone.

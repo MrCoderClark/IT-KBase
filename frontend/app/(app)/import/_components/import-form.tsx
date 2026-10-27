@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { IMPORT_STAGES, stageIndex, type ImportStageId } from "@/lib/ingestion/stages";
+import { formatDuration } from "@/lib/ingestion/trace";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -14,6 +15,8 @@ export function ImportForm() {
   const [phase, setPhase] = useState<"idle" | "uploading" | "running">("idle");
   const [activeStage, setActiveStage] = useState<ImportStageId | null>(null);
   const [doneStages, setDoneStages] = useState<Set<string>>(new Set());
+  const [durations, setDurations] = useState<Record<string, number>>({});
+  const [totalMs, setTotalMs] = useState<number | null>(null);
   const busyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +49,8 @@ export function ImportForm() {
     setPhase("running");
     setActiveStage("parsing");
     setDoneStages(new Set());
+    setDurations({});
+    setTotalMs(null);
     let settled = false;
     const source = new EventSource(`/api/jobs/${jobId}/stream`);
 
@@ -53,12 +58,17 @@ export function ImportForm() {
       const data = JSON.parse((message as MessageEvent).data) as {
         stage?: string;
         status?: string;
+        durationMs?: number | null;
       };
       if (!data.stage) return;
-      if (data.status === "succeeded" || data.stage === "done") {
-        setDoneStages((prev) => new Set(prev).add(data.stage!));
+      if (typeof data.durationMs === "number") {
+        const key = data.stage === "persisting" ? "done" : data.stage;
+        setDurations((prev) => ({ ...prev, [key]: data.durationMs as number }));
       }
-      if (data.stage !== "done") {
+      if (data.status === "succeeded") {
+        setDoneStages((prev) => new Set(prev).add(data.stage === "persisting" ? "done" : data.stage!));
+      }
+      if (data.stage !== "done" && data.stage !== "persisting") {
         setActiveStage(data.stage as ImportStageId);
       } else {
         setActiveStage("done");
@@ -68,16 +78,29 @@ export function ImportForm() {
     source.addEventListener("done", (message) => {
       if (settled) return;
       settled = true;
-      const data = JSON.parse((message as MessageEvent).data) as { slug?: string };
+      const data = JSON.parse((message as MessageEvent).data) as {
+        slug?: string;
+        trace?: { stages?: { stage: string; durationMs: number }[]; totalMs?: number };
+      };
       source.close();
       setDoneStages(new Set(IMPORT_STAGES.map((stage) => stage.id)));
       setActiveStage("done");
+      if (data.trace?.stages?.length) {
+        const next: Record<string, number> = {};
+        for (const row of data.trace.stages) {
+          next[row.stage === "persisting" ? "done" : row.stage] = row.durationMs;
+        }
+        setDurations(next);
+        setTotalMs(data.trace.totalMs ?? data.trace.stages.reduce((sum, row) => sum + row.durationMs, 0));
+      }
       if (!data.slug) {
         setError("The document could not be read.");
         resetBusy();
         return;
       }
-      router.push(`/kb/${data.slug}/edit?notice=imported`);
+      window.setTimeout(() => {
+        router.push(`/kb/${data.slug}/edit?notice=imported`);
+      }, 1200);
     });
 
     source.addEventListener("failed", (message) => {
@@ -114,6 +137,8 @@ export function ImportForm() {
     setError(null);
     setActiveStage(null);
     setDoneStages(new Set());
+    setDurations({});
+    setTotalMs(null);
     busyRef.current = true;
     try {
       const presign = await fetch("/api/upload/presign", {
@@ -232,6 +257,7 @@ export function ImportForm() {
           {IMPORT_STAGES.map((stage, index) => {
             const complete = doneStages.has(stage.id) || (activeIndex > index && stage.id !== "done");
             const current = activeStage === stage.id && !doneStages.has(stage.id);
+            const duration = durations[stage.id];
             return (
               <li
                 key={stage.id}
@@ -251,11 +277,20 @@ export function ImportForm() {
                 >
                   {complete ? "✓" : index + 1}
                 </span>
-                {stage.label}
+                <span className="flex-1">{stage.label}</span>
+                {typeof duration === "number" ? (
+                  <span className="font-mono text-[11px] text-fg-subtle">{formatDuration(duration)}</span>
+                ) : null}
               </li>
             );
           })}
         </ol>
+      ) : null}
+
+      {totalMs != null ? (
+        <p className="mt-2 text-[12px] text-fg-muted">
+          Total {formatDuration(totalMs)}. Opening the editor…
+        </p>
       ) : null}
 
       {error ? (
