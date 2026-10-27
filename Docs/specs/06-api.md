@@ -191,9 +191,11 @@ The first slice does not use that job. It parses one Word file on the request:
 
 ```
 POST /v1/parse/docx
+POST /v1/parse/pdf
   headers: Authorization: Bearer v1...   # author, reviewer, or admin
-  body:    multipart file field `file` (.docx, max 25MB)
+  body:    multipart file field `file` (.docx or .pdf, max 25MB)
   effect:  returns a draft (title, summary, five sections). Does not write the database.
+           A scanned PDF page is described in the overview and is not read.
 ```
 
 ## 5. Rate limiting

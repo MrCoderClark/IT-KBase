@@ -11,9 +11,10 @@ import {
   Pencil,
   Search,
 } from "lucide-react";
-import { canEditArticle, listableStatuses, type Role } from "@/lib/auth/policy";
+import { can, canEditArticle, listableStatuses, type Role } from "@/lib/auth/policy";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
+import { DeleteArticleButton } from "@/components/kb/delete-article-button";
 import { SearchSnippet } from "@/components/kb/search-snippet";
 import type { SearchHit } from "@/lib/queries/search";
 import { StatusChip } from "@/components/kb/status-chip";
@@ -296,13 +297,13 @@ export default function ArticleTable({
       <div className="rounded-xl border border-border bg-surface shadow-[0_1px_2px_rgba(15,23,42,.06),0_4px_12px_rgba(15,23,42,.04)]">
         <table className="w-full table-fixed text-left">
           <colgroup>
-            <col className="w-[36%]" />
+            <col className="w-[30%]" />
             <col className="w-[12%]" />
-            <col className="w-[14%]" />
+            <col className="w-[13%]" />
             <col className="w-[10%]" />
-            <col className="w-[11%]" />
-            <col className="w-[8%]" />
-            <col className="w-[9%]" />
+            <col className="w-[10%]" />
+            <col className="w-[7%]" />
+            <col className="w-[18%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border">
@@ -435,6 +436,7 @@ export default function ArticleTable({
                 </td>
 
                 <td className={`px-3 text-right ${isCompact ? "py-1.5" : "py-2.5"}`}>
+                  <div className="flex flex-nowrap items-center justify-end gap-2">
                   {actor &&
                   article.author.id &&
                   canEditArticle(actor.role, actor.userId, {
@@ -449,6 +451,10 @@ export default function ArticleTable({
                       Edit
                     </Link>
                   ) : null}
+                  {actor && can(actor.role, "article.delete") ? (
+                    <DeleteArticleButton articleId={article.id} title={article.title} compact />
+                  ) : null}
+                  </div>
                 </td>
               </tr>
             ))}

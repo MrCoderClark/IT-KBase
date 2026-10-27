@@ -95,6 +95,7 @@ export async function ArticleView({
           article={article}
           canEdit={canEdit}
           canCreateChild={Boolean(session && can(session.role, "article.create"))}
+          canDelete={Boolean(session && can(session.role, "article.delete"))}
         />
       </div>
 

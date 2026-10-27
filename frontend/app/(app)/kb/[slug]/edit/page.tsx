@@ -74,7 +74,7 @@ async function EditEditor({
       role={session.role}
       notice={
         query.notice === "imported"
-          ? "Drafted from a Word document. Review the sections, then save or publish."
+          ? "Drafted from a file. Review the sections, then save or publish."
           : null
       }
     />

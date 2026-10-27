@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-26 (docs/suggested-order)
+Last updated: 2026-10-27 (feat/ingest-pdf)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
 | M2 | Create / edit article (manual)     | Week 4        | 🟡 (overview and step bodies are TipTap with bold, italic, and lists; custom nodes and autosave remain) |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (Word file → draft; PDF, stepper, and LLM remain) |
+| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (Word and text PDF → structured draft; object storage and the stepper remain) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
@@ -78,6 +78,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Title block (category chip, h1 title, summary, metadata row with dot separators)
 - ✅ Hero image slot (right-aligned, 16/10 aspect ratio, gradient placeholder)
 - ✅ Edit and Share (copies the article link). Overflow stays a stub
+- ✅ An admin can delete an article from the list or the article page. Delete asks for confirmation, then removes the article and its versions. Child pages stay.
 - ✅ In-article table of contents (sticky left rail, 210px, IntersectionObserver active tracking)
 - ✅ Section renderers: Overview, Prerequisites (checklist), Steps (numbered badges), Verification, Troubleshooting, Related
 - ✅ Callout component (Info, Important, Warning, Success) — 4 variants, left-border tinted panels
@@ -112,16 +113,16 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ## 4. Ingestion (M3)
 
-- 🟡 `/import` accepts one `.docx` up to 25MB (drag-drop or file picker). PDF is refused
+- 🟡 `/import` accepts one `.docx` or `.pdf` up to 25MB. A scanned PDF page is noted and not read. OCR is later.
 - ⬜ S3 presigned-upload flow
 - ⬜ `POST /ingest` kicks off Python job, returns `jobId`
 - ⬜ Live progress via SSE (parse → extract → structure → validate)
 - 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
-- ⬜ Python: PDF parser (pdfplumber primary, unstructured fallback)
+- 🟡 Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber). A picture page is noted. A text PDF was checked in the browser. A scan was not. Unstructured fallback is later.
 - 🟡 Heading map is inside the docx parser. The fuller segmenter that only suggests kinds to an LLM is later
-- 🟡 Empty Overview, Verification, and Troubleshooting are written from the extracted steps through OpenRouter. A section already in the file is kept. The full structure call is later
-- ⬜ Python: Pydantic validator with one-shot repair
+- 🟡 The model structures the extracted text into the article. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
+- ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.
 - ⬜ Python: emit progress events to Redis stream
 - ⬜ Observability: trace a full ingestion end-to-end
 
@@ -189,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 1 in [Docs/suggested-order.md](Docs/suggested-order.md). A PDF becomes a draft the same way a Word file does. The reader check (sidebar and archived articles) shipped in pull request #32.
+Next: item 3 in [Docs/suggested-order.md](Docs/suggested-order.md). Store the file, then start a job. A text PDF import was checked. A scanned page was not.
 
 ---
 

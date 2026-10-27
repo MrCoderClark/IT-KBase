@@ -31,3 +31,5 @@ class ParsedDraft(BaseModel):
     verificationCode: str = ""
     troubleshootingTitle: str = "Troubleshooting"
     troubleshooting: list[ParsedCallout] = Field(default_factory=list)
+    # Folded into overview after the model fills blank sections. Not sent to the browser.
+    readingNotes: str = Field(default="", exclude=True)

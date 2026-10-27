@@ -22,12 +22,13 @@ export async function importDocx(
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Choose a Word document." };
+    return { error: "Choose a Word document or a PDF." };
   }
 
   const filename = safeName(file.name);
-  if (!filename.toLowerCase().endsWith(".docx")) {
-    return { error: "Only a .docx file can be imported. PDF comes later." };
+  const lower = filename.toLowerCase();
+  if (!lower.endsWith(".docx") && !lower.endsWith(".pdf")) {
+    return { error: "Only a .docx or .pdf file can be imported." };
   }
   if (file.size > MAX_BYTES) {
     return { error: "That file is larger than 25 MB." };
@@ -46,5 +47,5 @@ export async function importDocx(
 function safeName(name: string): string {
   const base = name.split(/[/\\]/).pop() ?? "document.docx";
   const cleaned = base.replace(/[^\w.\- ()]+/g, "").trim();
-  return (cleaned || "document.docx").slice(0, 120);
+  return (cleaned || "document.docx").slice(0, 180);
 }

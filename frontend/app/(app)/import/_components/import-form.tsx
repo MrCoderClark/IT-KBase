@@ -17,8 +17,9 @@ export function ImportForm() {
   }
 
   function accept(file: File) {
-    if (!file.name.toLowerCase().endsWith(".docx")) {
-      reject("Only a .docx file can be imported. PDF comes later.");
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith(".docx") && !lower.endsWith(".pdf")) {
+      reject("Only a .docx or .pdf file can be imported.");
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
@@ -45,7 +46,9 @@ export function ImportForm() {
           const file = event.dataTransfer.files[0];
           const input = inputRef.current;
           if (!file || !input) return;
-          if (!file.name.toLowerCase().endsWith(".docx") || file.size > 25 * 1024 * 1024) {
+          const lower = file.name.toLowerCase();
+          const allowed = lower.endsWith(".docx") || lower.endsWith(".pdf");
+          if (!allowed || file.size > 25 * 1024 * 1024) {
             accept(file);
             return;
           }
@@ -59,18 +62,18 @@ export function ImportForm() {
         }`}
       >
         <span className="text-[13px] font-semibold text-fg">
-          {fileName ?? "Drop a .docx here, or choose a file"}
+          {fileName ?? "Drop a .docx or .pdf here, or choose a file"}
         </span>
         <span className="text-[12px] leading-5 text-fg-subtle">
-          Word documents up to 25 MB. A numbered procedure becomes steps, and each
-          picture stays with the step it follows. Headings such as Overview and
-          Prerequisites become those sections.
+          Word or PDF, up to 25 MB. A numbered procedure becomes steps. In a Word
+          file, each picture stays with the step it follows. A scanned PDF page is
+          noted and left unread.
         </span>
         <input
           ref={inputRef}
           type="file"
           name="file"
-          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           required
           onChange={(event) => {
             const file = event.target.files?.[0];

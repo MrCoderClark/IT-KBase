@@ -55,6 +55,7 @@ class _Line:
     numbered: bool = False
     code: bool = False
     heading: bool = False
+    level: int = 1
     images: list[str] = field(default_factory=list)
 
 
@@ -81,6 +82,25 @@ class _Budget:
         cut = text[: self.left].rstrip()
         self.left = 0
         return cut
+
+
+def assemble_draft(filename: str, lines: list[_Line], *, title: str = "") -> ParsedDraft:
+    """Build a draft from lines the Word or PDF reader already classified."""
+    parser = _Parser(filename=filename, core_title=_clean(title, _TITLE_LIMIT), core_subject="")
+    for line in lines:
+        if line.heading:
+            parser.add_heading(line.text, line.level or 1)
+        else:
+            parser.add_line(line)
+    draft = parser.finish()
+    if not _has_body(draft):
+        raise DocxError("That document has no text to import.")
+    return draft
+
+
+def section_kind(title: str) -> str | None:
+    """Known section name, or None when the line is ordinary text."""
+    return _classify(title)
 
 
 def parse_docx(data: bytes, filename: str) -> ParsedDraft:
@@ -262,14 +282,21 @@ class _Parser:
 
 
 def _classify(title: str) -> str | None:
-    """Match a stem at the start of a word, so "Prerequisites" hits "prerequisite"."""
-    lowered = title.casefold()
+    """Match a heading, not a sentence that merely contains the word.
+
+    "Prerequisites" hits "prerequisite". "First step is to save the file"
+    stays body text, because "step" is not the heading.
+    """
+    lowered = " ".join(title.casefold().split())
+    if not lowered or len(lowered) > 80:
+        return None
+    words = lowered.split()
     for kind, phrases in _KINDS:
         for phrase in phrases:
             if " " in phrase:
-                if phrase in lowered:
+                if lowered.startswith(phrase):
                     return kind
-            elif re.search(rf"\b{re.escape(phrase)}", lowered):
+            elif words[0].startswith(phrase):
                 return kind
     return None
 

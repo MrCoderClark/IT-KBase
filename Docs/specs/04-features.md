@@ -67,7 +67,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
    - Summary (muted)
    - Metadata row: author avatar+name, created date, read time, status chip.
    - Right side: hero image (locked aspect, `420` max).
-   - Right-top: `Edit`, `Share`, overflow (`•••`).
+   - Right-top: `Edit`, `Share`, overflow (`•••`). An admin also sees `Delete`. Delete asks for confirmation, then removes the article, its versions, notes, and votes. Child pages stay in the library at the top level. Archive remains the reversible status.
 3. In the right column (`TOC`), a sticky list of section titles with icon tiles. Click scrolls with `scroll-margin-top` offset.
 4. Content column renders each section:
    - **Overview**: prose + optional callout.
@@ -138,11 +138,11 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Entry**: sidebar `Import from File`, bottom CTA, keyboard `g i`.
 
-**First slice** (Word only):
-1. `/import` accepts one `.docx` up to 25MB. A PDF is refused.
-2. Next.js checks `article.create`, then sends the file to `POST /v1/parse/docx` with the 60-second assertion.
-3. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview.
-4. If Overview, Verification, or Troubleshooting is missing, and `AI_API_KEY` is set, the service writes the missing sections from the extracted steps through `AI_BASE_URL` and `AI_MODEL`. A section already in the file is kept.
+**First slice** (one file, no queue):
+1. `/import` accepts one `.docx` or `.pdf` up to 25MB.
+2. Next.js checks `article.create`, then sends the file to `POST /v1/parse/docx` or `POST /v1/parse/pdf` with the 60-second assertion.
+3. Python maps headings onto Overview, Prerequisites, Steps, Verification, and Troubleshooting. Any other heading stays in Overview. A numbered procedure becomes steps. Word pictures stay on the step. A PDF page that is a picture with almost no text is noted in Overview and not read.
+4. When `AI_API_KEY` is set, the model structures the extracted text into the article through `AI_BASE_URL` and `AI_MODEL`. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
 5. The draft is saved and the editor opens. There is no S3 upload and no progress stepper in this slice.
 
 **Target flow** (after the first slice):
