@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/editor-autosave)
+Last updated: 2026-10-27 (feat/editor-preview)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -16,7 +16,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
 | M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view done; Share copies the link; `e`, `g a`, `g h`, and `?` done; `s` and the rest remain) |
-| M2 | Create / edit article (manual)     | Week 4        | 🟡 (TipTap section nodes + autosave done; preview remains) |
+| M2 | Create / edit article (manual)     | Week 4        | ✅ (nodes, autosave, reader preview) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
 | M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
@@ -103,7 +103,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 Draft editor at `/create` and `/kb/[slug]/edit` — template sections, TipTap section nodes, metadata rail, Save writes a new `ArticleVersion`
 - 🟡 TipTap for overview body and step body, with bold, italic, and lists saved as HTML
 - ✅ TipTap custom nodes (checklist item, step, callout, code block) match the read view. Checked 2026-10-27 on Reset Local Admin Password edit.
-- ⬜ Side-by-side preview matching read view (the field editor is the first stand-in)
+- ✅ Reader preview dialog from the editor (same header/TOC/content as `/kb/[slug]`). Article title promoted to the main column. Checked 2026-10-27.
 - ✅ Autosave: 10s debounce + blur/pagehide flush to Postgres, `localStorage` mirror, Autosaved chip. In-place for drafts; `wip` draftVersion for published. Redis later. Checked 2026-10-27.
 - ✅ Publish checklist (title, category, 1+ tag, summary, ≥1 step) with minor or major bump; status dropdown cannot publish on its own
 - ✅ Edit entry points: article header, Quick Actions, and an Edit link on each All Articles row
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 8 in [Docs/suggested-order.md](Docs/suggested-order.md), read-view preview. A scanned page was not tried. Redis queue remains later.
+Next: item 9 in [Docs/suggested-order.md](Docs/suggested-order.md), remaining shortcuts. A scanned page was not tried. Redis queue remains later.
 
 ---
 

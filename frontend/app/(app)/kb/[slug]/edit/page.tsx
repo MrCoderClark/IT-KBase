@@ -72,6 +72,7 @@ async function EditEditor({
       categories={categories}
       tags={tags}
       role={session.role}
+      authorName={article.author.name}
       notice={
         query.notice === "imported"
           ? "Drafted from a file. Review the sections, then save or publish."

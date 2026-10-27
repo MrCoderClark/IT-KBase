@@ -9,7 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, CloudOff, Loader2, Plus } from "lucide-react";
+import { Check, CloudOff, Eye, Loader2, Plus } from "lucide-react";
 import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 import {
@@ -27,6 +27,7 @@ import {
   readLocalDraft,
   writeLocalDraft,
 } from "@/lib/editor/local-draft";
+import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,7 @@ export function ArticleEditor({
   categories,
   tags,
   role,
+  authorName,
   parentTitle = null,
   notice = null,
 }: {
@@ -78,6 +80,7 @@ export function ArticleEditor({
   categories: { name: string; slug: string }[];
   tags: { name: string; slug: string }[];
   role: Role;
+  authorName: string;
   parentTitle?: string | null;
   notice?: string | null;
 }) {
@@ -87,6 +90,7 @@ export function ArticleEditor({
   const [error, setError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -345,6 +349,15 @@ export function ArticleEditor({
           >
             Cancel
           </Link>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Eye size={14} aria-hidden />
+            Preview
+          </Button>
           <Button type="submit" variant="outline" disabled={pending}>
             {pending && !publishOpen ? "Saving…" : "Save"}
           </Button>
@@ -355,6 +368,15 @@ export function ArticleEditor({
           ) : null}
         </div>
       </div>
+
+      <PreviewDialog
+        draft={draft}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        authorName={authorName}
+        categories={categories}
+        tags={tags}
+      />
 
       <PublishDialog
         draft={draft}
@@ -367,6 +389,36 @@ export function ArticleEditor({
 
       <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1 space-y-4">
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,.06)]">
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-fg-muted">
+                Article title
+              </span>
+              <input
+                required
+                value={draft.title}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, title: event.target.value }))
+                }
+                className="w-full border-0 bg-transparent text-[22px] leading-7 font-bold tracking-tight text-fg outline-none placeholder:text-fg-subtle/50 focus:ring-0"
+                placeholder="Name this article…"
+                aria-label="Article title"
+              />
+            </label>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-[12px] font-medium text-fg-muted">Summary</span>
+              <textarea
+                value={draft.summary}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, summary: event.target.value }))
+                }
+                rows={2}
+                className={`${fieldClass} resize-y`}
+                placeholder="One or two sentences readers see under the title."
+              />
+            </label>
+          </div>
+
           {draft.sections.map((section, index) => (
             <SectionCard
               key={section.kind}
@@ -405,32 +457,6 @@ export function ArticleEditor({
         </div>
 
         <aside className="sticky top-24 w-[300px] shrink-0 self-start space-y-4 rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,.06),0_8px_24px_rgba(15,23,42,.04)]">
-          <label className="block">
-            <span className="mb-1 block text-[12px] font-medium text-fg-muted">Title</span>
-            <input
-              required
-              value={draft.title}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, title: event.target.value }))
-              }
-              className={fieldClass}
-              placeholder="Article title"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-[12px] font-medium text-fg-muted">Summary</span>
-            <textarea
-              value={draft.summary}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, summary: event.target.value }))
-              }
-              rows={4}
-              className={fieldClass}
-              placeholder="One or two sentences."
-            />
-          </label>
-
           <label className="block">
             <span className="mb-1 block text-[12px] font-medium text-fg-muted">Category</span>
             <select

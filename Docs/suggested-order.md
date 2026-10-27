@@ -22,7 +22,7 @@ The field editor already saves versions. Publish already checks title, category,
 
 6. ✅ **Custom section nodes.** Checked 2026-10-27 on `/kb/reset-local-admin-password/edit`. Checklist items use the green mark; steps, callouts, and code blocks use TipTap nodes matching the read view.
 7. ✅ **Autosave.** Checked 2026-10-27. Edits autosave to Postgres (~10s / blur) with a visible Autosaved chip; refresh keeps the last edit via localStorage. Redis buffer later.
-8. **Read-view preview.** The author can see the article the way a reader will, without publishing.
+8. ✅ **Read-view preview.** Checked 2026-10-27. Preview opens the reader layout from the live draft without publishing. Article title sits at the top of the editor so it is not confused with a section heading.
 
 ## 3. Finish the article page and the shell
 
