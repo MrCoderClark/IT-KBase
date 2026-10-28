@@ -118,6 +118,7 @@ export async function resetPassword(formData: FormData): Promise<void> {
   if (password !== confirm) redirect(`${back}&e=match`);
 
   const meta = await currentRequestMeta();
+  const { zxcvbnScore } = await import("./zxcvbn-score");
   const result = await completePasswordReset({
     store: authStore,
     hasher: passwordHasher,
@@ -126,8 +127,14 @@ export async function resetPassword(formData: FormData): Promise<void> {
     now: await requestTime(),
     ip: meta.ip,
     userAgent: meta.userAgent,
+    passwordChecks: { score: zxcvbnScore },
   });
-  if (!result.ok) redirect(`${back}&e=${result.error}`);
+  if (!result.ok) {
+    if (result.error === "weak" && result.message) {
+      redirect(`${back}&e=weak&m=${encodeURIComponent(result.message)}`);
+    }
+    redirect(`${back}&e=${result.error}`);
+  }
   redirect("/login?notice=reset");
 }
 

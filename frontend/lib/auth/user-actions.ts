@@ -156,7 +156,11 @@ export async function createUser(formData: FormData): Promise<void> {
   if (!isRole(role)) redirect("/admin/users?e=role");
   const password = String(formData.get("password") ?? "");
   if (password !== String(formData.get("confirmPassword") ?? "")) redirect("/admin/users?e=match");
-  if (passwordProblem(password)) redirect("/admin/users?e=password");
+  const { zxcvbnScore } = await import("./zxcvbn-score");
+  const problem = await passwordProblem(password, { score: zxcvbnScore });
+  if (problem) {
+    redirect(`/admin/users?e=password&m=${encodeURIComponent(problem)}`);
+  }
   if (await emailTaken(email)) redirect("/admin/users?e=taken");
 
   const now = await requestTime();
