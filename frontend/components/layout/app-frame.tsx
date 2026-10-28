@@ -8,6 +8,7 @@ import type { AppSession } from "@/lib/auth/session";
 import { getKbNavCounts } from "@/lib/queries/articles";
 import { getArticleTree } from "@/lib/queries/article-tree";
 import { listRecentPaletteArticles } from "@/lib/queries/recent-articles";
+import { resolveAvatarSrc } from "@/lib/avatar/gravatar";
 import { accentTokens, type SiteSettings } from "@/lib/settings/site-settings";
 
 /** Signed-in chrome: dark sidebar, top bar, light canvas. */
@@ -36,7 +37,12 @@ export function AppFrame({
           <SidebarWithCounts userId={session.userId} role={session.role} logoUrl={settings.logoUrl} />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar name={session.name} role={session.role} />
+          <Topbar
+            name={session.name}
+            role={session.role}
+            email={session.email}
+            avatarSrc={resolveAvatarSrc(session.email, session.avatarUrl, 64)}
+          />
           <Suspense fallback={null}>
             <PaletteArticleSource role={session.role} userId={session.userId} />
           </Suspense>

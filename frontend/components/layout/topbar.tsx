@@ -10,9 +10,19 @@ import { UserMenu } from "@/components/layout/user-menu";
  *   - Search opens the command palette. Ctrl+K does the same from any screen.
  *   - Bell has a static unread count badge.
  *   - Theme toggle is wired.
- *   - Avatar opens a menu. Sign out lives there.
+ *   - Avatar opens a menu (Profile, shortcuts, security, sign out). Gravatar when set.
  */
-export function Topbar({ name, role }: { name: string; role: string }) {
+export function Topbar({
+  name,
+  role,
+  email,
+  avatarSrc,
+}: {
+  name: string;
+  role: string;
+  email: string;
+  avatarSrc: string | null;
+}) {
   return (
     <header
       className="sticky top-0 z-10 flex h-16 items-center gap-4 px-6"
@@ -21,16 +31,14 @@ export function Topbar({ name, role }: { name: string; role: string }) {
           "linear-gradient(180deg, var(--sidebar-bg-top), #0C1324)",
       }}
     >
-      {/* Search */}
       <div className="flex min-w-0 flex-1 justify-center">
         <SearchTrigger />
       </div>
 
-      {/* Right cluster */}
       <div className="flex items-center gap-1.5">
         <NotificationsBell count={3} />
         <ThemeToggle />
-        <UserMenu name={name} role={role} />
+        <UserMenu name={name} role={role} email={email} avatarSrc={avatarSrc} />
       </div>
     </header>
   );
@@ -56,4 +64,3 @@ function NotificationsBell({ count }: { count: number }) {
     </button>
   );
 }
-

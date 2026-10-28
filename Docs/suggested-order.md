@@ -27,7 +27,7 @@ The field editor already saves versions. Publish already checks title, category,
 ## 3. Finish the article page and the shell
 
 9. ✅ **Remaining shortcuts.** Checked 2026-10-27. `s` shares, `p` prints, `j`/`k` move between sections. `e`, `g a`, `g h`, `g i`, and `?` already existed.
-10. **Avatar menu.** Profile and the shortcut list live next to Sign out.
+10. ✅ **Avatar menu.** Checked 2026-10-28. Profile, Keyboard shortcuts, Security, and Sign out. Gravatar (SHA-256, identicon fallback) for the account email and article author chips.
 11. **Notifications.** The bell opens real items. Until this exists it stays a stub.
 
 ## 4. Finish find and organize

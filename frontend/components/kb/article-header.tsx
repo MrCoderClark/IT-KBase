@@ -5,6 +5,7 @@ import { CategoryChip } from "@/components/kb/category-chip";
 import { DeleteArticleButton } from "@/components/kb/delete-article-button";
 import { ShareLinkButton } from "@/components/kb/share-link-button";
 import { StatusChip } from "@/components/kb/status-chip";
+import { UserAvatar } from "@/components/kb/user-avatar";
 
 /**
  * Article title block: category chip, h1, summary, metadata row,
@@ -30,13 +31,6 @@ export function ArticleHeader({
     "en-US",
     { month: "short", day: "numeric", year: "numeric" },
   );
-
-  const initials = article.author.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   return (
     <div className="flex items-start justify-between gap-6">
@@ -67,9 +61,11 @@ export function ArticleHeader({
         <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] leading-5 text-fg-subtle">
           {/* Author */}
           <span className="flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white">
-              {initials}
-            </span>
+            <UserAvatar
+              name={article.author.name}
+              src={article.author.avatarUrl}
+              size={24}
+            />
             <span>
               Created by{" "}
               <span className="font-medium text-fg">{article.author.name}</span>
