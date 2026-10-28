@@ -12,6 +12,7 @@ from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
 from backend.parse.overview import structure_draft
 from backend.parse.pdf import PdfError, parse_pdf
+from backend.policy import require_capability
 from backend.progress import ProgressEvent, StageClock
 from backend.telemetry import get_logger
 
@@ -54,8 +55,7 @@ async def _upload(
     suffix: str,
     fallback: str,
 ) -> tuple[str, bytes]:
-    if principal.kind != "user" or principal.role not in {"author", "reviewer", "admin"}:
-        raise HTTPException(status_code=403, detail="You cannot import articles.")
+    require_capability(principal, "article.create", detail="You cannot import articles.")
 
     name = (file.filename or fallback).rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
     if not name.lower().endswith(suffix):
