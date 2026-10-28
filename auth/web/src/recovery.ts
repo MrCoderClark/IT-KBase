@@ -1,5 +1,5 @@
 import { hashEmailToken, newEmailToken, RESET_TOKEN_MS, VERIFY_TOKEN_MS } from "./email-token";
-import { passwordProblem } from "./password-policy";
+import { passwordProblem, type PasswordPolicyOptions } from "./password-policy";
 import { isRateLimited, LOGIN_WINDOW_MS, normalizeEmail } from "./session";
 import type { AuthStore, PasswordHasher } from "./types";
 
@@ -86,8 +86,10 @@ export async function completePasswordReset(input: {
   now: Date;
   ip: string | null;
   userAgent: string | null;
+  /** Host supplies zxcvbn score (and optional HIBP stub). */
+  passwordChecks: PasswordPolicyOptions;
 }): Promise<{ ok: true } | { ok: false; error: "invalid" | "weak"; message?: string }> {
-  const problem = passwordProblem(input.password);
+  const problem = await passwordProblem(input.password, input.passwordChecks);
   if (problem) return { ok: false, error: "weak", message: problem };
 
   const record = await input.store.findEmailToken(hashEmailToken(input.token));

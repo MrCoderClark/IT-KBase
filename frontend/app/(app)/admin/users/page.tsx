@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import { PasswordPolicyHint } from "@/components/auth/password-policy-hint";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { Button } from "@/components/ui/button";
+import { PASSWORD_POLICY_SUMMARY } from "../../../../../auth/web/src";
 import { createUser, deleteUser, setSignInEnabled, setUserRole, updateUserProfile } from "@/lib/auth/user-actions";
 import { can, ROLES, type Role } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
@@ -19,7 +21,7 @@ const ROLE_LABEL: Record<Role, string> = {
 export default function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; m?: string }>;
 }) {
   return (
     <Suspense fallback={<ArticleListShell title="Users" description="Loading accounts…" showCreate={false}><div /></ArticleListShell>}>
@@ -28,7 +30,11 @@ export default function UsersPage({
   );
 }
 
-function notice(code: string | undefined, error: string | undefined): string | null {
+function notice(
+  code: string | undefined,
+  error: string | undefined,
+  detail?: string | undefined,
+): string | null {
   if (error === "self") return "You cannot change your own access or delete your account.";
   if (error === "last") return "The last admin has to keep that role, and their account has to stay.";
   if (error === "missing") return "That account was not found.";
@@ -37,7 +43,9 @@ function notice(code: string | undefined, error: string | undefined): string | n
   if (error === "email") return "Enter an email like ada@contoso.com.";
   if (error === "taken") return "That email is already in use.";
   if (error === "match") return "The passwords do not match.";
-  if (error === "password") return "Use at least 12 characters, with three of uppercase, lowercase, a digit, and a symbol.";
+  if (error === "password") {
+    return detail?.trim() || PASSWORD_POLICY_SUMMARY;
+  }
   if (error === "confirm") return "Type that person's current email to delete the account.";
   if (code === "role") return "Role updated. That person was signed out.";
   if (code === "off") return "Sign-in turned off. Their sessions were ended.";
@@ -52,7 +60,7 @@ function notice(code: string | undefined, error: string | undefined): string | n
 async function UsersPanel({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; m?: string }>;
 }) {
   const session = await getSession();
   if (!session || !can(session.role, "admin.manage")) {
@@ -74,7 +82,7 @@ async function UsersPanel({
     select: { id: true, disabledAt: true },
   });
   const disabled = new Map(identities.map((row) => [row.id, row.disabledAt !== null]));
-  const message = notice(params.notice, params.e);
+  const message = notice(params.notice, params.e, params.m);
 
   return (
     <ArticleListShell
@@ -116,6 +124,7 @@ async function UsersPanel({
           Confirm password
           <input name="confirmPassword" type="password" required autoComplete="new-password" className={fieldClass} />
         </label>
+        <PasswordPolicyHint className="sm:col-span-2" />
         <div className="flex items-end">
           <Button type="submit">Add account</Button>
         </div>

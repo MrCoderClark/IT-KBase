@@ -1,13 +1,36 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { passwordProblem } from "./password-policy";
+import { passwordProblem, passwordShapeProblem } from "./password-policy";
 import { completePasswordReset, requestPasswordReset } from "./recovery";
 import type { AuthStore, IdentityRecord } from "./types";
 
+const strongOk = {
+  score: () => 4,
+  isBreached: async () => false,
+};
+
 describe("password policy", () => {
-  it("rejects short passwords and accepts a mixed one", () => {
-    assert.equal(passwordProblem("short"), "Use at least 12 characters.");
-    assert.equal(passwordProblem("TechBase-dev-1"), null);
+  it("rejects short passwords on shape alone", () => {
+    assert.equal(passwordShapeProblem("short"), "Use at least 12 characters.");
+    assert.equal(passwordShapeProblem("TechBase-dev-1"), null);
+  });
+
+  it("requires zxcvbn ≥ 3 and a clean breach check", async () => {
+    assert.equal(
+      await passwordProblem("TechBase-dev-1", {
+        score: () => 2,
+        isBreached: async () => false,
+      }),
+      "Choose a stronger password. Avoid common words and simple patterns.",
+    );
+    assert.equal(
+      await passwordProblem("orchid-Lantern-7-quilt!", {
+        score: () => 4,
+        isBreached: async () => true,
+      }),
+      "That password appears in a known breach. Choose a different one.",
+    );
+    assert.equal(await passwordProblem("orchid-Lantern-7-quilt!", strongOk), null);
   });
 });
 
@@ -44,6 +67,7 @@ describe("password reset request", () => {
       now: new Date("2026-10-14T12:00:00Z"),
       ip: null,
       userAgent: null,
+      passwordChecks: strongOk,
     });
     assert.deepEqual(result.ok, false);
     assert.equal(store.tokens[0]?.usedAt, null);

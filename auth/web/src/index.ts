@@ -12,7 +12,14 @@ export {
   sessionDeadlines,
   sessionIsActive,
 } from "./session";
-export { passwordProblem } from "./password-policy";
+export {
+  isPasswordBreached,
+  PASSWORD_POLICY_RULES,
+  PASSWORD_POLICY_SUMMARY,
+  passwordProblem,
+  passwordShapeProblem,
+} from "./password-policy";
+export type { PasswordPolicyOptions } from "./password-policy";
 export { hashEmailToken, newEmailToken, RESET_TOKEN_MS, VERIFY_TOKEN_MS } from "./email-token";
 export { completeEmailVerification, completePasswordReset, requestPasswordReset } from "./recovery";
 export type { RecoveryMail, RecoveryRequest } from "./recovery";

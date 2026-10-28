@@ -1,12 +1,14 @@
 import { Suspense } from "react";
-import { Button } from "@/components/ui/button";
 import { AuthFrame, authFieldClass } from "@/components/auth/auth-frame";
+import { PasswordPolicyHint } from "@/components/auth/password-policy-hint";
+import { Button } from "@/components/ui/button";
+import { PASSWORD_POLICY_SUMMARY } from "../../../auth/web/src";
 import { resetPassword } from "@/lib/auth/actions";
 
 export default function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; e?: string }>;
+  searchParams: Promise<{ token?: string; e?: string; m?: string }>;
 }) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
@@ -18,7 +20,7 @@ export default function ResetPasswordPage({
 async function ResetForm({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; e?: string }>;
+  searchParams: Promise<{ token?: string; e?: string; m?: string }>;
 }) {
   const params = await searchParams;
   const token = params.token ?? "";
@@ -26,7 +28,7 @@ async function ResetForm({
     params.e === "match"
       ? "Those passwords do not match."
       : params.e === "weak"
-        ? "Use at least 12 characters, with three of uppercase, lowercase, a digit, and a symbol."
+        ? params.m?.trim() || PASSWORD_POLICY_SUMMARY
         : params.e === "invalid" || !token
           ? "This reset link is invalid or has expired."
           : null;
@@ -58,6 +60,7 @@ async function ResetForm({
             required
             className={authFieldClass}
           />
+          <PasswordPolicyHint className="mt-4" />
           {message ? (
             <p role="alert" className="mt-4 text-[13px] font-medium text-danger">
               {message}
