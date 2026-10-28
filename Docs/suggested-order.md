@@ -37,7 +37,7 @@ Search, category pages, and tag pages already work. Spec: `Docs/specs/04-feature
 12. ✅ **Tags.** Checked 2026-10-28. Create, rename, and merge on `/tags`. Delete stays blocked while a tag is on an article.
 13. ✅ **Category merge and color.** Checked 2026-10-28. Merge and optional chip color on `/categories`; delete stays blocked while a category has articles.
 14. ✅ **Filters inside search.** Checked 2026-10-28. Category, status, and updated-within narrow `/kb` (URL) and FTS, not only the rows already on screen.
-15. **Related articles by the text.** The right rail can use more than "same category, then the rest." Embeddings stay post-pilot.
+15. ✅ **Related articles by the text.** Checked 2026-10-28. Right rail ranks by FTS (title/tags/summary) with same-category boost; category/library fill for shortfalls. Embeddings stay post-pilot. Manual curated links not in this step.
 
 ## 5. Finish the page system
 

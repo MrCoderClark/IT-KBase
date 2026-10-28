@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/search-filters)
+Last updated: 2026-10-28 (feat/related-by-text)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -136,7 +136,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Public category and tag browse pages (index + filtered article list)
 - ✅ Category admin: create, rename, merge, color, delete-when-empty. Checked 2026-10-28 on `/categories`.
 - ✅ Tag admin: create, rename, merge, delete-when-empty. Checked 2026-10-28 on `/tags`.
-- 🟡 Related articles: right rail lists other published articles in the same category (backfilled from the rest of the library). Lexical and embedding similarity still to do
+- ✅ Related articles: FTS rank (title/tags/summary) with same-category boost; category/library fill for shortfalls. Checked 2026-10-28. Embeddings and curated links still later.
 
 ---
 
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 15 in [Docs/suggested-order.md](Docs/suggested-order.md), related articles by text. A scanned page was not tried. Redis queue remains later.
+Next: item 16 in [Docs/suggested-order.md](Docs/suggested-order.md), page tree leftovers. A scanned page was not tried. Redis queue remains later.
 
 ---
 

@@ -78,7 +78,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
    - **Related Articles**: a horizontal row of related chips (also mirrored in the right rail).
 5. **Right rail** (meta):
    - `Article Details` card: ID, Category, Tags, Last Updated, Created By, Version.
-   - `Related Articles` card.
+   - `Related Articles` card: up to four other **published** articles. Ranked by Postgres FTS against the current title, tags, and summary (`plainto_tsquery` on `searchVector`), with same-category boosted. Shortfalls fill from the same category, then the rest of the published library. Embeddings stay post-pilot.
    - `Quick Actions` card: Download as PDF, Copy Link, Print Article.
    - `Was this article helpful?` thumbs card.
 
