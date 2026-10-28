@@ -53,6 +53,8 @@ An anonymous caller may read a single article when `status` is `published` and `
 
 A signed-in reader sees published articles. An author also sees their own drafts and articles in review. A reviewer sees every article that is not archived. An admin also sees archived articles. Lists, search, the page tree, and a direct URL enforce that rule. Hiding a nav link is not the check.
 
+A page may further **narrow** who can open it (`role_floor`), with children inheriting until they set their own mode. That layer never grants capabilities beyond this matrix. Spec: [`12-per-page-permissions.md`](12-per-page-permissions.md).
+
 Enforcement:
 - **Every** server action and API route checks `can(principal, capability, resource)` in `frontend/lib/auth/policy.ts`. The reusable package does not know about articles. FastAPI repeats the check for its own routes.
 - Policy is table-driven and unit-tested.

@@ -1,6 +1,6 @@
 # 10 — Page tree
 
-The second Confluence-like feature. Articles can now have a parent, forming a hierarchy. The sidebar shows a collapsible tree instead of a flat list. A child page inherits nothing yet — per-page permissions come later.
+The second Confluence-like feature. Articles can now have a parent, forming a hierarchy. The sidebar shows a collapsible tree instead of a flat list. Per-page access inheritance is specified in [`12-per-page-permissions.md`](12-per-page-permissions.md).
 
 This file is the behavior for that slice. `04-features.md` will point here once the feature lands.
 
@@ -115,7 +115,7 @@ moveArticle(articleId: string, newParentId: string | null, newOrder: number)
 
 2. **Archiving a parent**: Children remain visible. The archived parent shows in the tree as grayed/italic but is not navigable (or navigates to an "archived" notice). Revisit when archive behavior is more defined.
 
-3. **Visibility mismatch**: A public child of a private parent is still public. Tree visibility doesn't cascade (yet). Per-page permissions will address this.
+3. **Visibility mismatch**: A public child of a private parent is still public until page access is set. Effective access and public+restriction rules are in [`12-per-page-permissions.md`](12-per-page-permissions.md).
 
 4. **Deep nesting**: No hard limit, but UI may truncate or indent less aggressively past depth 5. Warn in the editor if depth > 5.
 
@@ -134,8 +134,8 @@ moveArticle(articleId: string, newParentId: string | null, newOrder: number)
 
 ## Not in this slice
 
-- Per-page permissions (inheriting down the tree).
-- Cascading visibility or status.
+- Per-page permissions — see [`12-per-page-permissions.md`](12-per-page-permissions.md) (implement in that slice).
+- Cascading status (publish parent ≠ publish children).
 - Archiving behavior for trees.
 - Lazy loading (defer until >100 articles).
 - Tree view in the main content area (keep sidebar-only for now).

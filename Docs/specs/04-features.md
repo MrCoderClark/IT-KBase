@@ -279,5 +279,16 @@ Discoverable through `?` and the command palette.
 - A public article is `published` and `visibility=public`. Its page shows the read view only: no sidebar, no edit or share controls, and no links to other articles.
 - Drafts, in-review articles, and archived articles stay private. Reviewer and admin may change visibility.
 - A reader sees published articles. An author also sees their own drafts and articles in review. A reviewer sees every article that is not archived. An admin also sees archived articles. Lists, search, the page tree, category and tag counts, and a direct link follow that rule.
+- A page may also set a **page access** floor (author / reviewer / admin) that narrows who can open it; children inherit until they override. Spec: [`12-per-page-permissions.md`](12-per-page-permissions.md). Setting a floor clears `visibility=public`.
 
 **Non-goals (Phase A)**: SSO, MFA, a user admin screen, and a public catalog or search.
+
+---
+
+## F16 — Per-page permissions
+
+**What**: Narrow who may open one page; children inherit. Does not grant powers beyond the role matrix.
+
+**Behavior**: See [`12-per-page-permissions.md`](12-per-page-permissions.md). Reviewer/admin set Inherit / Library / Role floor on the details card. Admin always passes the page gate.
+
+**Non-goals (this slice)**: Per-user allowlists, separate edit ACLs, category-level permissions.

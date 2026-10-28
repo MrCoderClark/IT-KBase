@@ -13,6 +13,10 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 06 | `06-api.md`                | HTTP contracts (web, internal, ingestion)                    |
 | 07 | `07-security.md`           | AuthN/Z, data handling, compliance                           |
 | 08 | `08-roadmap.md`            | Milestones, risks                                            |
+| 09 | `09-version-history.md`    | Version list, compare, restore                               |
+| 10 | `10-page-tree.md`          | Article parent/order, sidebar tree, move                     |
+| 11 | `11-article-notes.md`      | Field notes on an article                                    |
+| 12 | `12-per-page-permissions.md` | Narrow who may open a page; inherit down the tree          |
 
 Supporting:
 
