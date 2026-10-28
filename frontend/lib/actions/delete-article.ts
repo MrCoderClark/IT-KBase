@@ -14,9 +14,12 @@ export async function deleteArticle(articleId: string): Promise<string | void> {
 
   const article = await prisma.article.findUnique({
     where: { id: articleId },
-    select: { id: true },
+    select: { id: true, _count: { select: { children: true } } },
   });
   if (!article) redirect("/kb");
+  if (article._count.children > 0) {
+    return "Move or delete child pages first.";
+  }
 
   await prisma.$transaction([
     prisma.article.update({

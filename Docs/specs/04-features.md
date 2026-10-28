@@ -67,7 +67,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
    - Summary (muted)
    - Metadata row: author avatar+name, created date, read time, status chip.
    - Right side: hero image (locked aspect, `420` max).
-   - Right-top: `Edit`, `Share`, overflow (`•••`). An admin also sees `Delete`. Delete asks for confirmation, then removes the article, its versions, notes, and votes. Child pages stay in the library at the top level. Archive remains the reversible status.
+   - Right-top: `Edit`, `Share`, overflow (`•••`). An admin also sees `Delete`. Delete asks for confirmation, then removes the article, its versions, notes, and votes. Delete is blocked while the article still has child pages (move or delete children first — see `10-page-tree.md`). Archive remains the reversible status.
 3. In the right column (`TOC`), a sticky list of section titles with icon tiles. Click scrolls with `scroll-margin-top` offset.
 4. Content column renders each section:
    - **Overview**: prose + optional callout.

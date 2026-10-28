@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/related-by-text)
+Last updated: 2026-10-28 (feat/page-tree-leftovers)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -186,11 +186,11 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | # | Feature | Spec | Status |
 |---|---------|------|--------|
 | 1 | **Version history** | `09-version-history.md` | ✅ History list, read older version, section compare, restore |
-| 2 | **Page tree** | `10-page-tree.md` | 🟡 Sidebar tree, ancestor breadcrumbs, Add child, reviewer drag-reorder. Dragging a page under another page checked in the browser |
+| 2 | **Page tree** | `10-page-tree.md` | ✅ Sidebar tree, breadcrumbs, Add child, nest/reorder, promote to root, delete blocked with children. Checked 2026-10-28 |
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 16 in [Docs/suggested-order.md](Docs/suggested-order.md), page tree leftovers. A scanned page was not tried. Redis queue remains later.
+Next: item 17 in [Docs/suggested-order.md](Docs/suggested-order.md), per-page permissions (spec first). A scanned page was not tried. Redis queue remains later.
 
 ---
 
