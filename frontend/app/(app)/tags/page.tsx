@@ -1,20 +1,25 @@
 import { Suspense } from "react";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
-import { TaxonomyList } from "@/components/kb/taxonomy-list";
+import { TagAdmin } from "@/components/kb/tag-admin";
+import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { getTagIndex } from "@/lib/queries/articles";
 
 export default function TagsPage() {
   return (
-    <ArticleListShell
-      title="Tags"
-      description="Browse articles by topic."
-      showCreate={false}
+    <Suspense
+      fallback={
+        <ArticleListShell
+          title="Tags"
+          description="Browse articles by topic."
+          showCreate={false}
+        >
+          <ListFallback />
+        </ArticleListShell>
+      }
     >
-      <Suspense fallback={<ListFallback />}>
-        <TagIndex />
-      </Suspense>
-    </ArticleListShell>
+      <TagIndex />
+    </Suspense>
   );
 }
 
@@ -22,13 +27,9 @@ async function TagIndex() {
   const session = await getSession();
   const tags = session ? await getTagIndex(session.role, session.userId) : [];
   return (
-    <TaxonomyList
-      emptyTitle="No tags yet"
-      items={tags.map((tag) => ({
-        name: tag.name,
-        href: `/tags/${tag.slug}`,
-        count: tag.count,
-      }))}
+    <TagAdmin
+      tags={tags}
+      canManage={Boolean(session && can(session.role, "admin.manage"))}
     />
   );
 }
