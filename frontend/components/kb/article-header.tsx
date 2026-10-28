@@ -41,6 +41,7 @@ export function ArticleHeader({
           <CategoryChip
             name={article.category.name}
             slug={article.category.slug}
+            color={article.category.color}
             className="mb-3"
           />
         )}

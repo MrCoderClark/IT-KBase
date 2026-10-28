@@ -372,6 +372,7 @@ export default function ArticleTable({
                       <CategoryChip
                         name={article.category.name}
                         slug={article.category.slug}
+                        color={article.category.color}
                         className="shrink-0 px-1.5 py-px text-[10px]"
                       />
                     )}

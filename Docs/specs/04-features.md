@@ -176,7 +176,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 ## F8 — Categories & tags
 
 **Admin screens**:
-- **Categories**: list with article count, create/rename/merge, optional color override. Cannot delete a category with articles — must merge first.
+- **Categories**: list with article count. Admins can create, rename, merge into another category, set an optional chip color (`#RRGGBB` presets or clear to brand accent), and delete when empty. Cannot delete a category with articles — merge first.
 - **Tags**: list with article count. Admins can create, rename, merge into another tag, and delete when the tag is on no articles (same delete rule as categories). Tags are flat (no hierarchy).
 
 **Browse views** (session required):
