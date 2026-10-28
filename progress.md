@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/notifications)
+Last updated: 2026-10-28 (feat/tag-admin)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -135,7 +135,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ⬜ Facets: category, tag, status, updated-within
 - ✅ Public category and tag browse pages (index + filtered article list)
 - 🟡 Category admin: create, rename, and delete when the category has no articles. Merge and the color override remain
-- ⬜ Tag CRUD + merge
+- ✅ Tag admin: create, rename, merge, delete-when-empty. Checked 2026-10-28 on `/tags`.
 - 🟡 Related articles: right rail lists other published articles in the same category (backfilled from the rest of the library). Lexical and embedding similarity still to do
 
 ---
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 12 in [Docs/suggested-order.md](Docs/suggested-order.md), tags admin. A scanned page was not tried. Redis queue remains later.
+Next: item 13 in [Docs/suggested-order.md](Docs/suggested-order.md), category merge and color. A scanned page was not tried. Redis queue remains later.
 
 ---
 

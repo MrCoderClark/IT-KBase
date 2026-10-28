@@ -177,7 +177,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 
 **Admin screens**:
 - **Categories**: list with article count, create/rename/merge, optional color override. Cannot delete a category with articles — must merge first.
-- **Tags**: list with article count, create/rename/merge/delete. Tags are flat (no hierarchy).
+- **Tags**: list with article count. Admins can create, rename, merge into another tag, and delete when the tag is on no articles (same delete rule as categories). Tags are flat (no hierarchy).
 
 **Browse views** (session required):
 - `/categories/[slug]` and `/tags/[slug]` show an article list filtered to that taxonomy term.
