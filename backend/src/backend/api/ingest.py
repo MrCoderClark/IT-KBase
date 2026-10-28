@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from auth_py import Principal
 from backend.api.parse import draft_from_bytes, iter_draft_from_bytes
 from backend.parse.models import ParsedDraft
+from backend.policy import require_capability
 from backend.progress import ProgressEvent, event
 from backend.storage import StorageError, download_object, key_owned, object_key, presign_put
 from backend.telemetry import get_logger
@@ -19,7 +20,6 @@ from backend.telemetry import get_logger
 log = get_logger(__name__)
 
 _MAX_BYTES = 25 * 1024 * 1024
-_ROLES = {"author", "reviewer", "admin"}
 
 
 class PresignBody(BaseModel):
@@ -164,8 +164,7 @@ def _sse(event_name: str, data: dict) -> str:
 
 
 def _require_importer(principal: Principal) -> None:
-    if principal.kind != "user" or principal.role not in _ROLES:
-        raise HTTPException(status_code=403, detail="You cannot import articles.")
+    require_capability(principal, "article.create", detail="You cannot import articles.")
 
 
 def _suffix(name: str) -> str:
