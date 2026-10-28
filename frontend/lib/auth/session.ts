@@ -16,6 +16,7 @@ export type AppSession = {
   email: string;
   name: string;
   role: "reader" | "author" | "reviewer" | "admin";
+  avatarUrl: string | null;
 };
 
 export function sessionCookieName(): string {
@@ -50,7 +51,7 @@ export async function getSession(): Promise<AppSession | null> {
 
   const user = await prisma.user.findUnique({
     where: { identityId: active.identityId },
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, email: true, name: true, role: true, avatarUrl: true },
   });
   if (!user) return null;
 
@@ -61,6 +62,7 @@ export async function getSession(): Promise<AppSession | null> {
     email: user.email,
     name: user.name,
     role: user.role,
+    avatarUrl: user.avatarUrl,
   };
 }
 

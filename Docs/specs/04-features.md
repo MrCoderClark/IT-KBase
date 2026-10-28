@@ -49,7 +49,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 - Typing two or more characters searches article text and filters Actions and Go to by name.
 - Notifications bell shows unread count (badge). Panel lists: ingestion-complete, review-requested, mention.
 - Theme toggle cycles light → dark → system.
-- User menu: profile, keyboard shortcuts (`?`), sign out.
+- User menu: profile (`/account`), keyboard shortcuts (`?`), security, sign out. The avatar uses a stored `avatarUrl` when set, otherwise [Gravatar](https://gravatar.com) for the account email (SHA-256 hash, `d=identicon` when that email has no photo). Article author chips resolve the same way on the server without putting the email in the page payload.
 
 ---
 

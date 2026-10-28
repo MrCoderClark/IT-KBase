@@ -6,6 +6,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { can, type Role } from "@/lib/auth/policy";
+import { resolveAvatarSrc } from "@/lib/avatar/gravatar";
 import { prisma } from "@/lib/db";
 import type {
   Article,
@@ -40,7 +41,7 @@ const articleListSelect = {
   tags: {
     select: { tag: { select: { name: true, slug: true } } },
   },
-  author: { select: { id: true, name: true, avatarUrl: true } },
+  author: { select: { id: true, name: true, email: true, avatarUrl: true } },
 } as const;
 
 const versionWithSections = {
@@ -61,7 +62,7 @@ const articleDetailInclude = {
   tags: {
     select: { tag: { select: { name: true, slug: true } } },
   },
-  author: { select: { id: true, name: true, avatarUrl: true } },
+  author: { select: { id: true, name: true, email: true, avatarUrl: true } },
   currentVersion: versionWithSections,
 } as const;
 
@@ -93,7 +94,11 @@ function mapListArticle(row: PrismaArticleList): Article {
       ? { name: row.category.name, slug: row.category.slug, color: row.category.color }
       : null,
     tags: row.tags.map((at) => ({ name: at.tag.name, slug: at.tag.slug })),
-    author: { id: row.author.id, name: row.author.name, avatarUrl: row.author.avatarUrl },
+    author: {
+      id: row.author.id,
+      name: row.author.name,
+      avatarUrl: resolveAvatarSrc(row.author.email, row.author.avatarUrl, 48),
+    },
     sections: [],
     views: row.views,
     helpful: row.helpful,
@@ -370,7 +375,12 @@ function mapDetailArticle(
     version: string;
     category: { name: string; slug: string; color: string | null } | null;
     tags: { tag: { name: string; slug: string } }[];
-    author: { id: string; name: string; avatarUrl: string | null };
+    author: {
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    };
     views: number;
     helpful: number;
     notHelpful: number;
@@ -398,7 +408,12 @@ function mapDetailArticle(
       ? { name: row.category.name, slug: row.category.slug, color: row.category.color }
       : null,
     tags: row.tags.map((at) => ({ name: at.tag.name, slug: at.tag.slug })),
-    author: { id: row.author.id, name: row.author.name, avatarUrl: row.author.avatarUrl },
+    author: {
+      id: row.author.id,
+      name: row.author.name,
+      // Resolved Gravatar URL — email never leaves the server in this payload.
+      avatarUrl: resolveAvatarSrc(row.author.email, row.author.avatarUrl, 48),
+    },
     sections,
     views: row.views,
     helpful: row.helpful,
@@ -480,7 +495,7 @@ export async function getArticleVersion(
       versions: {
         where: { version },
         include: {
-          author: { select: { id: true, name: true, avatarUrl: true } },
+          author: { select: { id: true, name: true, email: true, avatarUrl: true } },
           sections: {
             orderBy: { order: "asc" },
             include: { blocks: { orderBy: { order: "asc" } } },
@@ -511,7 +526,7 @@ export async function getArticleVersion(
       author: {
         id: snap.author.id,
         name: snap.author.name,
-        avatarUrl: snap.author.avatarUrl,
+        avatarUrl: resolveAvatarSrc(snap.author.email, snap.author.avatarUrl, 48),
       },
       sections: snap.sections.map(mapSection),
       views: row.views,

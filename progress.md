@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/article-shortcuts)
+Last updated: 2026-10-27 (feat/avatar-menu)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -15,7 +15,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view + article shortcuts done; avatar menu / notifications remain) |
+| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view + shortcuts + avatar/Gravatar done; notifications remain) |
 | M2 | Create / edit article (manual)     | Week 4        | ✅ (nodes, autosave, reader preview) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -66,11 +66,11 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Upload CTA card (bottom of sidebar) with gradient treatment. Hidden, with AI Assistant and Import, unless the role can create an article. Analytics stays reviewer and admin.
 - ✅ Article lists, search, the page tree, and a direct link follow the role. A reader sees published articles. An admin also sees archived articles.
 - ✅ Home brief: published count, your drafts (links to `/kb/drafts`), in-review count, and the five newest articles
-- 🟡 Top bar: layout + bell + theme toggle done; search opens the command palette. Avatar menu has Sign out. Profile and shortcut entries remain
+- ✅ Top bar: layout + bell + theme toggle; search opens the command palette. Avatar menu with Profile / shortcuts / security / sign out + Gravatar. Checked 2026-10-28.
 - ✅ Light / dark theme toggle (persists in `localStorage`, no FOUC via pre-paint script)
 - ✅ Command palette (`cmdk`): `Ctrl+K` and the top-bar search find articles by title, category, and tag, and jump to Home, Knowledge Base, Create, Categories, and Tags
 - ✅ Command palette actions (create, import, theme, shortcuts, analytics) and recent 10 articles
-- 🟡 User menu: avatar opens a dropdown with Sign out (checked in the browser). Profile and keyboard-shortcut entries remain
+- ✅ User menu: Profile, Keyboard shortcuts, Security, Sign out; Gravatar identicon (or photo) for account email. Checked 2026-10-28.
 - ⬜ Notifications panel
 
 ### Article detail view
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 10 in [Docs/suggested-order.md](Docs/suggested-order.md), avatar menu. A scanned page was not tried. Redis queue remains later.
+Next: item 11 in [Docs/suggested-order.md](Docs/suggested-order.md), notifications. A scanned page was not tried. Redis queue remains later.
 
 ---
 

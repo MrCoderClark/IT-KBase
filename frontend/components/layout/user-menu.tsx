@@ -2,22 +2,29 @@
 
 import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { UserAvatar } from "@/components/kb/user-avatar";
+import { SHORTCUTS_EVENT } from "@/components/layout/keyboard-shortcuts";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/lib/auth/actions";
 
-export function UserMenu({ name, role }: { name: string; role: string }) {
+export function UserMenu({
+  name,
+  role,
+  email,
+  avatarSrc,
+}: {
+  name: string;
+  role: string;
+  email: string;
+  avatarSrc: string | null;
+}) {
   const router = useRouter();
-  const initials = name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
 
   return (
     <DropdownMenu>
@@ -25,9 +32,7 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
         aria-label={`Account menu for ${name}`}
         className="ml-1 inline-flex h-10 items-center gap-2.5 rounded-sm pr-2 pl-1 text-left outline-none transition-colors hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-accent data-popup-open:bg-white/[0.06]"
       >
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-white">
-          {initials}
-        </span>
+        <UserAvatar name={name} src={avatarSrc} size={32} />
         <span className="hidden min-w-0 sm:block">
           <span className="block truncate text-[13px] leading-4 font-semibold text-white">
             {name}
@@ -42,10 +47,24 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
           aria-hidden
         />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8}>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-[200px]">
+        <div className="px-2 py-1.5">
+          <p className="truncate text-[13px] font-semibold text-fg">{name}</p>
+          <p className="truncate text-[12px] text-fg-subtle">{email}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/account")}>Profile</DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            window.dispatchEvent(new Event(SHORTCUTS_EVENT));
+          }}
+        >
+          Keyboard shortcuts
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/account/security")}>
           Security
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
