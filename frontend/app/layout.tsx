@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { THEME_INIT_SCRIPT } from "@/lib/security/theme-init-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,26 +34,6 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
 };
 
-/**
- * Blocking inline script to resolve the theme before paint.
- * Prevents a light-to-dark (or vice-versa) flash. Reads `tb_theme` from
- * localStorage; falls back to the system preference. Must stay in sync
- * with the theme toggle (added in a later pass).
- */
-const themeInitScript = `
-(function () {
-  try {
-    var stored = localStorage.getItem('tb_theme');
-    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var mode = stored === 'light' || stored === 'dark'
-      ? stored
-      : (systemDark ? 'dark' : 'light');
-    if (mode === 'dark') document.documentElement.classList.add('dark');
-    document.documentElement.dataset.theme = mode;
-  } catch (_) { /* no-op */ }
-})();
-`;
-
 export default function RootLayout({
   children,
 }: {
@@ -65,7 +46,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-canvas text-fg">
         {children}

@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/audit-list)
+Last updated: 2026-10-28 (feat/security-headers)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -164,6 +164,7 @@ Phase B:
 - ⬜ Finer permissions and organizations. OIDC (Entra ID, Google Workspace) and SAML
 - ✅ Users admin. Add an account, edit a name or email, change a role, turn sign-in off, and delete. A new password follows the reset rules. Delete asks for the email and reassigns articles to the acting admin. Self and last-admin changes are refused. Invite by email is later. Checked on `:3001`: added Casey Nguyen, renamed them, then deleted the account. Seeded users are unchanged.
 - ✅ Settings. An admin can set the accent, an optional logo URL, how long versions are kept, and allowed email domains. The signed-in shell uses the accent. Versions are not deleted, and sign-in is unchanged. Checked on `:3001`: a teal accent and 90-day retention saved, the Save button used that color after refresh, then both were put back to the defaults. Migration `20261015160000_site_setting` is applied.
+- ✅ Security headers. Next.js 16 `proxy.ts` sets HSTS, CSP (nonce + theme sha256 + strict-dynamic), Referrer-Policy, Permissions-Policy, nosniff, and X-Frame-Options DENY. Public `/kb` rewrite kept. Checked 2026-10-28.
 - ⬜ Integrations placeholder (ServiceNow, Jira, Teams webhook)
 - ⬜ Row-level permissions on drafts beyond the role matrix
 
@@ -190,7 +191,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 21 in [Docs/suggested-order.md](Docs/suggested-order.md), security headers. A scanned page was not tried. Redis queue remains later.
+Next: item 22 in [Docs/suggested-order.md](Docs/suggested-order.md), integrations shell. A scanned page was not tried. Redis queue remains later.
 
 ---
 
