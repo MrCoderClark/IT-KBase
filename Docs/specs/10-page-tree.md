@@ -89,7 +89,8 @@ Each ancestor is a link. The breadcrumb replaces the current flat "Knowledge Bas
 - Drag a node onto another node → becomes last child of that node.
 - Drag a node between two nodes → reorder among siblings.
 - Drag a root node under another → becomes child.
-- Drag a child to root level (top or bottom of tree) → becomes root.
+- Drag a child to root level → becomes root. While dragging, the tree shows **Move to top of library** and **Move to end of library** strips; dropping before/after a root sibling also promotes to root.
+- After every move, sibling `order` values in the affected parent groups are rewritten `0..n` so reorder stays stable.
 
 ### Server action: `moveArticle`
 

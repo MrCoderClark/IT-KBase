@@ -6,11 +6,16 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, FileText, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { moveArticle } from "@/lib/actions/move-article";
+import {
+  ROOT_DROP_END,
+  ROOT_DROP_START,
+  applyTreeMove,
+  dropDestination,
+  type DropPlace,
+} from "@/lib/kb/tree-dnd";
 import type { ArticleTreeNode } from "@/lib/queries/article-tree";
 
 const STORAGE_KEY = "techbase:tree-expanded";
-
-type DropPlace = "before" | "after" | "inside";
 
 type DropTarget = {
   id: string;
@@ -18,8 +23,8 @@ type DropTarget = {
 };
 
 /**
- * Collapsible article tree. Reviewers drag the grip to reorder or re-parent.
- * The server action is the permission check.
+ * Collapsible article tree. Reviewers drag the grip to reorder, nest, or
+ * promote a page back to the top level (root drop strips).
  */
 export function SidebarArticleTree({
   tree,
@@ -87,15 +92,22 @@ export function SidebarArticleTree({
       const draggedId = draggingId;
       setDraggingId(null);
       setDrop(null);
-      if (!canMove || !draggedId || draggedId === targetId) return;
+      if (!canMove || !draggedId) return;
+      if (
+        draggedId === targetId &&
+        targetId !== ROOT_DROP_START &&
+        targetId !== ROOT_DROP_END
+      ) {
+        return;
+      }
 
       const destination = dropDestination(nodes, draggedId, targetId, place);
       if (!destination) return;
 
       const previous = nodes;
       setMoveError(null);
-      setNodes(applyMove(nodes, draggedId, destination.parentId, destination.order));
-      if (place === "inside") {
+      setNodes(applyTreeMove(nodes, draggedId, destination.parentId, destination.order));
+      if (place === "inside" && targetId !== ROOT_DROP_START && targetId !== ROOT_DROP_END) {
         setExpanded((prev) => new Set(prev).add(targetId));
       }
 
@@ -112,9 +124,22 @@ export function SidebarArticleTree({
 
   if (nodes.length === 0) return null;
 
+  const showRootZones = Boolean(canMove && draggingId);
+
   return (
     <div>
       <ul className="flex flex-col gap-0.5">
+        {showRootZones ? (
+          <li>
+            <RootDropZone
+              label="Move to top of library"
+              active={drop?.id === ROOT_DROP_START}
+              onHover={() => setDrop({ id: ROOT_DROP_START, place: "before" })}
+              onLeave={() => setDrop((current) => (current?.id === ROOT_DROP_START ? null : current))}
+              onDrop={() => onDrop(ROOT_DROP_START, "before")}
+            />
+          </li>
+        ) : null}
         {nodes.map((node) => (
           <TreeNode
             key={node.id}
@@ -135,10 +160,62 @@ export function SidebarArticleTree({
             onDrop={onDrop}
           />
         ))}
+        {showRootZones ? (
+          <li>
+            <RootDropZone
+              label="Move to end of library"
+              active={drop?.id === ROOT_DROP_END}
+              onHover={() => setDrop({ id: ROOT_DROP_END, place: "after" })}
+              onLeave={() => setDrop((current) => (current?.id === ROOT_DROP_END ? null : current))}
+              onDrop={() => onDrop(ROOT_DROP_END, "after")}
+            />
+          </li>
+        ) : null}
       </ul>
       {moveError ? (
         <p className="px-2 py-1 text-[11px] leading-4 text-amber-300">{moveError}</p>
       ) : null}
+    </div>
+  );
+}
+
+function RootDropZone({
+  label,
+  active,
+  onHover,
+  onLeave,
+  onDrop,
+}: {
+  label: string;
+  active: boolean;
+  onHover: () => void;
+  onLeave: () => void;
+  onDrop: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={-1}
+      aria-label={label}
+      className={cn(
+        "mx-1 my-0.5 rounded-sm border border-dashed px-2 py-1.5 text-center text-[11px] leading-4 transition-colors",
+        active
+          ? "border-[#93B4FF] bg-white/10 text-white"
+          : "border-white/15 text-sidebar-fg/50",
+      )}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onHover();
+      }}
+      onDragLeave={onLeave}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onDrop();
+      }}
+    >
+      {label}
     </div>
   );
 }
@@ -198,7 +275,9 @@ function TreeNode({
                 event.stopPropagation();
                 const rect = event.currentTarget.getBoundingClientRect();
                 const ratio = (event.clientY - rect.top) / rect.height;
-                const place: DropPlace = ratio < 0.28 ? "before" : ratio > 0.72 ? "after" : "inside";
+                // Wider before/after bands so sibling reorder is easier to hit.
+                const place: DropPlace =
+                  ratio < 0.35 ? "before" : ratio > 0.65 ? "after" : "inside";
                 onDragHover({ id: node.id, place });
               }
             : undefined
@@ -309,88 +388,4 @@ function findAncestors(nodes: ArticleTreeNode[], slug: string, ancestors: string
     }
   }
   return null;
-}
-
-function contains(root: ArticleTreeNode | null, id: string): boolean {
-  if (!root) return false;
-  if (root.id === id) return true;
-  return root.children.some((child) => contains(child, id));
-}
-
-function locate(
-  nodes: ArticleTreeNode[],
-  id: string,
-  parent: ArticleTreeNode | null = null,
-): { parent: ArticleTreeNode | null; siblings: ArticleTreeNode[] } | null {
-  for (const node of nodes) {
-    if (node.id === id) return { parent, siblings: nodes };
-    const found = locate(node.children, id, node);
-    if (found) return found;
-  }
-  return null;
-}
-
-function dropDestination(
-  nodes: ArticleTreeNode[],
-  draggedId: string,
-  targetId: string,
-  place: DropPlace,
-): { parentId: string | null; order: number } | null {
-  const dragged = locate(nodes, draggedId);
-  if (!dragged) return null;
-  const draggedNode = dragged.siblings.find((node) => node.id === draggedId) ?? null;
-  if (place === "inside") {
-    if (draggedId === targetId || contains(draggedNode, targetId)) return null;
-    const target = locate(nodes, targetId);
-    const targetNode = target?.siblings.find((node) => node.id === targetId);
-    const childCount = (targetNode?.children ?? []).filter((child) => child.id !== draggedId).length;
-    return { parentId: targetId, order: childCount };
-  }
-  const target = locate(nodes, targetId);
-  if (!target) return null;
-  const parentId = target.parent?.id ?? null;
-  if (parentId && contains(draggedNode, parentId)) return null;
-  const siblings = target.siblings.filter((node) => node.id !== draggedId);
-  const index = siblings.findIndex((node) => node.id === targetId);
-  if (index < 0) return null;
-  return { parentId, order: place === "before" ? index : index + 1 };
-}
-
-function applyMove(
-  nodes: ArticleTreeNode[],
-  id: string,
-  parentId: string | null,
-  index: number,
-): ArticleTreeNode[] {
-  let moved: ArticleTreeNode | null = null;
-  const remove = (list: ArticleTreeNode[]): ArticleTreeNode[] => {
-    const next: ArticleTreeNode[] = [];
-    for (const node of list) {
-      if (node.id === id) {
-        moved = { ...node, children: node.children };
-        continue;
-      }
-      next.push({ ...node, children: remove(node.children) });
-    }
-    return next;
-  };
-  const stripped = remove(nodes);
-  const relocated = moved as ArticleTreeNode | null;
-  if (!relocated) return nodes;
-  const placed: ArticleTreeNode = { ...relocated, parentId };
-
-  const insert = (list: ArticleTreeNode[], pid: string | null): ArticleTreeNode[] => {
-    if (pid === null) {
-      const copy = list.slice();
-      copy.splice(Math.min(index, copy.length), 0, placed);
-      return copy.map((node, order) => ({ ...node, order }));
-    }
-    return list.map((node) => {
-      if (node.id !== pid) return { ...node, children: insert(node.children, pid) };
-      const children = node.children.slice();
-      children.splice(Math.min(index, children.length), 0, placed);
-      return { ...node, children: children.map((child, order) => ({ ...child, order })) };
-    });
-  };
-  return insert(stripped, parentId);
 }

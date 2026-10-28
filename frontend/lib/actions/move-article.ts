@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/policy";
@@ -10,14 +11,17 @@ export type MoveArticleResult =
   | { success: true }
   | { success: false; error: string };
 
+type Tx = Prisma.TransactionClient;
+
 /**
- * Move an article to a new parent and/or position.
- * Only reviewers and admins can move articles.
+ * Move an article to a new parent and/or sibling index.
+ * Only reviewers and admins can move articles. Sibling `order` values are
+ * rewritten 0..n so reorder stays stable even when older rows shared an order.
  */
 export async function moveArticle(
   articleId: string,
   newParentId: string | null,
-  newOrder: number
+  newOrder: number,
 ): Promise<MoveArticleResult> {
   const session = await getSession();
   if (!session) {
@@ -28,22 +32,19 @@ export async function moveArticle(
     return { success: false, error: "You cannot move articles." };
   }
 
-  // Validate article exists
   const article = await prisma.article.findUnique({
     where: { id: articleId },
-    select: { id: true, parentId: true, order: true },
+    select: { id: true, parentId: true },
   });
 
   if (!article) {
     return { success: false, error: "Article not found." };
   }
 
-  // Check for cycles
   if (await wouldCreateCycle(articleId, newParentId)) {
     return { success: false, error: "Cannot move an article under itself or its descendants." };
   }
 
-  // Validate new parent exists (if specified)
   if (newParentId) {
     const parent = await prisma.article.findUnique({
       where: { id: newParentId },
@@ -54,42 +55,20 @@ export async function moveArticle(
     }
   }
 
-  // If moving to the same parent, just reorder
-  if (article.parentId === newParentId) {
-    await reorderSiblings(articleId, newParentId, newOrder);
-  } else {
-    // Moving to a different parent
-    // 1. Remove from old parent's ordering
-    await prisma.article.updateMany({
-      where: {
-        parentId: article.parentId,
-        order: { gt: article.order },
-      },
-      data: {
-        order: { decrement: 1 },
-      },
-    });
+  const oldParentId = article.parentId;
 
-    // 2. Make space in new parent's ordering
-    await prisma.article.updateMany({
-      where: {
-        parentId: newParentId,
-        order: { gte: newOrder },
-      },
-      data: {
-        order: { increment: 1 },
-      },
-    });
-
-    // 3. Update the article
-    await prisma.article.update({
+  await prisma.$transaction(async (tx) => {
+    // Park the row so sibling renumbers never collide on unique-ish order gaps.
+    await tx.article.update({
       where: { id: articleId },
-      data: {
-        parentId: newParentId,
-        order: newOrder,
-      },
+      data: { parentId: newParentId, order: -1 },
     });
-  }
+
+    if (oldParentId !== newParentId) {
+      await renumberSiblings(tx, oldParentId);
+    }
+    await renumberSiblings(tx, newParentId, articleId, newOrder);
+  });
 
   revalidatePath("/kb");
   revalidatePath("/");
@@ -98,52 +77,34 @@ export async function moveArticle(
 }
 
 /**
- * Reorder within the same parent.
+ * Write contiguous `order` values for one sibling group.
+ * When `insertId` is set, that article is placed at `insertAt` among the others.
  */
-async function reorderSiblings(
-  articleId: string,
+async function renumberSiblings(
+  tx: Tx,
   parentId: string | null,
-  newOrder: number
+  insertId?: string,
+  insertAt?: number,
 ): Promise<void> {
-  const article = await prisma.article.findUnique({
-    where: { id: articleId },
-    select: { order: true },
+  const rows = await tx.article.findMany({
+    where: {
+      parentId,
+      ...(insertId ? { id: { not: insertId } } : {}),
+    },
+    select: { id: true },
+    orderBy: [{ order: "asc" }, { title: "asc" }],
   });
-
-  if (!article) return;
-
-  const oldOrder = article.order;
-
-  if (newOrder === oldOrder) return;
-
-  if (newOrder > oldOrder) {
-    // Moving down: shift items between old and new up
-    await prisma.article.updateMany({
-      where: {
-        parentId,
-        order: { gt: oldOrder, lte: newOrder },
-        id: { not: articleId },
-      },
-      data: {
-        order: { decrement: 1 },
-      },
-    });
-  } else {
-    // Moving up: shift items between new and old down
-    await prisma.article.updateMany({
-      where: {
-        parentId,
-        order: { gte: newOrder, lt: oldOrder },
-        id: { not: articleId },
-      },
-      data: {
-        order: { increment: 1 },
-      },
+  const ids = rows.map((row) => row.id);
+  if (insertId != null && insertAt != null) {
+    const clamped = Math.max(0, Math.min(insertAt, ids.length));
+    ids.splice(clamped, 0, insertId);
+  }
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    if (!id) continue;
+    await tx.article.update({
+      where: { id },
+      data: { order: i },
     });
   }
-
-  await prisma.article.update({
-    where: { id: articleId },
-    data: { order: newOrder },
-  });
 }

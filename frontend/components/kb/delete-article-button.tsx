@@ -51,8 +51,8 @@ export function DeleteArticleButton({
           <DialogHeader>
             <DialogTitle>Delete this article?</DialogTitle>
             <DialogDescription>
-              {title} is removed, including its versions, notes, and votes. Child pages stay in the
-              library. This cannot be undone.
+              {title} is removed, including its versions, notes, and votes. If it still has child
+              pages, move or delete those first. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           {error ? <p className="text-[13px] text-danger">{error}</p> : null}

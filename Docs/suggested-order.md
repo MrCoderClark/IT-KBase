@@ -41,7 +41,7 @@ Search, category pages, and tag pages already work. Spec: `Docs/specs/04-feature
 
 ## 5. Finish the page system
 
-16. **Page tree leftovers.** Sibling reorder and moving a page back to the top level, if a pass through `Docs/specs/10-page-tree.md` still shows them open.
+16. ✅ **Page tree leftovers.** Checked 2026-10-28. Sibling reorder, root drop strips to promote to top level, contiguous order rewrite, delete blocked while children exist.
 17. **Per-page permissions.** Write the spec first. Then a page can narrow who sees it, and a child inherits that rule. This is item 4 in `progress.md` section 7b.
 
 Field-note replies and @mentions wait. `Docs/specs/11-article-notes.md` already says so.
