@@ -67,11 +67,73 @@ export async function deleteCategory(slug: string): Promise<CategoryResult> {
   });
   if (!current) return { ok: false, error: "Category not found." };
   if (current._count.articles > 0) {
-    return { ok: false, error: "This category still has articles." };
+    return { ok: false, error: "This category still has articles. Merge it first." };
   }
 
   await prisma.category.delete({ where: { id: current.id } });
   refreshCategories(slug);
+  return { ok: true };
+}
+
+/** Move every article from `fromSlug` onto `intoSlug`, then delete `fromSlug`. */
+export async function mergeCategory(
+  fromSlug: string,
+  intoSlug: string,
+): Promise<CategoryResult> {
+  const allowed = await requireCategoryAdmin();
+  if (!allowed.ok) return allowed;
+
+  if (fromSlug === intoSlug) {
+    return { ok: false, error: "Pick a different category to merge into." };
+  }
+
+  const [from, into] = await Promise.all([
+    prisma.category.findUnique({ where: { slug: fromSlug }, select: { id: true } }),
+    prisma.category.findUnique({ where: { slug: intoSlug }, select: { id: true } }),
+  ]);
+  if (!from) return { ok: false, error: "Category not found." };
+  if (!into) return { ok: false, error: "Target category not found." };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.article.updateMany({
+      where: { categoryId: from.id },
+      data: { categoryId: into.id },
+    });
+    await tx.category.delete({ where: { id: from.id } });
+  });
+
+  refreshCategories(fromSlug);
+  refreshCategories(intoSlug);
+  revalidatePath("/kb");
+  return { ok: true };
+}
+
+/** Set or clear the optional chip color (`#RRGGBB`, or null for accent default). */
+export async function setCategoryColor(
+  slug: string,
+  rawColor: string | null,
+): Promise<CategoryResult> {
+  const allowed = await requireCategoryAdmin();
+  if (!allowed.ok) return allowed;
+
+  const current = await prisma.category.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!current) return { ok: false, error: "Category not found." };
+
+  let color: string | null = null;
+  if (rawColor != null && rawColor.trim() !== "") {
+    const value = rawColor.trim().toUpperCase();
+    if (!/^#[0-9A-F]{6}$/.test(value)) {
+      return { ok: false, error: "Use a hex color like #1E6BFF." };
+    }
+    color = value;
+  }
+
+  await prisma.category.update({ where: { id: current.id }, data: { color } });
+  refreshCategories(slug);
+  revalidatePath("/kb");
   return { ok: true };
 }
 

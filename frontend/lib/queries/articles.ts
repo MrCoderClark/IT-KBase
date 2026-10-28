@@ -546,12 +546,14 @@ export async function getCategoryIndex(role: Role, userId: string) {
     select: {
       name: true,
       slug: true,
+      color: true,
       _count: { select: { articles: { where: visible } } },
     },
   });
   return rows.map((row) => ({
     name: row.name,
     slug: row.slug,
+    color: row.color,
     count: row._count.articles,
   }));
 }
