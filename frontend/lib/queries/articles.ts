@@ -4,7 +4,7 @@
  * These run in Server Components only. Never import from client components.
  */
 
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { can, type Role } from "@/lib/auth/policy";
 import { resolveAvatarSrc } from "@/lib/avatar/gravatar";
 import { prisma } from "@/lib/db";
@@ -12,6 +12,7 @@ import {
   type ArticleFacetFilters,
   updatedWithinCutoff,
 } from "@/lib/kb/article-filters";
+import { relatedSearchText } from "@/lib/kb/related";
 import type {
   Article,
   ArticleStatus,
@@ -313,41 +314,87 @@ export async function getKbNavCounts(role: Role, userId: string): Promise<{
 
 const RELATED_LIMIT = 4;
 
+type RelatedRow = { title: string; slug: string };
+
 /**
  * Up to four published articles for the right rail.
- * Same category first, then other published articles.
+ * Rank by FTS against the current title, tags, and summary (same-category
+ * boosted). Fill any shortfall with same-category, then other published.
+ * Embeddings stay post-pilot.
  */
 export async function getRelatedArticles(article: {
   slug: string;
+  title: string;
+  summary: string | null;
   category: { slug: string } | null;
-}): Promise<{ title: string; slug: string }[]> {
-  const select = { title: true, slug: true } as const;
-  const sameCategory = article.category
-    ? await prisma.article.findMany({
-        where: {
-          status: "published",
-          slug: { not: article.slug },
-          category: { slug: article.category.slug },
-        },
-        select,
-        orderBy: { updatedAt: "desc" },
-        take: RELATED_LIMIT,
-      })
-    : [];
+  tags: { name: string }[];
+}): Promise<RelatedRow[]> {
+  const picked: RelatedRow[] = [];
+  const seen = new Set<string>([article.slug]);
+  const queryText = relatedSearchText(article);
 
-  if (sameCategory.length >= RELATED_LIMIT) return sameCategory;
+  if (queryText) {
+    const categorySlug = article.category?.slug ?? "";
+    const hasCategory = Boolean(article.category?.slug);
+    const ranked = await prisma.$queryRaw<RelatedRow[]>(Prisma.sql`
+      WITH q AS (
+        SELECT plainto_tsquery('english', ${queryText}) AS query
+      )
+      SELECT a.title, a.slug
+      FROM "public"."Article" a
+      CROSS JOIN q
+      LEFT JOIN "public"."Category" c ON c.id = a."categoryId"
+      WHERE a.status = 'published'
+        AND a.slug <> ${article.slug}
+        AND numnode(q.query) > 0
+        AND a."searchVector" @@ q.query
+      ORDER BY
+        CASE WHEN ${hasCategory} AND c.slug = ${categorySlug} THEN 1 ELSE 0 END DESC,
+        ts_rank(a."searchVector", q.query) DESC,
+        a."updatedAt" DESC
+      LIMIT ${RELATED_LIMIT}
+    `);
+    for (const row of ranked) {
+      picked.push(row);
+      seen.add(row.slug);
+    }
+  }
+
+  if (picked.length >= RELATED_LIMIT) return picked;
+
+  const select = { title: true, slug: true } as const;
+  const exclude = [...seen];
+
+  if (article.category) {
+    const sameCategory = await prisma.article.findMany({
+      where: {
+        status: "published",
+        slug: { notIn: exclude },
+        category: { slug: article.category.slug },
+      },
+      select,
+      orderBy: { updatedAt: "desc" },
+      take: RELATED_LIMIT - picked.length,
+    });
+    for (const row of sameCategory) {
+      picked.push(row);
+      seen.add(row.slug);
+    }
+  }
+
+  if (picked.length >= RELATED_LIMIT) return picked;
 
   const filler = await prisma.article.findMany({
     where: {
       status: "published",
-      slug: { notIn: [article.slug, ...sameCategory.map((row) => row.slug)] },
+      slug: { notIn: [...seen] },
     },
     select,
     orderBy: { updatedAt: "desc" },
-    take: RELATED_LIMIT - sameCategory.length,
+    take: RELATED_LIMIT - picked.length,
   });
 
-  return [...sameCategory, ...filler];
+  return [...picked, ...filler];
 }
 
 /** Single article by slug with full section + block tree. */
