@@ -150,7 +150,10 @@ async function VersionRead({
 }) {
   const snap = await getArticleVersion(slug, version);
   if (!snap) notFound();
-  const related = await getRelatedArticles(snap.article);
+  const session = await getSession();
+  const related = session
+    ? await getRelatedArticles(snap.article, session.role, session.userId)
+    : await getRelatedArticles(snap.article);
   const historyHref = `/kb/${snap.article.slug}/history`;
 
   return (

@@ -9,11 +9,20 @@ import {
   Printer,
 } from "lucide-react";
 import { ArticleFeedback } from "@/components/kb/article-feedback";
+import { PageAccessControl } from "@/components/kb/page-access-control";
 import { ViewTrendCard } from "@/components/kb/view-trend-card";
 import type { TrendPoint } from "@/lib/kb/view-trend";
-import type { Article } from "@/lib/types/article";
+import type { EffectivePageAccess } from "@/lib/kb/page-access";
+import type { AccessRoleFloor, Article, ArticleAccessMode } from "@/lib/types/article";
 import { TagChip } from "@/components/kb/tag-chip";
 import { CategoryChip } from "@/components/kb/category-chip";
+
+export type PageAccessProps = {
+  canManage: boolean;
+  mode: ArticleAccessMode;
+  roleFloor: AccessRoleFloor | null;
+  effective: EffectivePageAccess;
+};
 
 /**
  * Right-rail meta column (320px sticky).
@@ -28,6 +37,7 @@ export function ArticleRightRail({
   historyHref,
   feedbackNotice = null,
   trend = null,
+  pageAccess = null,
 }: {
   article: Article;
   related: { title: string; slug: string }[];
@@ -35,10 +45,11 @@ export function ArticleRightRail({
   historyHref?: string;
   feedbackNotice?: string | null;
   trend?: TrendPoint[] | null;
+  pageAccess?: PageAccessProps | null;
 }) {
   return (
     <aside className="sticky top-24 flex w-[300px] shrink-0 self-start flex-col gap-5">
-      <ArticleDetailsCard article={article} historyHref={historyHref} />
+      <ArticleDetailsCard article={article} historyHref={historyHref} pageAccess={pageAccess} />
       {trend ? (
         <ViewTrendCard points={trend} helpful={article.helpful} notHelpful={article.notHelpful} />
       ) : null}
@@ -60,9 +71,11 @@ export function ArticleRightRail({
 function ArticleDetailsCard({
   article,
   historyHref,
+  pageAccess = null,
 }: {
   article: Article;
   historyHref?: string;
+  pageAccess?: PageAccessProps | null;
 }) {
   const updatedDate = new Date(article.updatedAt).toLocaleDateString("en-US", {
     month: "short",
@@ -114,6 +127,18 @@ function ArticleDetailsCard({
             ))}
           </div>
         </DetailRow>
+
+        {pageAccess ? (
+          <div className="border-t border-border/60 pt-3.5">
+            <PageAccessControl
+              articleId={article.id}
+              mode={pageAccess.mode}
+              roleFloor={pageAccess.roleFloor}
+              effective={pageAccess.effective}
+              canManage={pageAccess.canManage}
+            />
+          </div>
+        ) : null}
 
         <DetailRow label="Last Updated">
           <span className="text-fg">{updatedDate}</span>

@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { AccessDenied } from "@/components/auth/access-denied";
 import { ArticleEditor } from "@/components/kb/editor/article-editor";
-import { canEditArticle, canReadArticle } from "@/lib/auth/policy";
+import { canEditArticle, canOpenArticle } from "@/lib/auth/policy";
+import { passesPageGate } from "@/lib/kb/page-access";
+import { effectiveArticleAccess } from "@/lib/queries/page-access";
 import { getSession } from "@/lib/auth/session";
 import { articleToDraft } from "@/lib/editor/draft";
 import {
@@ -44,11 +46,14 @@ async function EditEditor({
     getSession(),
   ]);
   if (!article || !session || !article.author.id) notFound();
+  const effective = await effectiveArticleAccess(article.id);
   if (
-    !canReadArticle(session.role, session.userId, {
-      authorId: article.author.id,
-      status: article.status,
-    })
+    !canOpenArticle(
+      session.role,
+      session.userId,
+      { authorId: article.author.id, status: article.status },
+      passesPageGate(session.role, effective),
+    )
   ) {
     notFound();
   }

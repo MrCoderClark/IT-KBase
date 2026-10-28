@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { articleSaveError, can, canEditArticle, canReadArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback, isPublicArticle, listableStatuses } from "./policy";
+import { articleSaveError, can, canEditArticle, canOpenArticle, canOpenPublicArticle, canReadArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback, isPublicArticle, listableStatuses } from "./policy";
 
 describe("role matrix", () => {
   it("lets every signed-in role read and only an admin manage the directory", () => {
@@ -66,6 +66,37 @@ describe("public articles", () => {
     assert.equal(isPublicArticle({ status: "archived", visibility: "public" }), false);
     assert.equal(isPublicArticle({ status: "published", visibility: "private" }), false);
     assert.equal(isPublicArticle({ status: "published" }), false);
+  });
+
+  it("blocks anonymous public when the page gate is a role floor", () => {
+    assert.equal(
+      canOpenPublicArticle({ status: "published", visibility: "public" }, "library"),
+      true,
+    );
+    assert.equal(
+      canOpenPublicArticle({ status: "published", visibility: "public" }, "role_floor"),
+      false,
+    );
+  });
+});
+
+describe("page access gate", () => {
+  it("lets an author keep a draft under a restricted parent", () => {
+    assert.equal(
+      canOpenArticle("author", "sarah", { authorId: "sarah", status: "draft" }, false),
+      true,
+    );
+  });
+
+  it("enforces the gate on published pages", () => {
+    assert.equal(
+      canOpenArticle("author", "sarah", { authorId: "sarah", status: "published" }, false),
+      false,
+    );
+    assert.equal(
+      canOpenArticle("author", "sarah", { authorId: "sarah", status: "published" }, true),
+      true,
+    );
   });
 });
 

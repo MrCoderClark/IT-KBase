@@ -228,13 +228,22 @@ async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]
   return rows.map(mapListArticle);
 }
 
+async function listOpenArticles(
+  role: Role,
+  userId: string,
+  where?: Prisma.ArticleWhereInput,
+): Promise<Article[]> {
+  const { filterArticlesByPageAccess } = await import("@/lib/queries/page-access");
+  return filterArticlesByPageAccess(role, userId, await listArticles(where));
+}
+
 /** Articles this role may see (no sections/blocks loaded). */
 export async function getAllArticles(
   role: Role,
   userId: string,
   filters?: ArticleFacetFilters | null,
 ): Promise<Article[]> {
-  return listArticles(facetWhere(readableWhere(role, userId), filters));
+  return listOpenArticles(role, userId, facetWhere(readableWhere(role, userId), filters));
 }
 
 /** AND category / status / updated-within onto a visibility where-clause. */
@@ -262,7 +271,7 @@ export async function getMyDrafts(userId: string): Promise<Article[]> {
 
 /** Articles still in the library that this role may see, newest first. */
 export async function getRecentlyUpdated(role: Role, userId: string): Promise<Article[]> {
-  return listArticles(libraryWhere(role, userId));
+  return listOpenArticles(role, userId, libraryWhere(role, userId));
 }
 
 /** Counts and the newest articles for the home brief. */
@@ -275,24 +284,19 @@ export async function getHomeBrief(role: Role, userId: string): Promise<{
   const inReviewWhere: Prisma.ArticleWhereInput = can(role, "article.editAny")
     ? { status: "in_review" }
     : { status: "in_review", authorId: userId };
-  const [published, drafts, inReview, recentRows] = await Promise.all([
+  const [published, drafts, inReview, recent] = await Promise.all([
     prisma.article.count({ where: { status: "published" } }),
     prisma.article.count({ where: { status: "draft", authorId: userId } }),
     can(role, "article.editOwn") || can(role, "article.editAny")
       ? prisma.article.count({ where: inReviewWhere })
       : Promise.resolve(0),
-    prisma.article.findMany({
-      where: libraryWhere(role, userId),
-      select: articleListSelect,
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-    }),
+    listOpenArticles(role, userId, libraryWhere(role, userId)).then((rows) => rows.slice(0, 5)),
   ]);
   return {
     published,
     drafts,
     inReview,
-    recent: recentRows.map(mapListArticle),
+    recent,
   };
 }
 
@@ -322,16 +326,21 @@ type RelatedRow = { title: string; slug: string };
  * boosted). Fill any shortfall with same-category, then other published.
  * Embeddings stay post-pilot.
  */
-export async function getRelatedArticles(article: {
-  slug: string;
-  title: string;
-  summary: string | null;
-  category: { slug: string } | null;
-  tags: { name: string }[];
-}): Promise<RelatedRow[]> {
+export async function getRelatedArticles(
+  article: {
+    slug: string;
+    title: string;
+    summary: string | null;
+    category: { slug: string } | null;
+    tags: { name: string }[];
+  },
+  role?: Role,
+  userId?: string,
+): Promise<RelatedRow[]> {
   const picked: RelatedRow[] = [];
   const seen = new Set<string>([article.slug]);
   const queryText = relatedSearchText(article);
+  const overfetch = role && userId ? RELATED_LIMIT * 3 : RELATED_LIMIT;
 
   if (queryText) {
     const categorySlug = article.category?.slug ?? "";
@@ -352,7 +361,7 @@ export async function getRelatedArticles(article: {
         CASE WHEN ${hasCategory} AND c.slug = ${categorySlug} THEN 1 ELSE 0 END DESC,
         ts_rank(a."searchVector", q.query) DESC,
         a."updatedAt" DESC
-      LIMIT ${RELATED_LIMIT}
+      LIMIT ${overfetch}
     `);
     for (const row of ranked) {
       picked.push(row);
@@ -360,21 +369,18 @@ export async function getRelatedArticles(article: {
     }
   }
 
-  if (picked.length >= RELATED_LIMIT) return picked;
-
   const select = { title: true, slug: true } as const;
-  const exclude = [...seen];
 
-  if (article.category) {
+  if (picked.length < overfetch && article.category) {
     const sameCategory = await prisma.article.findMany({
       where: {
         status: "published",
-        slug: { notIn: exclude },
+        slug: { notIn: [...seen] },
         category: { slug: article.category.slug },
       },
       select,
       orderBy: { updatedAt: "desc" },
-      take: RELATED_LIMIT - picked.length,
+      take: overfetch - picked.length,
     });
     for (const row of sameCategory) {
       picked.push(row);
@@ -382,19 +388,29 @@ export async function getRelatedArticles(article: {
     }
   }
 
-  if (picked.length >= RELATED_LIMIT) return picked;
+  if (picked.length < overfetch) {
+    const filler = await prisma.article.findMany({
+      where: {
+        status: "published",
+        slug: { notIn: [...seen] },
+      },
+      select,
+      orderBy: { updatedAt: "desc" },
+      take: overfetch - picked.length,
+    });
+    picked.push(...filler);
+  }
 
-  const filler = await prisma.article.findMany({
-    where: {
-      status: "published",
-      slug: { notIn: [...seen] },
-    },
-    select,
-    orderBy: { updatedAt: "desc" },
-    take: RELATED_LIMIT - picked.length,
+  if (!role || !userId) return picked.slice(0, RELATED_LIMIT);
+
+  const { filterArticlesByPageAccess } = await import("@/lib/queries/page-access");
+  const meta = await prisma.article.findMany({
+    where: { slug: { in: picked.map((row) => row.slug) } },
+    select: { id: true, slug: true, authorId: true, status: true },
   });
-
-  return [...picked, ...filler];
+  const open = await filterArticlesByPageAccess(role, userId, meta);
+  const openSlugs = new Set(open.map((row) => row.slug));
+  return picked.filter((row) => openSlugs.has(row.slug)).slice(0, RELATED_LIMIT);
 }
 
 /** Single article by slug with full section + block tree. */
@@ -441,6 +457,8 @@ function mapDetailArticle(
     heroImageUrl: string | null;
     status: string;
     visibility: "private" | "public";
+    accessMode: "inherit" | "library" | "role_floor";
+    accessRoleFloor: "reader" | "author" | "reviewer" | "admin" | null;
     readingTimeMinutes: number;
     version: string;
     category: { name: string; slug: string; color: string | null } | null;
@@ -472,6 +490,13 @@ function mapDetailArticle(
     heroImageUrl: row.heroImageUrl,
     status: row.status as ArticleStatus,
     visibility: row.visibility,
+    accessMode: row.accessMode,
+    accessRoleFloor:
+      row.accessRoleFloor === "author" ||
+      row.accessRoleFloor === "reviewer" ||
+      row.accessRoleFloor === "admin"
+        ? row.accessRoleFloor
+        : null,
     readingTimeMinutes: row.readingTimeMinutes,
     version: row.version,
     category: row.category
@@ -653,7 +678,7 @@ export async function getArticlesInCategory(slug: string, role: Role, userId: st
     select: { name: true },
   });
   if (!category) return null;
-  const articles = await listArticles({
+  const articles = await listOpenArticles(role, userId, {
     AND: [{ category: { slug } }, readableWhere(role, userId)],
   });
   return { name: category.name, articles };
@@ -666,7 +691,7 @@ export async function getArticlesWithTag(slug: string, role: Role, userId: strin
     select: { name: true },
   });
   if (!tag) return null;
-  const articles = await listArticles({
+  const articles = await listOpenArticles(role, userId, {
     AND: [{ tags: { some: { tag: { slug } } } }, readableWhere(role, userId)],
   });
   return { name: tag.name, articles };
