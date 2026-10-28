@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/category-merge-color)
+Last updated: 2026-10-28 (feat/search-filters)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -130,9 +130,9 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ## 5. Search & taxonomy (M4)
 
-- ✅ Postgres FTS. `Ctrl+K` and the article list search title, summary, tags, and the current version's text, and show a short snippet. Filters stay on the list. Checked on `:3001` as Joe Clark: "net user" found the local administrator article from the command in the steps, and "BitLocker" ranked the BitLocker article ahead of the password article that only mentions it in troubleshooting. Semantic search is later.
+- ✅ Postgres FTS. `Ctrl+K` and the article list search title, summary, tags, and the current version's text, and show a short snippet. Category, status, and updated-within also narrow FTS when passed. Checked on `:3001` as Joe Clark: "net user" found the local administrator article from the command in the steps, and "BitLocker" ranked the BitLocker article ahead of the password article that only mentions it in troubleshooting. Semantic search is later.
 - ✅ `Ctrl+K` palette. An empty query lists the last 10 articles this person opened or edited, then actions (create, import, theme, keyboard shortcuts, analytics for a reviewer) and pages. Typing still searches article text and filters those actions and pages by name. Closing the palette clears the query. Checked on `:3001` as Joe Clark: Recent led with the local administrator article, "dark" switched the theme and the top bar followed, and "bitlocker" still opened on the BitLocker article. Theme was put back to light.
-- ⬜ Facets: category, tag, status, updated-within
+- ✅ Facets: category, status, updated-within on `/kb` (URL) and FTS. Checked 2026-10-28. Tag facet still open.
 - ✅ Public category and tag browse pages (index + filtered article list)
 - ✅ Category admin: create, rename, merge, color, delete-when-empty. Checked 2026-10-28 on `/categories`.
 - ✅ Tag admin: create, rename, merge, delete-when-empty. Checked 2026-10-28 on `/tags`.
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 14 in [Docs/suggested-order.md](Docs/suggested-order.md), search filters. A scanned page was not tried. Redis queue remains later.
+Next: item 15 in [Docs/suggested-order.md](Docs/suggested-order.md), related articles by text. A scanned page was not tried. Redis queue remains later.
 
 ---
 

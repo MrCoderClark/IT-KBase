@@ -106,6 +106,8 @@ interface ArticleFiltersProps {
   statuses: ArticleStatus[];
   selectedPeriod: string | null;
   onPeriodChange: (period: string | null) => void;
+  /** Prefer a single clear when facets sync to the URL. */
+  onClearAll?: () => void;
 }
 
 const STATUS_OPTIONS: { value: ArticleStatus; label: string }[] = [
@@ -130,6 +132,7 @@ export default function ArticleFilters({
   statuses,
   selectedPeriod,
   onPeriodChange,
+  onClearAll,
 }: ArticleFiltersProps) {
   const hasFilters = selectedCategory || selectedStatus || selectedPeriod;
 
@@ -158,6 +161,10 @@ export default function ArticleFilters({
         <button
           type="button"
           onClick={() => {
+            if (onClearAll) {
+              onClearAll();
+              return;
+            }
             onCategoryChange(null);
             onStatusChange(null);
             onPeriodChange(null);

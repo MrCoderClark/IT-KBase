@@ -8,6 +8,10 @@ import type { Prisma } from "@prisma/client";
 import { can, type Role } from "@/lib/auth/policy";
 import { resolveAvatarSrc } from "@/lib/avatar/gravatar";
 import { prisma } from "@/lib/db";
+import {
+  type ArticleFacetFilters,
+  updatedWithinCutoff,
+} from "@/lib/kb/article-filters";
 import type {
   Article,
   ArticleStatus,
@@ -224,8 +228,27 @@ async function listArticles(where?: Prisma.ArticleWhereInput): Promise<Article[]
 }
 
 /** Articles this role may see (no sections/blocks loaded). */
-export async function getAllArticles(role: Role, userId: string): Promise<Article[]> {
-  return listArticles(readableWhere(role, userId));
+export async function getAllArticles(
+  role: Role,
+  userId: string,
+  filters?: ArticleFacetFilters | null,
+): Promise<Article[]> {
+  return listArticles(facetWhere(readableWhere(role, userId), filters));
+}
+
+/** AND category / status / updated-within onto a visibility where-clause. */
+function facetWhere(
+  base: Prisma.ArticleWhereInput,
+  filters?: ArticleFacetFilters | null,
+): Prisma.ArticleWhereInput {
+  if (!filters) return base;
+  const parts: Prisma.ArticleWhereInput[] = [base];
+  if (filters.category) parts.push({ category: { slug: filters.category } });
+  if (filters.status) parts.push({ status: filters.status });
+  if (filters.updated) {
+    parts.push({ updatedAt: { gte: updatedWithinCutoff(filters.updated) } });
+  }
+  return parts.length === 1 ? base : { AND: parts };
 }
 
 /** Drafts owned by the signed-in user. */

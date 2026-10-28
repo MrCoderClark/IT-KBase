@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { can, type Role } from "@/lib/auth/policy";
 import { prisma } from "@/lib/db";
+import {
+  type ArticleFacetFilters,
+  updatedWithinCutoff,
+} from "@/lib/kb/article-filters";
 import { SNIPPET_START, SNIPPET_STOP } from "@/lib/kb/search";
 import type { ArticleStatus } from "@/lib/types/article";
 
@@ -27,8 +31,18 @@ export async function searchArticles(
   limit: number,
   role: Role,
   userId: string,
+  filters?: ArticleFacetFilters | null,
 ): Promise<SearchHit[]> {
   const visibility = searchVisibility(role, userId);
+  const categoryClause = filters?.category
+    ? Prisma.sql`AND c.slug = ${filters.category}`
+    : Prisma.empty;
+  const statusClause = filters?.status
+    ? Prisma.sql`AND a.status::text = ${filters.status}`
+    : Prisma.empty;
+  const updatedClause = filters?.updated
+    ? Prisma.sql`AND a."updatedAt" >= ${updatedWithinCutoff(filters.updated)}`
+    : Prisma.empty;
   const rows = await prisma.$queryRaw<
     { slug: string; title: string; status: ArticleStatus; category: string | null; snippet: string | null }[]
   >(Prisma.sql`
@@ -51,6 +65,9 @@ export async function searchArticles(
     LEFT JOIN "public"."Category" c ON c.id = a."categoryId"
     WHERE a."searchVector" @@ query.q
       AND ${visibility}
+      ${categoryClause}
+      ${statusClause}
+      ${updatedClause}
     ORDER BY ts_rank(a."searchVector", query.q) DESC, a.title ASC
     LIMIT ${limit}
   `);

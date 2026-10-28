@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpDown,
   ArrowUp,
@@ -12,6 +13,12 @@ import {
   Search,
 } from "lucide-react";
 import { can, canEditArticle, listableStatuses, type Role } from "@/lib/auth/policy";
+import {
+  type ArticleFacetFilters,
+  articleFacetsQuery,
+  articleFacetsToSearchParams,
+  EMPTY_ARTICLE_FACETS,
+} from "@/lib/kb/article-filters";
 import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { DeleteArticleButton } from "@/components/kb/delete-article-button";
@@ -56,38 +63,34 @@ function comparator(key: SortKey, dir: SortDir) {
 // Filtering
 // ---------------------------------------------------------------------------
 
-function daysAgo(days: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d;
-}
-
-function applyFilters(
+function applyClientFacets(
   articles: Article[],
-  category: string | null,
-  status: ArticleStatus | null,
-  period: string | null,
-  search: string,
+  facets: ArticleFacetFilters,
 ): Article[] {
   let result = articles;
-  if (category) result = result.filter((a) => a.category?.slug === category);
-  if (status) result = result.filter((a) => a.status === status);
-  if (period) {
-    const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
-    const cutoff = daysAgo(days);
+  if (facets.category) {
+    result = result.filter((a) => a.category?.slug === facets.category);
+  }
+  if (facets.status) result = result.filter((a) => a.status === facets.status);
+  if (facets.updated) {
+    const days = facets.updated === "7d" ? 7 : facets.updated === "30d" ? 30 : 90;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
     result = result.filter((a) => new Date(a.updatedAt) >= cutoff);
   }
-  if (search.trim()) {
-    const q = search.trim().toLowerCase();
-    result = result.filter(
-      (a) =>
-        a.title.toLowerCase().includes(q) ||
-        a.summary?.toLowerCase().includes(q) ||
-        a.category?.name.toLowerCase().includes(q) ||
-        a.tags.some((t) => t.name.toLowerCase().includes(q)),
-    );
-  }
   return result;
+}
+
+function applyClientSearch(articles: Article[], search: string): Article[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return articles;
+  return articles.filter(
+    (a) =>
+      a.title.toLowerCase().includes(q) ||
+      a.summary?.toLowerCase().includes(q) ||
+      a.category?.name.toLowerCase().includes(q) ||
+      a.tags.some((t) => t.name.toLowerCase().includes(q)),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +168,12 @@ interface ArticleTableProps {
   emptyTitle?: string;
   emptyHint?: string;
   actor?: { role: Role; userId: string } | null;
+  /** Full category list for the filter (preferred over deriving from rows). */
+  categories?: ArticleCategory[];
+  /** Initial / server-driven facets (URL on `/kb`). */
+  facets?: ArticleFacetFilters;
+  /** Rewrite the current path query when a facet changes. */
+  syncFacetsToUrl?: boolean;
 }
 
 function deriveCategories(articles: Article[]): ArticleCategory[] {
@@ -182,17 +191,35 @@ export default function ArticleTable({
   emptyTitle = "No articles match your filters",
   emptyHint = "Try broadening your search or removing a filter.",
   actor = null,
+  categories: categoriesProp,
+  facets: facetsProp,
+  syncFacetsToUrl = false,
 }: ArticleTableProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [density, setDensity] = useState<Density>("comfortable");
   const [search, setSearch] = useState("");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<ArticleStatus | null>(
-    null,
+  const [localFacets, setLocalFacets] = useState<ArticleFacetFilters>(
+    facetsProp ?? EMPTY_ARTICLE_FACETS,
   );
-  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+
+  const facets = syncFacetsToUrl ? (facetsProp ?? EMPTY_ARTICLE_FACETS) : localFacets;
+
+  function setFacets(next: ArticleFacetFilters) {
+    if (syncFacetsToUrl) {
+      const params = articleFacetsToSearchParams(next);
+      const query = params.toString();
+      startTransition(() => {
+        router.replace(query ? `${pathname}?${query}` : pathname);
+      });
+      return;
+    }
+    setLocalFacets(next);
+  }
 
   useEffect(() => {
     const trimmed = search.trim();
@@ -202,7 +229,10 @@ export default function ArticleTable({
     }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      void fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=20`, { signal: controller.signal })
+      const facetQs = articleFacetsQuery(facets);
+      void fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=20${facetQs}`, {
+        signal: controller.signal,
+      })
         .then((response) => (response.ok ? response.json() : { hits: [] }))
         .then((body: { hits?: SearchHit[] }) => {
           if (!controller.signal.aborted) setHits(body.hits ?? []);
@@ -215,7 +245,7 @@ export default function ArticleTable({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [search]);
+  }, [search, facets.category, facets.status, facets.updated]);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -227,14 +257,20 @@ export default function ArticleTable({
   };
 
   const filtered = useMemo(() => {
-    const narrowed = applyFilters(articles, selectedCategory, selectedStatus, selectedPeriod, "");
-    if (!hits) return applyFilters(articles, selectedCategory, selectedStatus, selectedPeriod, search);
-    const bySlug = new Map(narrowed.map((article) => [article.slug, article]));
-    return hits.flatMap((hit) => {
+    // Server already applied facets when syncing to the URL.
+    const base = syncFacetsToUrl ? articles : applyClientFacets(articles, facets);
+    if (!hits) return applyClientSearch(base, search);
+    // FTS already applied facets; keep hit order and drop rows not in the list.
+    const bySlug = new Map(base.map((article) => [article.slug, article]));
+    const fromHits = hits.flatMap((hit) => {
       const article = bySlug.get(hit.slug);
       return article ? [article] : [];
     });
-  }, [articles, hits, search, selectedCategory, selectedStatus, selectedPeriod]);
+    // Hits may include articles outside the current page's loaded set (e.g.
+    // /kb with facets already matching). Prefer hit order; include any hit
+    // we can resolve from the loaded rows.
+    return fromHits;
+  }, [articles, hits, search, facets, syncFacetsToUrl]);
 
   const ranked = Boolean(hits) && sortKey === "updatedAt" && sortDir === "desc";
   const sorted = useMemo(
@@ -244,6 +280,9 @@ export default function ArticleTable({
   const snippets = useMemo(() => new Map((hits ?? []).map((hit) => [hit.slug, hit.snippet])), [hits]);
 
   const isCompact = density === "compact";
+  const categoryOptions = categoriesProp?.length
+    ? [...categoriesProp].sort((a, b) => a.name.localeCompare(b.name))
+    : deriveCategories(articles);
 
   return (
     <div className="space-y-3">
@@ -274,14 +313,20 @@ export default function ArticleTable({
 
         {/* Filter dropdowns */}
         <ArticleFilters
-          categories={deriveCategories(articles)}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
+          categories={categoryOptions}
+          selectedCategory={facets.category}
+          onCategoryChange={(category) => setFacets({ ...facets, category })}
+          selectedStatus={facets.status}
+          onStatusChange={(status) => setFacets({ ...facets, status })}
           statuses={actor ? listableStatuses(actor.role) : ["published"]}
-          selectedPeriod={selectedPeriod}
-          onPeriodChange={setSelectedPeriod}
+          selectedPeriod={facets.updated}
+          onPeriodChange={(updated) =>
+            setFacets({
+              ...facets,
+              updated: updated as ArticleFacetFilters["updated"],
+            })
+          }
+          onClearAll={() => setFacets(EMPTY_ARTICLE_FACETS)}
         />
 
         {/* Right: count + density */}
