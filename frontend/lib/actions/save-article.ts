@@ -136,11 +136,21 @@ export async function saveArticle(
     return { ok: false, error: "Use Publish to release this article." };
   }
 
-  const visibility = can(session.role, "article.makePublic")
+  let visibility = can(session.role, "article.makePublic")
     ? input.visibility === "public"
       ? "public"
       : "private"
     : (existing?.visibility ?? "private");
+  if (visibility === "public" && existing) {
+    const { effectiveArticleAccess } = await import("@/lib/queries/page-access");
+    const effective = await effectiveArticleAccess(existing.id);
+    if (effective.mode === "role_floor") {
+      return {
+        ok: false,
+        error: "This page has a role floor. Clear page access to library or inherit before making it public.",
+      };
+    }
+  }
 
   const slug = existing ? existing.slug : await uniqueSlug(slugifyTitle(title));
   const version = nextArticleVersion(existing?.version ?? null, bump);
@@ -350,11 +360,21 @@ export async function autosaveArticle(input: EditorDraft): Promise<AutosaveResul
   });
   if (denied) return { ok: false, error: denied };
 
-  const visibility = can(session.role, "article.makePublic")
+  let visibility = can(session.role, "article.makePublic")
     ? input.visibility === "public"
       ? "public"
       : "private"
     : (existing?.visibility ?? "private");
+  if (visibility === "public" && existing) {
+    const { effectiveArticleAccess } = await import("@/lib/queries/page-access");
+    const effective = await effectiveArticleAccess(existing.id);
+    if (effective.mode === "role_floor") {
+      return {
+        ok: false,
+        error: "This page has a role floor. Clear page access to library or inherit before making it public.",
+      };
+    }
+  }
 
   const summary = input.summary.trim() || null;
   const minutes = readingMinutes(input.sections);

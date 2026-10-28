@@ -42,7 +42,7 @@ Search, category pages, and tag pages already work. Spec: `Docs/specs/04-feature
 ## 5. Finish the page system
 
 16. ✅ **Page tree leftovers.** Checked 2026-10-28. Sibling reorder, root drop strips to promote to top level, contiguous order rewrite, delete blocked while children exist.
-17. **Per-page permissions.** Spec checked 2026-10-28 (`12-per-page-permissions.md`). Next: implement inherit / library / role_floor. Item 4 in `progress.md` section 7b.
+17. ✅ **Per-page permissions.** Checked 2026-10-28. Inherit / library / role_floor on the article details card; children inherit; lists, tree, and search enforce the gate.
 
 Field-note replies and @mentions wait. `Docs/specs/11-article-notes.md` already says so.
 

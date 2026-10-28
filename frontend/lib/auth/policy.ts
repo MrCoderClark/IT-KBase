@@ -91,6 +91,30 @@ export function isPublicArticle(article: {
   return article.status === "published" && article.visibility === "public";
 }
 
+/**
+ * Status rule ∧ page gate (Docs/specs/12-per-page-permissions.md).
+ * Draft / in_review skip the page gate so authors keep their drafts under a
+ * restricted parent; published (and archived) enforce the floor.
+ */
+export function canOpenArticle(
+  role: Role,
+  userId: string,
+  article: { authorId: string; status: ArticleStatus },
+  passesGate: boolean,
+): boolean {
+  if (!canReadArticle(role, userId, article)) return false;
+  if (article.status === "draft" || article.status === "in_review") return true;
+  return passesGate;
+}
+
+/** Anonymous public view also requires effective library access (no role floor). */
+export function canOpenPublicArticle(
+  article: { status: ArticleStatus; visibility?: "private" | "public" },
+  effectiveMode: "library" | "role_floor",
+): boolean {
+  return isPublicArticle(article) && effectiveMode === "library";
+}
+
 export function canEditArticle(
   role: Role,
   userId: string,

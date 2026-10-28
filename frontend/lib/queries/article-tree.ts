@@ -1,7 +1,9 @@
 import { cache } from "react";
-import { canReadArticle, type ArticleStatus, type Role } from "@/lib/auth/policy";
+import { canOpenArticle, type ArticleStatus, type Role } from "@/lib/auth/policy";
 import { prisma } from "@/lib/db";
+import { passesPageGate, resolveEffectiveAccess } from "@/lib/kb/page-access";
 import { readableWhere } from "@/lib/queries/articles";
+import { loadPageAccessIndex } from "@/lib/queries/page-access";
 
 /**
  * A node in the article tree. Children are nested recursively.
@@ -19,24 +21,48 @@ export type ArticleTreeNode = {
 /**
  * Fetch all articles with tree fields, then build the nested structure.
  * For <100 articles, this is simpler than recursive CTEs.
+ * Restricted pages are omitted (orphaned visible children become roots).
  */
 export const getArticleTree = cache(async (role: Role, userId: string): Promise<ArticleTreeNode[]> => {
-  const articles = await prisma.article.findMany({
-    where: {
-      AND: [readableWhere(role, userId), { status: { not: "archived" } }],
-    },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      status: true,
-      parentId: true,
-      order: true,
-    },
-    orderBy: [{ parentId: "asc" }, { order: "asc" }, { title: "asc" }],
+  const [articles, accessIndex] = await Promise.all([
+    prisma.article.findMany({
+      where: {
+        AND: [readableWhere(role, userId), { status: { not: "archived" } }],
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        status: true,
+        parentId: true,
+        order: true,
+        authorId: true,
+      },
+      orderBy: [{ parentId: "asc" }, { order: "asc" }, { title: "asc" }],
+    }),
+    loadPageAccessIndex(),
+  ]);
+
+  const visible = articles.filter((article) => {
+    const effective = resolveEffectiveAccess(article.id, accessIndex);
+    return canOpenArticle(
+      role,
+      userId,
+      { authorId: article.authorId, status: article.status },
+      passesPageGate(role, effective),
+    );
   });
 
-  return buildTree(articles);
+  return buildTree(
+    visible.map(({ id, slug, title, status, parentId, order }) => ({
+      id,
+      slug,
+      title,
+      status,
+      parentId,
+      order,
+    })),
+  );
 });
 
 /**
@@ -95,6 +121,7 @@ export const getArticleAncestors = cache(
     userId: string,
   ): Promise<{ id: string; slug: string; title: string }[]> => {
     const ancestors: { id: string; slug: string; title: string }[] = [];
+    const accessIndex = await loadPageAccessIndex();
 
     let currentId: string | null = articleId;
     const visited = new Set<string>();
@@ -116,11 +143,18 @@ export const getArticleAncestors = cache(
       });
 
       if (!article) break;
-      if (
-        article.id !== articleId &&
-        canReadArticle(role, userId, { authorId: article.authorId, status: article.status })
-      ) {
-        ancestors.unshift({ id: article.id, slug: article.slug, title: article.title });
+      if (article.id !== articleId) {
+        const effective = resolveEffectiveAccess(article.id, accessIndex);
+        if (
+          canOpenArticle(
+            role,
+            userId,
+            { authorId: article.authorId, status: article.status },
+            passesPageGate(role, effective),
+          )
+        ) {
+          ancestors.unshift({ id: article.id, slug: article.slug, title: article.title });
+        }
       }
       currentId = article.parentId;
     }

@@ -76,6 +76,12 @@ enum ArticleVisibility {
   public
 }
 
+enum ArticleAccessMode {
+  inherit
+  library
+  role_floor
+}
+
 enum JobStatus {
   queued
   parsing
@@ -125,6 +131,8 @@ model Article {
   heroImageUrl       String?
   status             ArticleStatus   @default(draft)
   visibility         ArticleVisibility @default(private) // public is honored only when status=published
+  accessMode         ArticleAccessMode @default(inherit) // 12-per-page-permissions.md
+  accessRoleFloor    Role?           // set when accessMode = role_floor
   readingTimeMinutes Int             @default(0)
   version            String          @default("1.0")
 

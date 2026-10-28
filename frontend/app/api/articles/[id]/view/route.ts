@@ -1,9 +1,11 @@
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
-import { canReadArticle, isPublicArticle } from "@/lib/auth/policy";
+import { canOpenArticle, canOpenPublicArticle } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { articleViewerKey, viewDay } from "@/lib/kb/article-views";
+import { passesPageGate } from "@/lib/kb/page-access";
+import { effectiveArticleAccess } from "@/lib/queries/page-access";
 
 const VIEWER_COOKIE = "tb_viewer";
 
@@ -18,12 +20,20 @@ export async function POST(
   });
   if (!article) return new Response(null, { status: 404 });
 
+  const effective = await effectiveArticleAccess(article.id);
   const session = await getSession();
   if (session) {
-    if (!canReadArticle(session.role, session.userId, article)) {
+    if (
+      !canOpenArticle(
+        session.role,
+        session.userId,
+        article,
+        passesPageGate(session.role, effective),
+      )
+    ) {
       return new Response(null, { status: 404 });
     }
-  } else if (!isPublicArticle(article)) {
+  } else if (!canOpenPublicArticle(article, effective.mode)) {
     return new Response(null, { status: 404 });
   }
   const jar = await cookies();

@@ -8,6 +8,10 @@
 
 export type ArticleStatus = "draft" | "in_review" | "published" | "archived";
 
+export type ArticleAccessMode = "inherit" | "library" | "role_floor";
+
+export type AccessRoleFloor = "author" | "reviewer" | "admin";
+
 export type SectionKind =
   | "overview"
   | "prerequisites"
@@ -113,6 +117,9 @@ export interface Article {
   status: ArticleStatus;
   /** Omitted on static fixtures. Live rows always set it. Default private. */
   visibility?: "private" | "public";
+  /** Per-page access; omitted on list rows. Default inherit. */
+  accessMode?: ArticleAccessMode;
+  accessRoleFloor?: AccessRoleFloor | null;
   readingTimeMinutes: number;
   version: string;
   category: ArticleCategory | null;

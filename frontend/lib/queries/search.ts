@@ -43,17 +43,28 @@ export async function searchArticles(
   const updatedClause = filters?.updated
     ? Prisma.sql`AND a."updatedAt" >= ${updatedWithinCutoff(filters.updated)}`
     : Prisma.empty;
+  const overfetch = role === "admin" ? limit : Math.min(60, Math.max(limit * 4, limit));
   const rows = await prisma.$queryRaw<
-    { slug: string; title: string; status: ArticleStatus; category: string | null; snippet: string | null }[]
+    {
+      id: string;
+      slug: string;
+      title: string;
+      status: ArticleStatus;
+      category: string | null;
+      snippet: string | null;
+      authorId: string;
+    }[]
   >(Prisma.sql`
     WITH query AS (
       SELECT websearch_to_tsquery('english', ${query}) AS q
     )
     SELECT
+      a.id,
       a.slug,
       a.title,
       a.status::text AS status,
       c.name AS category,
+      a."authorId" AS "authorId",
       ts_headline(
         'english',
         coalesce(public.article_search_plain(a.id), a.title),
@@ -69,13 +80,44 @@ export async function searchArticles(
       ${statusClause}
       ${updatedClause}
     ORDER BY ts_rank(a."searchVector", query.q) DESC, a.title ASC
-    LIMIT ${limit}
+    LIMIT ${overfetch}
   `);
-  return rows.map((row) => ({
-    slug: row.slug,
-    title: row.title,
-    status: row.status,
-    category: row.category,
-    snippet: row.snippet ?? "",
-  }));
+
+  if (role === "admin") {
+    return rows.slice(0, limit).map((row) => ({
+      slug: row.slug,
+      title: row.title,
+      status: row.status,
+      category: row.category,
+      snippet: row.snippet ?? "",
+    }));
+  }
+
+  const { canOpenArticle } = await import("@/lib/auth/policy");
+  const { passesPageGate, resolveEffectiveAccess } = await import("@/lib/kb/page-access");
+  const { loadPageAccessIndex } = await import("@/lib/queries/page-access");
+  const index = await loadPageAccessIndex();
+  const hits: SearchHit[] = [];
+  for (const row of rows) {
+    const effective = resolveEffectiveAccess(row.id, index);
+    if (
+      !canOpenArticle(
+        role,
+        userId,
+        { authorId: row.authorId, status: row.status },
+        passesPageGate(role, effective),
+      )
+    ) {
+      continue;
+    }
+    hits.push({
+      slug: row.slug,
+      title: row.title,
+      status: row.status,
+      category: row.category,
+      snippet: row.snippet ?? "",
+    });
+    if (hits.length >= limit) break;
+  }
+  return hits;
 }

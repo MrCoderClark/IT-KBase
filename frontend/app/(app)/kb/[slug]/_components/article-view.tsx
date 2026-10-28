@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
-import { can, canEditArticle, canReadArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
+import { can, canEditArticle, canOpenArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
+import { passesPageGate } from "@/lib/kb/page-access";
 import { fillTrend, trendDays, type TrendPoint } from "@/lib/kb/view-trend";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/queries/articles";
 import { getArticleAncestors } from "@/lib/queries/article-tree";
 import { listArticleNotes } from "@/lib/queries/article-notes";
+import { effectiveArticleAccess } from "@/lib/queries/page-access";
 import { ArticleNotes } from "@/components/kb/article-notes";
 import { listArticleViewCounts } from "@/lib/queries/view-trend";
 import { Breadcrumbs, type BreadcrumbSegment } from "@/components/kb/breadcrumbs";
@@ -14,6 +16,7 @@ import { ArticleToc } from "@/components/kb/article-toc";
 import { ArticleContent } from "@/components/kb/article-content";
 import { RecordArticleView } from "@/components/kb/record-article-view";
 import { ArticleRightRail } from "@/components/kb/article-right-rail";
+import type { AccessRoleFloor, ArticleAccessMode } from "@/lib/types/article";
 
 function feedbackNotice(query: { notice?: string; e?: string }): string | null {
   if (query.notice === "feedback") return "Thanks. Your vote is saved.";
@@ -48,17 +51,21 @@ export async function ArticleView({
   const [article, session] = await Promise.all([getArticleBySlug(slug), getSession()]);
 
   if (!article || !session || !article.author.id) notFound();
+
+  const effective = await effectiveArticleAccess(article.id);
   if (
-    !canReadArticle(session.role, session.userId, {
-      authorId: article.author.id,
-      status: article.status,
-    })
+    !canOpenArticle(
+      session.role,
+      session.userId,
+      { authorId: article.author.id, status: article.status },
+      passesPageGate(session.role, effective),
+    )
   ) {
     notFound();
   }
 
   const [related, ancestors] = await Promise.all([
-    getRelatedArticles(article),
+    getRelatedArticles(article, session.role, session.userId),
     getArticleAncestors(article.id, session.role, session.userId),
   ]);
   let trend: TrendPoint[] | null = null;
@@ -75,6 +82,12 @@ export async function ArticleView({
         status: article.status,
       }),
   );
+  const pageAccess = {
+    canManage: can(session.role, "article.publish"),
+    mode: (article.accessMode ?? "inherit") as ArticleAccessMode,
+    roleFloor: (article.accessRoleFloor ?? null) as AccessRoleFloor | null,
+    effective,
+  };
 
   return (
     <div className="w-full px-6 py-6">
@@ -129,6 +142,7 @@ export async function ArticleView({
           canEdit={canEdit}
           historyHref={session && canReadArticleHistory(session.role) ? `/kb/${article.slug}/history` : undefined}
           feedbackNotice={feedbackNotice(query)}
+          pageAccess={pageAccess}
           trend={trend}
         />
       </div>
