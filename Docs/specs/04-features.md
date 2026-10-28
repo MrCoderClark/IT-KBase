@@ -166,7 +166,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
 **Behavior**:
 - Postgres FTS (`tsvector`) with weighted fields (title A, tags B, summary B, section titles C, body D).
 - `Ctrl+K` and the article-list search box query that index. Each hit shows the title and a short snippet with the matched words in bold.
-- The list still applies category, status, and date filters after the search. Pushing those filters into the FTS query is later.
+- Category, status, and updated-within (7d / 30d / 90d) narrow the Postgres query on `/kb` (URL params) and the FTS query used by the list search box and `Ctrl+K` callers that pass the same params.
 - Zero-result empty state suggests a broader word.
 
 **Non-goals (v1)**: embedding-based semantic search.
