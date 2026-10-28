@@ -9,6 +9,10 @@ import { getKbNavCounts } from "@/lib/queries/articles";
 import { getArticleTree } from "@/lib/queries/article-tree";
 import { listRecentPaletteArticles } from "@/lib/queries/recent-articles";
 import { resolveAvatarSrc } from "@/lib/avatar/gravatar";
+import {
+  countUnreadNotifications,
+  listNotifications,
+} from "@/lib/queries/notifications";
 import { accentTokens, type SiteSettings } from "@/lib/settings/site-settings";
 
 /** Signed-in chrome: dark sidebar, top bar, light canvas. */
@@ -37,12 +41,20 @@ export function AppFrame({
           <SidebarWithCounts userId={session.userId} role={session.role} logoUrl={settings.logoUrl} />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar
-            name={session.name}
-            role={session.role}
-            email={session.email}
-            avatarSrc={resolveAvatarSrc(session.email, session.avatarUrl, 64)}
-          />
+          <Suspense
+            fallback={
+              <Topbar
+                name={session.name}
+                role={session.role}
+                email={session.email}
+                avatarSrc={resolveAvatarSrc(session.email, session.avatarUrl, 64)}
+                notifications={[]}
+                unreadCount={0}
+              />
+            }
+          >
+            <TopbarWithNotifications session={session} />
+          </Suspense>
           <Suspense fallback={null}>
             <PaletteArticleSource role={session.role} userId={session.userId} />
           </Suspense>
@@ -53,6 +65,23 @@ export function AppFrame({
         </div>
       </div>
     </PaletteProvider>
+  );
+}
+
+async function TopbarWithNotifications({ session }: { session: AppSession }) {
+  const [notifications, unreadCount] = await Promise.all([
+    listNotifications(session.userId),
+    countUnreadNotifications(session.userId),
+  ]);
+  return (
+    <Topbar
+      name={session.name}
+      role={session.role}
+      email={session.email}
+      avatarSrc={resolveAvatarSrc(session.email, session.avatarUrl, 64)}
+      notifications={notifications}
+      unreadCount={unreadCount}
+    />
   );
 }
 

@@ -94,6 +94,14 @@ enum JobStatus {
   @@schema("public")
 }
 
+enum NotificationKind {
+  ingestion_complete
+  review_requested
+  mention
+
+  @@schema("public")
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -108,10 +116,11 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  articles Article[]        @relation("ArticleAuthor")
-  versions ArticleVersion[] @relation("VersionAuthor")
-  feedback Feedback[]
-  notes    ArticleNote[]     @relation("NoteAuthor")
+  articles      Article[]        @relation("ArticleAuthor")
+  versions      ArticleVersion[] @relation("VersionAuthor")
+  feedback      Feedback[]
+  notes         ArticleNote[]    @relation("NoteAuthor")
+  notifications Notification[]
 
   @@schema("public")
 }
@@ -314,6 +323,24 @@ model IngestionJob {
   createdAt      DateTime   @default(now())
 
   @@index([status, createdAt])
+  @@schema("public")
+}
+
+/// In-app bell items for the signed-in user (F2).
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  title     String
+  body      String?
+  href      String?
+  articleId String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
   @@schema("public")
 }
 

@@ -47,7 +47,7 @@ For each feature: **what it is**, **key screens**, **behavior**, **non-goals**. 
   - **Actions** — Create article (author and above), Import from file, Toggle theme, Keyboard shortcuts, and Analytics (reviewer and admin).
   - **Go to** — pages such as Home, All Articles, and Categories.
 - Typing two or more characters searches article text and filters Actions and Go to by name.
-- Notifications bell shows unread count (badge). Panel lists: ingestion-complete, review-requested, mention.
+- Notifications bell shows unread count (badge). The panel lists recent items: `ingestion_complete` (after a file import finishes), `review_requested` (when an article moves to In Review — reviewers and admins), and `mention` (seeded for now; @mentions in field notes come later). Click marks read and follows the link. Mark all read clears the badge.
 - Theme toggle cycles light → dark → system.
 - User menu: profile (`/account`), keyboard shortcuts (`?`), security, sign out. The avatar uses a stored `avatarUrl` when set, otherwise [Gravatar](https://gravatar.com) for the account email (SHA-256 hash, `d=identicon` when that email has no photo). Article author chips resolve the same way on the server without putting the email in the page payload.
 
