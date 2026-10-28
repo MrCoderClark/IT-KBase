@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-27 (feat/avatar-menu)
+Last updated: 2026-10-28 (feat/notifications)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -15,7 +15,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
 | M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | 🟡 (detail view + shortcuts + avatar/Gravatar done; notifications remain) |
+| M1 | Article detail view matches mock   | Week 3        | ✅ (detail, shortcuts, avatar/Gravatar, notifications) |
 | M2 | Create / edit article (manual)     | Week 4        | ✅ (nodes, autosave, reader preview) |
 | M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
 | M4 | Search, categories, tags           | Week 7        | ⬜     |
@@ -71,7 +71,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Command palette (`cmdk`): `Ctrl+K` and the top-bar search find articles by title, category, and tag, and jump to Home, Knowledge Base, Create, Categories, and Tags
 - ✅ Command palette actions (create, import, theme, shortcuts, analytics) and recent 10 articles
 - ✅ User menu: Profile, Keyboard shortcuts, Security, Sign out; Gravatar identicon (or photo) for account email. Checked 2026-10-28.
-- ⬜ Notifications panel
+- ✅ Notifications panel: unread badge, list, mark read / mark all. Import-complete and review-requested emit; mention seeded. Checked 2026-10-28.
 
 ### Article detail view
 - ✅ Breadcrumbs (`Knowledge Base > Articles`)
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | TBD | ⬜ Override role on one article, inherit down the tree |
 
-Next: item 11 in [Docs/suggested-order.md](Docs/suggested-order.md), notifications. A scanned page was not tried. Redis queue remains later.
+Next: item 12 in [Docs/suggested-order.md](Docs/suggested-order.md), tags admin. A scanned page was not tried. Redis queue remains later.
 
 ---
 

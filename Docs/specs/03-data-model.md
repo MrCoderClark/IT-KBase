@@ -13,6 +13,7 @@ User ──< ArticleVersion >── Article ──< Section
                                └── IngestionJob (optional link to source)
 
 User ─── Role (enum)
+User ──< Notification (bell: import, review, mention)
 IngestionJob ── SourceFile (S3 object)
 ```
 
@@ -293,6 +294,28 @@ model IngestionJob {
   createdAt       DateTime    @default(now())
 
   @@index([status, createdAt])
+}
+
+enum NotificationKind {
+  ingestion_complete
+  review_requested
+  mention
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  title     String
+  body      String?
+  href      String?
+  articleId String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }
 ```
 

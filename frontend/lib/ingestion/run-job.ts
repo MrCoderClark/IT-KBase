@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { jobStatusForStage } from "@/lib/ingestion/stages";
 import { emptyTrace, recordStage, type IngestTrace } from "@/lib/ingestion/trace";
 import { parsedToDraft, type ParsedDraft } from "@/lib/ingestion/to-draft";
+import { createNotification } from "@/lib/notifications/create";
 
 export type JobProgress = {
   jobId: string;
@@ -225,6 +226,15 @@ export async function* runIngestionJob(
       finishedAt: new Date(),
       trace,
     },
+  });
+
+  await createNotification({
+    userId: session.userId,
+    kind: "ingestion_complete",
+    title: "Import finished",
+    body: `“${job.sourceFileName}” is ready as a draft.`,
+    href: `/kb/${saved.slug}/edit`,
+    articleId: article?.id,
   });
 
   console.info(

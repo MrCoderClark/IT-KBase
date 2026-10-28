@@ -22,6 +22,7 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
+import { notifyReviewRequested } from "@/lib/notifications/create";
 
 const STATUSES: ArticleStatus[] = ["draft", "in_review", "published", "archived"];
 
@@ -148,6 +149,9 @@ export async function saveArticle(
     ...preservedSections(existing),
   ].map((section, order) => ({ ...section, order }));
 
+  const becameInReview =
+    status === "in_review" && existing?.status !== "in_review";
+
   const articleId = await prisma.$transaction(async (tx) => {
     // Determine order for new articles (append as last sibling)
     let newOrder = 0;
@@ -243,7 +247,19 @@ export async function saveArticle(
     if (draftId && draftId !== created.id) {
       await tx.articleVersion.delete({ where: { id: draftId } });
     }
+
+    return article.id;
   });
+
+  if (becameInReview || (!existing && status === "in_review")) {
+    await notifyReviewRequested({
+      articleId,
+      slug,
+      title,
+      authorId: existing?.authorId ?? session.userId,
+      authorName: session.name,
+    });
+  }
 
   revalidatePath("/kb");
   revalidatePath(`/kb/${slug}`);

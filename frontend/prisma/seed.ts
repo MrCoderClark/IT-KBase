@@ -654,6 +654,40 @@ async function main() {
   }
   console.log(`  ✅ ${ARTICLES.length} articles (with sections + blocks)`);
 
+  // Sample bell items for Joe so the notifications panel is not empty on first login.
+  const joeId = userMap.get("joe.clark@techbase.local");
+  if (joeId) {
+    await prisma.notification.deleteMany({ where: { userId: joeId } });
+    const sampleSlug = ARTICLES[0]?.slug ?? "reset-local-admin-password";
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: joeId,
+          kind: "ingestion_complete",
+          title: "Import finished",
+          body: "Scan_To_Network_Share.docx is ready as a draft.",
+          href: `/kb/${sampleSlug}/edit`,
+        },
+        {
+          userId: joeId,
+          kind: "review_requested",
+          title: "Review requested",
+          body: "Sarah Kim submitted “BitLocker recovery key retrieval”.",
+          href: `/kb/${sampleSlug}`,
+        },
+        {
+          userId: joeId,
+          kind: "mention",
+          title: "You were mentioned",
+          body: "Marcus Rivera noted you on a field note. Mentions wire up later.",
+          href: `/kb/${sampleSlug}`,
+          readAt: new Date(),
+        },
+      ],
+    });
+    console.log("  ✅ sample notifications for Joe Clark");
+  }
+
   console.log("🌱 Seed complete.");
 }
 
