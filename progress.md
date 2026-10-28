@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-28 (feat/fastapi-role-check)
+Last updated: 2026-10-28 (feat/audit-list)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -154,7 +154,7 @@ Phase A:
 - ✅ `Article.visibility` (`private` default). Joe Clark (admin) checked Public link on the BitLocker article and saved. Signed out, `/kb/windows-11-bitlocker-recovery-process` showed the public view (no sidebar, no edit, no related links). `/kb/servicenow-incident-integration` redirected to `/login?next=...`. Signed Joe back in
 - ✅ FastAPI `GET /v1/principal` requires the 60-second HMAC assertion or an `sv_` service credential. Health stays open. Pytest 11 passed, including a token minted by `auth/web`
 - ✅ Role checks from `07-security.md` on save, category admin, and the editor. Signed in as Sarah Kim (author) on `:3000`: no Admin nav, no Publish button, status is Draft or In Review, and her published article refused the editor. FastAPI repeats the same capability matrix in `backend/policy.py` on ingest and parse. Checked 2026-10-28.
-- ✅ Auth audit events and login rate limit (5 / 10 min, per IP and per email). Failures, successes, and lockouts append to `auth.audit_event`. The login page says to wait when the limit is hit. No admin screen lists those rows yet
+- ✅ Auth audit events and login rate limit (5 / 10 min, per IP and per email). Failures, successes, and lockouts append to `auth.audit_event`. The login page says to wait when the limit is hit. Admin list on `/admin/audit`. Checked 2026-10-28.
 - ✅ Tests (2026-10-14): `pnpm exec tsx --test` for session, recovery, login, and assertion from `frontend/` — 14 passed. Backend `uv run pytest`: 11 passed. Second-app install steps are in `auth/web/README.md`
 
 Phase B:
@@ -190,7 +190,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 20 in [Docs/suggested-order.md](Docs/suggested-order.md), audit list. A scanned page was not tried. Redis queue remains later.
+Next: item 21 in [Docs/suggested-order.md](Docs/suggested-order.md), security headers. A scanned page was not tried. Redis queue remains later.
 
 ---
 

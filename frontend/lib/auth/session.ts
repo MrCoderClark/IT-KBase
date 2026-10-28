@@ -1,3 +1,4 @@
+import { networkInterfaces } from "node:os";
 import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
 import { resolveSession, revokePresentedSession } from "../../../auth/web/src/read-session";
@@ -31,9 +32,47 @@ export function appOrigin(headerList: Headers): string {
 
 export function requestMeta(headerList: Headers): { ip: string | null; userAgent: string | null } {
   const forwarded = headerList.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || headerList.get("x-real-ip") || null;
+  const raw = forwarded?.split(",")[0]?.trim() || headerList.get("x-real-ip") || null;
   const userAgent = headerList.get("user-agent");
-  return { ip, userAgent };
+  return { ip: resolveClientIp(raw), userAgent };
+}
+
+/**
+ * When Next runs on localhost the peer is often `::1`. Prefer a non-internal
+ * IPv4 from this machine so the audit list is readable in local admin.
+ * Real remote clients (and production XFF) are left alone.
+ */
+export function resolveClientIp(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!isLoopbackIp(raw)) return raw;
+  return primaryLanIpv4() ?? (isIpv6Loopback(raw) ? "127.0.0.1" : raw);
+}
+
+function isLoopbackIp(ip: string): boolean {
+  const value = ip.trim().toLowerCase();
+  return (
+    value === "127.0.0.1" ||
+    value === "::1" ||
+    value === ":1" ||
+    value === "0:0:0:0:0:0:0:1" ||
+    value === "::ffff:127.0.0.1"
+  );
+}
+
+function isIpv6Loopback(ip: string): boolean {
+  const value = ip.trim().toLowerCase();
+  return value === "::1" || value === ":1" || value === "0:0:0:0:0:0:0:1";
+}
+
+function primaryLanIpv4(): string | null {
+  for (const entries of Object.values(networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      const family = entry.family;
+      const ipv4 = family === "IPv4" || family === 4;
+      if (ipv4 && !entry.internal) return entry.address;
+    }
+  }
+  return null;
 }
 
 /** Clock read for a real request. `cacheComponents` rejects a bare `new Date()` during prerender. */

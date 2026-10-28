@@ -11,6 +11,7 @@ import {
   House,
   Plus,
   Puzzle,
+  ScrollText,
   Settings,
   Sparkles,
   Tag,
@@ -72,6 +73,7 @@ const PRIMARY: NavItem[] = [
 
 const ADMIN: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/audit", label: "Audit", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/integrations", label: "Integrations", icon: Puzzle },
 ];

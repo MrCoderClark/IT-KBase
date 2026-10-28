@@ -204,6 +204,8 @@ Analytics shows the same audience a compact dashboard: totals by status, unique 
 
 **Users**: an admin can add an account with a name, email, role, and password, edit a name or email, change a role, turn sign-in off or back on, and delete an account. A new password follows the same rules as a reset: 12 characters, three character classes, zxcvbn score ≥ 3, and not present in the Have I Been Pwned range API. The new account is verified, so they can sign in immediately. A role change, a sign-in disable, an email change, or a delete signs that person out. Delete reassigns their articles and versions to the admin who deleted them. An admin cannot change their own role, turn off their own sign-in, or delete themselves. The last admin who can still sign in cannot be demoted, disabled, or deleted. Invite by email comes later.
 
+**Audit**: an admin can open `/admin/audit` and read `auth.audit_event` rows (when, action, account email, IP, client). Newest first, 50 per page. Article business `audit_log` stays a later feature.
+
 **Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. Versions are not deleted yet, and password and passkey sign-in stay open. Feature flags come later.
 
 **Integrations** (placeholders in v1):
