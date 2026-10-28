@@ -85,8 +85,9 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 Content-Security-Policy: default-src 'self'; img-src 'self' https: data: blob:;
                          script-src 'self' 'strict-dynamic' <nonces>;
                          style-src 'self' 'unsafe-inline';
-                         connect-src 'self' https://ingestion.*.techbase; 
+                         connect-src 'self' https: (S3/MinIO PUT) plus local :8080/:9000 in dev;
                          frame-ancestors 'none'
+                         (Next.js 16 `proxy.ts` mints the nonce per request.)
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 X-Content-Type-Options: nosniff
