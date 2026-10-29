@@ -484,6 +484,186 @@ const ARTICLES_LIST: Article[] = [
     updatedAt: "2026-10-02T12:00:00Z",
     publishedAt: "2026-04-15T10:00:00Z",
   }),
+
+  stub({
+    id: "KB-IT-1035",
+    slug: "entra-conditional-access-blocked-sign-in",
+    title: "Entra ID - Troubleshooting Conditional Access Blocked Sign-Ins",
+    summary:
+      "Find why a user was blocked by Conditional Access, read the sign-in log, and apply a temporary exclusion without weakening the tenant baseline.",
+    category: { name: "Security", slug: "security" },
+    tags: [
+      { name: "Conditional Access", slug: "conditional-access" },
+      { name: "Entra ID", slug: "entra-id" },
+      { name: "Troubleshooting", slug: "troubleshooting" },
+    ],
+    author: { name: "Marcus Rivera" },
+    readingTimeMinutes: 7,
+    version: "1.0",
+    views: 412,
+    helpful: 29,
+    notHelpful: 3,
+  }),
+
+  stub({
+    id: "KB-IT-1036",
+    slug: "intune-windows-update-ring-stuck",
+    title: "Intune - Clearing a Stuck Windows Update Ring Deployment",
+    summary:
+      "Diagnose devices that never leave a Windows Update quality ring, force a scan, and confirm the update inventory in Intune.",
+    category: { name: "Windows", slug: "windows" },
+    tags: [
+      { name: "Windows Update", slug: "windows-update" },
+      { name: "Intune", slug: "intune" },
+      { name: "Windows 11", slug: "windows-11" },
+    ],
+    author: { name: "Joe Clark" },
+    readingTimeMinutes: 6,
+    version: "1.2",
+    views: 268,
+    helpful: 21,
+    notHelpful: 2,
+  }),
+
+  stub({
+    id: "KB-IT-1037",
+    slug: "iis-internal-tls-certificate-renewal",
+    title: "IIS - Renewing an Internal TLS Certificate",
+    summary:
+      "Replace an expiring certificate on a Windows IIS site, bind the new thumbprint, and recycle the app pool without dropping the hostname mapping.",
+    category: { name: "Security", slug: "security" },
+    tags: [
+      { name: "Certificates", slug: "certificates" },
+      { name: "IIS", slug: "iis" },
+      { name: "Encryption", slug: "encryption" },
+    ],
+    author: { name: "Raj Patel" },
+    readingTimeMinutes: 8,
+    version: "1.1",
+    views: 193,
+    helpful: 17,
+    notHelpful: 1,
+  }),
+
+  stub({
+    id: "KB-IT-1038",
+    slug: "exchange-online-shared-mailbox-permissions",
+    title: "Exchange Online - Granting Shared Mailbox Permissions",
+    summary:
+      "Add Full Access and Send As for a shared mailbox in Exchange Online and confirm Outlook autoconfiguration.",
+    category: { name: "Microsoft 365", slug: "m365" },
+    tags: [
+      { name: "Exchange Online", slug: "exchange-online" },
+      { name: "Shared Mailbox", slug: "shared-mailbox" },
+      { name: "Email", slug: "email" },
+    ],
+    author: { name: "Sarah Kim" },
+    readingTimeMinutes: 5,
+    version: "2.0",
+    views: 744,
+    helpful: 58,
+    notHelpful: 4,
+  }),
+
+  stub({
+    id: "KB-IT-1039",
+    slug: "dns-client-cache-and-scavenging-checks",
+    title: "DNS - Client Cache Flush and Server Scavenging Checks",
+    summary:
+      "Clear a stale DNS client cache, verify authoritative records, and confirm scavenging settings on Windows DNS before deleting aged records.",
+    category: { name: "Networking", slug: "networking" },
+    tags: [
+      { name: "DNS", slug: "dns" },
+      { name: "Windows Server", slug: "windows-server" },
+      { name: "Troubleshooting", slug: "troubleshooting" },
+    ],
+    author: { name: "Raj Patel" },
+    readingTimeMinutes: 6,
+    version: "1.0",
+    views: 156,
+    helpful: 12,
+    notHelpful: 0,
+  }),
+
+  stub({
+    id: "KB-IT-1040",
+    slug: "linux-sudoers-break-glass-access",
+    title: "Linux - Granting Break-Glass Sudo Access Safely",
+    summary:
+      "Add a time-limited sudoers drop-in for break-glass access, validate with visudo, and remove the grant after the incident.",
+    category: { name: "Linux", slug: "linux" },
+    tags: [
+      { name: "Sudo", slug: "sudo" },
+      { name: "Security", slug: "security" },
+      { name: "Troubleshooting", slug: "troubleshooting" },
+    ],
+    author: { name: "Raj Patel" },
+    readingTimeMinutes: 5,
+    version: "1.3",
+    views: 98,
+    helpful: 11,
+    notHelpful: 1,
+  }),
+
+  stub({
+    id: "KB-IT-1041",
+    slug: "print-server-clearing-stuck-jobs",
+    title: "Print Server - Clearing Stuck Jobs on Windows Server",
+    summary:
+      "Drain a hung print queue, restart the spooler safely, and confirm clients can print again without deleting unrelated queues.",
+    category: { name: "Windows", slug: "windows" },
+    tags: [
+      { name: "Print Server", slug: "print-server" },
+      { name: "Windows Server", slug: "windows-server" },
+      { name: "Troubleshooting", slug: "troubleshooting" },
+    ],
+    author: { name: "Joe Clark" },
+    readingTimeMinutes: 4,
+    version: "1.0",
+    views: 321,
+    helpful: 24,
+    notHelpful: 2,
+  }),
+
+  stub({
+    id: "KB-IT-1042",
+    slug: "jira-servicenow-webhook-bridge",
+    title: "Integrations - Jira Webhook Bridge to ServiceNow Incidents",
+    summary:
+      "Configure a Jira webhook that creates or updates a ServiceNow incident, including shared secret validation and field mapping.",
+    category: { name: "Integrations", slug: "integrations" },
+    tags: [
+      { name: "Jira", slug: "jira" },
+      { name: "ServiceNow", slug: "servicenow" },
+      { name: "Webhook", slug: "webhook" },
+    ],
+    author: { name: "Sarah Kim" },
+    readingTimeMinutes: 10,
+    version: "1.0",
+    views: 87,
+    helpful: 9,
+    notHelpful: 0,
+  }),
+
+  stub({
+    id: "KB-IT-1043",
+    slug: "ad-computer-object-cleanup",
+    title: "Active Directory - Stale Computer Object Cleanup",
+    summary:
+      "Find computer accounts that have not signed on recently, disable them safely, and move them to a quarantine OU before deletion.",
+    category: { name: "Active Directory", slug: "active-directory" },
+    tags: [
+      { name: "Active Directory", slug: "active-directory" },
+      { name: "Maintenance", slug: "maintenance" },
+      { name: "Windows Server", slug: "windows-server" },
+    ],
+    author: { name: "Marcus Rivera" },
+    readingTimeMinutes: 7,
+    version: "1.1",
+    views: 205,
+    helpful: 18,
+    notHelpful: 1,
+  }),
 ];
 
 // ---------------------------------------------------------------------------
