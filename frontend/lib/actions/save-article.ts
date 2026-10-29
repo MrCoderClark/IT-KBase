@@ -22,7 +22,7 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
-import { notifySlackArticlePublished } from "@/lib/integrations/slack";
+import { notifyIntegrationsArticlePublished } from "@/lib/integrations/notify";
 import { notifyReviewRequested } from "@/lib/notifications/create";
 
 const STATUSES: ArticleStatus[] = ["draft", "in_review", "published", "archived"];
@@ -274,7 +274,7 @@ export async function saveArticle(
 
   if (publishing) {
     try {
-      await notifySlackArticlePublished({
+      await notifyIntegrationsArticlePublished({
         title,
         slug,
         summary: input.summary.trim() || null,
@@ -282,7 +282,7 @@ export async function saveArticle(
         authorName: session.name,
       });
     } catch {
-      // Publish already succeeded; Slack must not roll it back.
+      // Publish already succeeded; integrations must not roll it back.
     }
   }
 

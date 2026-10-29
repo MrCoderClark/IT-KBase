@@ -167,7 +167,7 @@ Phase B:
 - ✅ Security headers. Next.js 16 `proxy.ts` sets HSTS, CSP (nonce + theme sha256 + strict-dynamic), Referrer-Policy, Permissions-Policy, nosniff, and X-Frame-Options DENY. Public `/kb` rewrite kept. Checked 2026-10-28.
 - ✅ Integrations shell. `/admin/integrations` saves enable + config for ServiceNow, Jira, Teams, and Slack; Test records a stub attempt. Live calls wait. Migration `20261028210000_integration_setting`. Checked 2026-10-29.
 - ✅ Slack publish webhook. Real Test + post on Publish when enabled. Checked 2026-10-29.
-- ⬜ Modular integrations UI (templates + Add via UI + Generic webhook)
+- ✅ Modular integrations UI. Templates + DB instances; Add / Configure dialogs; Generic webhook; publish fan-out. Brand marks for Slack/Teams. Migration `20261029140000_integration_instances`. Checked 2026-10-29.
 - ⬜ Row-level permissions on drafts beyond the role matrix
 
 ---
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: modular integrations UI (`feat/integrations-modular`), then item 24 (CI). A scanned page was not tried. Redis queue remains later.
+Next: item 24 (CI). Editor status showing Draft for a published article is a separate bug. A scanned page was not tried. Redis queue remains later.
 
 ---
 

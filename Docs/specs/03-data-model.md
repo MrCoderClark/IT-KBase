@@ -429,21 +429,32 @@ model SiteSetting {
 `SiteSetting` is one row, `id` = `default`. Empty `allowedEmailDomains` means no domain list is stored yet. Login does not read it.
 
 ```prisma
-model IntegrationSetting {
-  kind       String    @id // servicenow | jira | teams | slack
-  enabled    Boolean   @default(false)
-  config     Json      @default("{}")
-  lastTestAt DateTime?
-  lastTestOk Boolean?
-  lastSyncAt DateTime?
-  updatedAt  DateTime  @updatedAt
+model Integration {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  name            String
+  description     String    @default("")
+  templateId      String    // slack | teams | webhook | servicenow | jira
+  accentHex       String    @default("#1E6BFF")
+  iconKey         String    @default("puzzle")
+  enabled         Boolean   @default(false)
+  fieldSchema     Json      @default("[]")
+  config          Json      @default("{}")
+  webhookUrlKey   String?
+  notifyOnPublish Boolean   @default(false)
+  lastTestAt      DateTime?
+  lastTestOk      Boolean?
+  lastSyncAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@map("integration_setting")
+  @@index([enabled, notifyOnPublish])
+  @@map("integration")
   @@schema("public")
 }
 ```
 
-`IntegrationSetting` holds the admin integrations shell. Config is JSON per kind. Live ServiceNow / Jira / Teams / Slack calls are not wired; Test records `lastTestAt` with `lastTestOk=false` until a real probe exists.
+`Integration` rows are admin-owned instances created from code templates (`slack`, `teams`, `webhook`, `servicenow`, `jira`). Field schema is copied onto the row at create time. Slack / Teams / Generic webhook post on publish when enabled; ServiceNow and Jira store link config only for now.
 
 `User.identityId` points at `Identity.id`. The auth package does not foreign-key into `User`.
 
