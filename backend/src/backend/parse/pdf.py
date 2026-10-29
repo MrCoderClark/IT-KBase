@@ -34,7 +34,7 @@ def parse_pdf(data: bytes, filename: str) -> ParsedDraft:
 
     try:
         pdf = pdfplumber.open(BytesIO(data))
-    except Exception as exc:  # noqa: BLE001 — a corrupt PDF should be a readable error
+    except Exception as exc:  # a corrupt PDF should be a readable error
         raise PdfError("That file is not a PDF.") from exc
 
     try:
@@ -73,7 +73,7 @@ def _page_lines(page) -> tuple[list[_Line], bool]:
         return [], True
     try:
         words = page.extract_words(extra_attrs=["size"]) or []
-    except Exception:  # noqa: BLE001 — fall back to plain text when word positions fail
+    except Exception:  # fall back to plain text when word positions fail
         words = []
     rows = _rows(words) if words else _rows_from_text(text)
     if not rows and not text:

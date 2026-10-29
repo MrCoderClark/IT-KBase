@@ -47,7 +47,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
 - ✅ `backend/` → FastAPI skeleton (`/healthz`, `/readyz`, `/docs`, structlog JSON, Pydantic Settings, pytest + ruff config, 4 smoke tests)
 - ✅ Docker, Redis, SeaweedFS (S3-compat) already running externally — no compose file needed in-repo yet
-- ⬜ CI: lint + typecheck + test on PR (web + python)
+- ✅ CI: lint + typecheck + test on PR (web + python). `.github/workflows/ci.yml`. Local checks passed 2026-10-29.
 - ⬜ Generate TS client from Python OpenAPI
 - ✅ Prisma schema (`frontend/prisma/schema.prisma`) matching `03-data-model.md`; pinned to Prisma 6 (v8 RC CLI dropped `migrate`)
 - ✅ `/kb` and `/kb/[slug]` read from Postgres; seed loads 4 users, 7 categories, tags, and 11 articles
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 24 (CI). Editor status showing Draft for a published article is a separate bug. A scanned page was not tried. Redis queue remains later.
+Next: item 25 (generated API client). A scanned page was not tried. Redis queue remains later.
 
 ---
 

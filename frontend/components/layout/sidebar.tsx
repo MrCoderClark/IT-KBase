@@ -122,6 +122,8 @@ export function Sidebar({
       {/* Brand */}
       <div className="flex shrink-0 items-center gap-3 px-5 pt-5 pb-6">
         {logoUrl ? (
+          // Admin-configured URL; next/image would need open remotePatterns.
+          // eslint-disable-next-line @next/next/no-img-element -- arbitrary logo hosts
           <img src={logoUrl} alt="" width={36} height={36} className="size-9 rounded-md object-cover" />
         ) : (
           <BrandMark size={36} title="TechBase" />

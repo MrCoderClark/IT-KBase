@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { startRegistration, WebAuthnError } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { beginPasskeyRegistration, finishPasskeyRegistration } from "@/lib/auth/passkey-actions";
@@ -33,6 +34,7 @@ function takeReady(): Ready | null {
 }
 
 export function AddPasskey() {
+  const router = useRouter();
   const [name, setName] = useState("This device");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -63,7 +65,8 @@ export function AddPasskey() {
         void prepare();
         return;
       }
-      window.location.assign("/account/security");
+      router.push("/account/security");
+      router.refresh();
     } catch (caught) {
       if (caught instanceof WebAuthnError && caught.code === "ERROR_CEREMONY_ABORTED") {
         setError("Passkey setup was cancelled.");

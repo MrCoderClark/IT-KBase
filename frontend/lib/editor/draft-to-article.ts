@@ -67,9 +67,16 @@ function sectionToArticle(section: EditorSection, order: number): Section {
   };
 }
 
+/** Omit on a union only keeps shared keys; distribute so each variant stays intact. */
+type BlockDraft = Block extends infer B
+  ? B extends Block
+    ? Omit<B, "id" | "order">
+    : never
+  : never;
+
 function blocksFor(section: EditorSection, sectionId: string): Block[] {
   const blocks: Block[] = [];
-  const push = (block: Omit<Block, "id" | "order">) => {
+  const push = (block: BlockDraft) => {
     blocks.push({
       ...block,
       id: `${sectionId}-b${blocks.length}`,
@@ -141,10 +148,7 @@ function blocksFor(section: EditorSection, sectionId: string): Block[] {
   return blocks;
 }
 
-function calloutBlock(callout: EditorCallout): Omit<
-  Extract<Block, { kind: "callout" }>,
-  "id" | "order"
-> {
+function calloutBlock(callout: EditorCallout): Extract<BlockDraft, { kind: "callout" }> {
   return {
     kind: "callout",
     variant: callout.variant as CalloutVariant,

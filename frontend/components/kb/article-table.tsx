@@ -19,7 +19,7 @@ import {
   articleFacetsToSearchParams,
   EMPTY_ARTICLE_FACETS,
 } from "@/lib/kb/article-filters";
-import type { Article, ArticleStatus, ArticleCategory } from "@/lib/types/article";
+import type { Article, ArticleCategory } from "@/lib/types/article";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { DeleteArticleButton } from "@/components/kb/delete-article-button";
 import { SearchSnippet } from "@/components/kb/search-snippet";
@@ -245,7 +245,7 @@ export default function ArticleTable({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [search, facets.category, facets.status, facets.updated]);
+  }, [search, facets]);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {

@@ -95,7 +95,9 @@ export function applyTreeMove<T extends TreeDragNode>(
   };
   const stripped = remove(nodes);
   if (!moved) return nodes;
-  const placed = { ...moved, parentId } as T;
+  // Generic `T` is not narrowed for object spread after a closure assignment.
+  const current: TreeDragNode = moved;
+  const placed = { ...current, parentId } as T;
 
   const insert = (list: T[], pid: string | null): T[] => {
     if (pid === null) {
