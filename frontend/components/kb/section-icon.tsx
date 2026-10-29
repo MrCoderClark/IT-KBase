@@ -38,7 +38,7 @@ export function SectionIcon({
   iconSize?: number;
   className?: string;
 }) {
-  const { icon: Icon, label } = SECTION_ICONS[kind];
+  const { icon: Icon } = SECTION_ICONS[kind];
   return (
     <span
       className={cn(
@@ -46,7 +46,7 @@ export function SectionIcon({
         className,
       )}
       style={{ width: size, height: size }}
-      aria-label={label}
+      aria-hidden
     >
       <Icon size={iconSize} strokeWidth={2} aria-hidden />
     </span>

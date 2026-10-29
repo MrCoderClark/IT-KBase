@@ -300,13 +300,13 @@ export function ArticleEditor({
       : saveStatus === "saved"
         ? {
             label: "Autosaved",
-            className: "border-success/30 bg-success-soft text-success",
+            className: "border-success/30 bg-success-soft text-success-fg",
             icon: <Check size={12} strokeWidth={2.5} aria-hidden />,
           }
         : saveStatus === "error"
           ? {
               label: "Autosave failed",
-              className: "border-warning/40 bg-warning-soft text-warning",
+              className: "border-warning/40 bg-warning-soft text-warning-fg",
               icon: <CloudOff size={12} aria-hidden />,
             }
           : saveStatus === "dirty"

@@ -205,6 +205,7 @@ cd frontend
 pnpm lint
 pnpm exec tsc --noEmit
 pnpm test
+pnpm test:a11y
 pnpm build
 cd ..
 
@@ -214,6 +215,8 @@ uv run ruff check .
 uv run pytest
 cd ..
 ```
+
+A11y details (install browsers, single-route filter, report): `frontend/README.md` and `Docs/specs/13-a11y-keyboard.md`.
 
 Also:
 - Update `progress.md` (move items, add new ones, note blockers).
@@ -232,7 +235,7 @@ Full details in `Docs/specs/02-design-system.md`. Quick reference:
 
 - **Brand name**: TechBase. Tagline: "IT Knowledge Hub".
 - **Logo**: isometric cobalt cube/polyhedron with inner highlight. Never flat; always has the subtle inner-face lighting from the mock.
-- **Primary accent**: cobalt blue `#1E6BFF` on dark; same hue tuned for AA on light.
+- **Primary accent**: cobalt `#1A5AE0` on light (AA 4.5:1 on canvas); `#1E6BFF` remains fine on dark sidebar chrome.
 - **Sidebar**: deep navy-black `#0B1220` → `#0F172A` vertical gradient, with a subtle inner highlight at the top.
 - **Canvas**: `#F6F8FB` (light) / `#0A0F1C` (dark).
 - **Chips**: pill-shaped, 11px uppercase or 12px sentence case; category chips are tinted, tag chips are outlined.

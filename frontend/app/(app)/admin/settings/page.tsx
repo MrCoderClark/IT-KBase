@@ -52,7 +52,7 @@ async function SettingsPanel({
     : null;
   const message =
     params.e === "accent"
-      ? "Accent must be a color like #1E6BFF."
+      ? "Accent must be a color like #1A5AE0."
       : params.e === "logo"
         ? "Logo must be an http or https address, or left blank."
         : params.e === "retention"

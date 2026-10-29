@@ -23,23 +23,29 @@
   /* text */
   --fg:                  #0B1220;
   --fg-muted:            #475569;
-  --fg-subtle:           #64748B;
+  /* #5E6B7C clears AA 4.5:1 on --canvas at 11px (was #64748B @ 4.47) */
+  --fg-subtle:           #5E6B7C;
   --fg-on-accent:        #FFFFFF;
 
-  /* brand / accent */
-  --accent:              #1E6BFF;
-  --accent-hover:        #1A5EE0;
+  /* brand / accent — #1A5AE0 meets WCAG AA 4.5:1 on --canvas (#F6F8FB) for 13px text.
+     Filled buttons still use white on accent (large AA). Brand hue stays cobalt. */
+  --accent:              #1A5AE0;
+  --accent-hover:        #1548C4;
   --accent-soft:         #E7EFFF;
   --accent-ring:         #93B4FF;
 
-  /* status */
+  /* status — bright tokens for dots/icons; *-fg for 12px label text on *-soft */
   --success:             #10B981;
+  --success-fg:          #047857;
   --success-soft:        #E6F7F1;
   --warning:             #F59E0B;
+  --warning-fg:          #B45309;
   --warning-soft:        #FEF3E2;
   --danger:              #EF4444;
+  --danger-fg:           #B91C1C;
   --danger-soft:         #FDECEC;
   --info:                #3B82F6;
+  --info-fg:             #1D4ED8;
   --info-soft:           #E8F0FE;
 
   /* sidebar — identical in both themes */
@@ -70,7 +76,7 @@
   --card-foreground:              oklch(0.145 0 0);
   --popover:              oklch(1 0 0);
   --popover-foreground:              oklch(0.145 0 0);
-  --primary:              #1E6BFF;
+  --primary:              #1A5AE0;
   --primary-foreground:              #FFFFFF;
   --secondary:              oklch(0.97 0 0);
   --secondary-foreground:              oklch(0.205 0 0);
@@ -194,12 +200,16 @@
   --color-accent-ring:          var(--accent-ring);
 
   --color-success:              var(--success);
+  --color-success-fg:           var(--success-fg);
   --color-success-soft:         var(--success-soft);
   --color-warning:              var(--warning);
+  --color-warning-fg:           var(--warning-fg);
   --color-warning-soft:         var(--warning-soft);
   --color-danger:               var(--danger);
+  --color-danger-fg:            var(--danger-fg);
   --color-danger-soft:          var(--danger-soft);
   --color-info:                 var(--info);
+  --color-info-fg:              var(--info-fg);
   --color-info-soft:            var(--info-soft);
 
   --color-sidebar-bg-top:       var(--sidebar-bg-top);

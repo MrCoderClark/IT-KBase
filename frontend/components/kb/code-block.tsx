@@ -40,7 +40,7 @@ export function CodeBlock({
       style={{ backgroundColor: "#0B1220" }}
     >
       {language ? (
-        <span className="absolute top-2.5 left-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/30 select-none">
+        <span className="absolute top-2.5 left-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/55 select-none">
           {language}
         </span>
       ) : null}
@@ -49,7 +49,7 @@ export function CodeBlock({
         type="button"
         aria-label={copied ? "Copied" : "Copy code"}
         onClick={handleCopy}
-        className="absolute top-2.5 right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-sm text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/80"
+        className="absolute top-2.5 right-2.5 inline-flex size-7 items-center justify-center rounded-sm text-white/55 transition-colors hover:bg-white/[0.08] hover:text-white/80"
       >
         {copied ? (
           <Check size={14} aria-hidden />

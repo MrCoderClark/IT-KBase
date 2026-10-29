@@ -68,7 +68,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 25. ✅ **Generated API client.** OpenAPI → `frontend/lib/api/generated/ingestion.ts`; CI fails on drift.
 26. ✅ **Seed.** Checked 2026-10-29. Library grown to 20 realistic IT articles across Windows, Linux, M365, Networking, Security, AD, Integrations.
 27. ✅ **Stack ADR.** Checked 2026-10-29. `Docs/specs/adr/0003-stack-choices.md` — Next.js ≥ 16.4.3 and the locked stack.
-28. **Accessibility.** axe-core clean on the main routes, plus a keyboard-only pass.
+28. 🟡 **Accessibility.** ✅ Playwright + axe clean on main routes (2026-10-29, `chore/a11y-axe`). Re-run: `cd frontend` → `pnpm test:a11y` (see `Docs/specs/13-a11y-keyboard.md`). Keyboard walkthrough in that spec still open.
 29. **Lighthouse.** Performance at least 90, accessibility at least 95, best practices at least 95 on the article page.
 30. **Visual check.** Screenshot comparison on the article view.
 31. **Load.** 100 concurrent ingestions, and the article page under the rate in `Docs/specs/08-roadmap.md`.

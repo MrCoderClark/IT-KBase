@@ -116,7 +116,11 @@ function ArticleDetailsCard({
 
         <DetailRow label="Category">
           {article.category && (
-            <CategoryChip name={article.category.name} slug={article.category.slug} />
+            <CategoryChip
+              name={article.category.name}
+              slug={article.category.slug}
+              color={article.category.color}
+            />
           )}
         </DetailRow>
 
@@ -127,18 +131,6 @@ function ArticleDetailsCard({
             ))}
           </div>
         </DetailRow>
-
-        {pageAccess ? (
-          <div className="border-t border-border/60 pt-3.5">
-            <PageAccessControl
-              articleId={article.id}
-              mode={pageAccess.mode}
-              roleFloor={pageAccess.roleFloor}
-              effective={pageAccess.effective}
-              canManage={pageAccess.canManage}
-            />
-          </div>
-        ) : null}
 
         <DetailRow label="Last Updated">
           <span className="text-fg">{updatedDate}</span>
@@ -167,6 +159,18 @@ function ArticleDetailsCard({
           )}
         </DetailRow>
       </dl>
+
+      {pageAccess ? (
+        <div className="mt-3.5 border-t border-border/60 pt-3.5">
+          <PageAccessControl
+            articleId={article.id}
+            mode={pageAccess.mode}
+            roleFloor={pageAccess.roleFloor}
+            effective={pageAccess.effective}
+            canManage={pageAccess.canManage}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

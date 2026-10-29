@@ -7,7 +7,7 @@ const STATUS_STYLES: Record<
 > = {
   published: {
     bg: "bg-success-soft",
-    text: "text-success",
+    text: "text-success-fg",
     dot: "bg-success",
     label: "Published",
   },
@@ -19,7 +19,7 @@ const STATUS_STYLES: Record<
   },
   in_review: {
     bg: "bg-warning-soft",
-    text: "text-warning",
+    text: "text-warning-fg",
     dot: "bg-warning",
     label: "In Review",
   },
@@ -46,7 +46,7 @@ export function StatusChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-0.5 text-[12px] font-semibold leading-4",
+        "inline-flex min-h-6 items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 text-[12px] font-semibold leading-4",
         s.bg,
         s.text,
         className,
