@@ -55,7 +55,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 20. ✅ **Audit list.** Checked 2026-10-28. `/admin/audit` lists `auth.audit_event` for admins; loopback peers show a LAN IPv4.
 21. ✅ **Security headers.** Checked 2026-10-28. `proxy.ts` sets HSTS, CSP (nonce + theme sha256 + strict-dynamic), Referrer-Policy, Permissions-Policy, nosniff, and X-Frame-Options DENY.
 22. ✅ **Integrations shell.** Checked 2026-10-29. `/admin/integrations` saves enable + config for ServiceNow, Jira, Teams, and Slack; Test is a stub. Live calls wait.
-23. **Version retention.** Settings already stores how long versions are kept. This step is the job that actually deletes expired rows.
+23. ✅ **Version retention.** Checked 2026-10-29. Daily cron + Settings “Run retention now” purge versions older than `versionRetentionDays`; current and draft rows are kept.
 
 ## 7. Hardening, then pilot
 

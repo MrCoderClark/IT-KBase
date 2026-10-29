@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-29 (feat/integrations-shell)
+Last updated: 2026-10-29 (feat/version-retention)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -163,7 +163,7 @@ Phase B:
 - ✅ Passkeys are a separate sign-in. Security has “Add a passkey”; the login page has “Sign in with a passkey”. Success sets the same session cookie and does not ask for an authenticator code. Checked on `:3001`: a passkey was created with Windows Hello, then sign-out and “Sign in with a passkey” opened the app. Migration `20261014223000_auth_passkey` is applied. `AUTH_WEBAUTHN_RP_ID` and `AUTH_WEBAUTHN_ORIGIN` are in `frontend/.env` and are not committed.
 - ⬜ Finer permissions and organizations. OIDC (Entra ID, Google Workspace) and SAML
 - ✅ Users admin. Add an account, edit a name or email, change a role, turn sign-in off, and delete. A new password follows the reset rules. Delete asks for the email and reassigns articles to the acting admin. Self and last-admin changes are refused. Invite by email is later. Checked on `:3001`: added Casey Nguyen, renamed them, then deleted the account. Seeded users are unchanged.
-- ✅ Settings. An admin can set the accent, an optional logo URL, how long versions are kept, and allowed email domains. The signed-in shell uses the accent. Versions are not deleted, and sign-in is unchanged. Checked on `:3001`: a teal accent and 90-day retention saved, the Save button used that color after refresh, then both were put back to the defaults. Migration `20261015160000_site_setting` is applied.
+- ✅ Settings. An admin can set the accent, an optional logo URL, how long versions are kept, and allowed email domains. The signed-in shell uses the accent. Sign-in is unchanged. Checked on `:3001`: a teal accent and 90-day retention saved, the Save button used that color after refresh, then both were put back to the defaults. Migration `20261015160000_site_setting` is applied. Version retention: daily cron + Run retention now; current/draft kept. Checked 2026-10-29.
 - ✅ Security headers. Next.js 16 `proxy.ts` sets HSTS, CSP (nonce + theme sha256 + strict-dynamic), Referrer-Policy, Permissions-Policy, nosniff, and X-Frame-Options DENY. Public `/kb` rewrite kept. Checked 2026-10-28.
 - ✅ Integrations shell. `/admin/integrations` saves enable + config for ServiceNow, Jira, Teams, and Slack; Test records a stub attempt. Live calls wait. Migration `20261028210000_integration_setting`. Checked 2026-10-29.
 - ⬜ Row-level permissions on drafts beyond the role matrix
@@ -191,7 +191,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 23 in [Docs/suggested-order.md](Docs/suggested-order.md), version retention. A scanned page was not tried. Redis queue remains later.
+Next: item 24 in [Docs/suggested-order.md](Docs/suggested-order.md), CI. A scanned page was not tried. Redis queue remains later.
 
 ---
 
