@@ -24,6 +24,7 @@ import {
 import { autosaveArticle, saveArticle } from "@/lib/actions/save-article";
 import {
   clearLocalDraft,
+  mergeLocalOverServer,
   readLocalDraft,
   writeLocalDraft,
 } from "@/lib/editor/local-draft";
@@ -111,13 +112,19 @@ export function ArticleEditor({
   const slugPreview = draft.slug ?? slugifyTitle(draft.title);
 
   // Restore a browser mirror left by a refresh before Postgres flush finished.
+  // Published/archived status always comes from the server so a stale mirror
+  // cannot show Draft while the live article is still published.
   useEffect(() => {
     const local = readLocalDraft(initial.slug);
-    const initialJson = JSON.stringify(initial);
-    if (local && JSON.stringify(local) !== initialJson) {
-      setDraft(local);
-      draftRef.current = local;
-      setSaveStatus("dirty");
+    if (local) {
+      const merged = mergeLocalOverServer(initial, local);
+      if (JSON.stringify(merged) !== JSON.stringify(initial)) {
+        setDraft(merged);
+        draftRef.current = merged;
+        setSaveStatus("dirty");
+      } else if (JSON.stringify(local) !== JSON.stringify(merged)) {
+        writeLocalDraft(merged);
+      }
     }
     setLocalReady(true);
     // Only on mount for this article.

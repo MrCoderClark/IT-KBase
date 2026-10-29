@@ -20,6 +20,21 @@ export function readLocalDraft(slug: string | null): EditorDraft | null {
   }
 }
 
+/**
+ * Prefer local section edits after a refresh, but never let a stale mirror
+ * demote a live published/archived article's status in the editor UI.
+ */
+export function mergeLocalOverServer(server: EditorDraft, local: EditorDraft): EditorDraft {
+  const locked = server.status === "published" || server.status === "archived";
+  return {
+    ...local,
+    slug: server.slug ?? local.slug,
+    version: server.version ?? local.version,
+    status: locked ? server.status : local.status,
+    visibility: locked ? server.visibility : local.visibility,
+  };
+}
+
 export function writeLocalDraft(draft: EditorDraft): void {
   if (typeof window === "undefined") return;
   try {
