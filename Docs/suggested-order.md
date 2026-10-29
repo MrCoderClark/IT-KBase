@@ -66,7 +66,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 
 24. ✅ **CI.** Checked 2026-10-29 locally. GitHub Actions on PR/main: frontend lint + typecheck + `tsx --test`; backend ruff + pytest.
 25. ✅ **Generated API client.** OpenAPI → `frontend/lib/api/generated/ingestion.ts`; CI fails on drift.
-26. **Seed.** Grow the library from 11 articles toward the ~20 realistic IT articles in `progress.md`.
+26. ✅ **Seed.** Checked 2026-10-29. Library grown to 20 realistic IT articles across Windows, Linux, M365, Networking, Security, AD, Integrations.
 27. **Stack ADR.** Write `Docs/specs/adr/0002-stack-choices.md` for the decisions already in `claude.md`.
 28. **Accessibility.** axe-core clean on the main routes, plus a keyboard-only pass.
 29. **Lighthouse.** Performance at least 90, accessibility at least 95, best practices at least 95 on the article page.
