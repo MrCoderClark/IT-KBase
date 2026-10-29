@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { isIntegrationKind, metaFor } from "./kinds";
-import { recordIntegrationTest, saveIntegration } from "./store";
+import { testSlackWebhook } from "./slack";
+import { recordIntegrationTestStub, saveIntegration } from "./store";
 
 function requireAdmin() {
   return getSession().then((session) => {
@@ -55,7 +56,18 @@ export async function testIntegration(formData: FormData): Promise<void> {
   const kindRaw = String(formData.get("kind") ?? "");
   if (!isIntegrationKind(kindRaw)) redirect("/admin/integrations?e=kind");
 
-  await recordIntegrationTest(kindRaw);
+  if (kindRaw === "slack") {
+    const result = await testSlackWebhook();
+    revalidatePath("/admin/integrations");
+    if (!result.ok) {
+      redirect(
+        `/admin/integrations?e=test&kind=slack&m=${encodeURIComponent(result.error)}`,
+      );
+    }
+    redirect("/admin/integrations?notice=test_ok&kind=slack");
+  }
+
+  await recordIntegrationTestStub(kindRaw);
   revalidatePath("/admin/integrations");
   redirect(`/admin/integrations?notice=test&kind=${kindRaw}`);
 }

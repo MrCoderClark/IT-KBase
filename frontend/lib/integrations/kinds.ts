@@ -73,21 +73,21 @@ export const INTEGRATIONS: IntegrationMeta[] = [
   {
     kind: "slack",
     title: "Slack",
-    summary: "On publish, post to a channel via an incoming webhook. Live posts are not wired yet.",
+    summary: "On publish, post a link to the article via an incoming webhook.",
     fields: [
       {
         name: "webhookUrl",
         label: "Incoming webhook URL",
         type: "password",
         placeholder: "https://hooks.slack.com/services/…",
-        hint: "Stored for later. Publishing does not call Slack yet.",
+        hint: "Must be https://hooks.slack.com/…. Used for Test and for publish posts.",
       },
       {
         name: "defaultChannel",
         label: "Default channel",
         type: "text",
         placeholder: "#it-knowledge",
-        hint: "Label only until a live post path exists.",
+        hint: "Shown in the Slack message. The webhook’s channel is still where the post lands.",
       },
     ],
   },

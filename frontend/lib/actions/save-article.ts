@@ -22,6 +22,7 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
+import { notifySlackArticlePublished } from "@/lib/integrations/slack";
 import { notifyReviewRequested } from "@/lib/notifications/create";
 
 const STATUSES: ArticleStatus[] = ["draft", "in_review", "published", "archived"];
@@ -269,6 +270,20 @@ export async function saveArticle(
       authorId: existing?.authorId ?? session.userId,
       authorName: session.name,
     });
+  }
+
+  if (publishing) {
+    try {
+      await notifySlackArticlePublished({
+        title,
+        slug,
+        summary: input.summary.trim() || null,
+        version,
+        authorName: session.name,
+      });
+    } catch {
+      // Publish already succeeded; Slack must not roll it back.
+    }
   }
 
   revalidatePath("/kb");
