@@ -418,7 +418,7 @@ export default function ArticleTable({
                         name={article.category.name}
                         slug={article.category.slug}
                         color={article.category.color}
-                        className="shrink-0 px-1.5 py-px text-[10px]"
+                        className="shrink-0 px-1.5 text-[11px]"
                       />
                     )}
                     <div className="min-w-0">
@@ -442,13 +442,13 @@ export default function ArticleTable({
 
                 {/* Tags */}
                 <td className={`px-3 ${isCompact ? "py-1.5" : "py-2.5"}`}>
-                  <div className="flex items-center gap-1 overflow-hidden">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
                     {article.tags.slice(0, 2).map((tag) => (
                       <TagChip
                         key={tag.slug}
                         name={tag.name}
                         slug={tag.slug}
-                        className="px-1.5 py-px text-[10px]"
+                        className="px-1.5 text-[11px]"
                       />
                     ))}
                     {article.tags.length > 2 && (
@@ -461,7 +461,7 @@ export default function ArticleTable({
 
                 {/* Status */}
                 <td className={`px-3 ${isCompact ? "py-1.5" : "py-2.5"}`}>
-                  <StatusChip status={article.status} className="text-[10px] px-1.5 py-px" />
+                  <StatusChip status={article.status} className="px-1.5 text-[11px]" />
                 </td>
 
                 {/* Updated */}

@@ -40,7 +40,11 @@ export function DeleteArticleButton({
         type="button"
         variant={compact ? "ghost" : "outline"}
         size={compact ? "sm" : "default"}
-        className={compact ? "h-6 shrink-0 px-1.5 text-[12px] text-danger hover:text-danger" : "text-danger"}
+        className={
+          compact
+            ? "h-6 shrink-0 px-1.5 text-[12px] text-danger-fg hover:text-danger-fg"
+            : "text-danger-fg hover:text-danger-fg"
+        }
         onClick={() => setOpen(true)}
       >
         <Trash2 size={compact ? 12 : 14} aria-hidden />

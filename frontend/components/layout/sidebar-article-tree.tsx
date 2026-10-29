@@ -297,7 +297,7 @@ function TreeNode({
             type="button"
             draggable
             aria-label={`Move ${node.title}`}
-            className="flex size-4 shrink-0 cursor-grab items-center justify-center text-sidebar-fg/40 hover:text-white active:cursor-grabbing"
+            className="flex size-6 shrink-0 cursor-grab items-center justify-center text-sidebar-fg/40 hover:text-white active:cursor-grabbing"
             onDragStart={(event) => {
               event.dataTransfer.setData("text/plain", node.id);
               event.dataTransfer.effectAllowed = "move";
@@ -305,14 +305,14 @@ function TreeNode({
             }}
             onDragEnd={onDragEnd}
           >
-            <GripVertical size={12} aria-hidden />
+            <GripVertical size={14} aria-hidden />
           </button>
         ) : null}
         {hasChildren ? (
           <button
             type="button"
             onClick={() => onToggle(node.id)}
-            className="flex size-5 shrink-0 items-center justify-center rounded hover:bg-white/10"
+            className="flex size-6 shrink-0 items-center justify-center rounded hover:bg-white/10"
             aria-expanded={isExpanded}
             aria-label={isExpanded ? "Collapse" : "Expand"}
           >
@@ -322,7 +322,7 @@ function TreeNode({
             />
           </button>
         ) : (
-          <span className="flex size-5 shrink-0 items-center justify-center">
+          <span className="flex size-6 shrink-0 items-center justify-center">
             <FileText size={12} className="opacity-50" />
           </span>
         )}

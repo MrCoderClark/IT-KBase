@@ -359,7 +359,7 @@ model Notification {
 /// Single row (`id` = "default") for admin-owned site options.
 model SiteSetting {
   id                   String   @id @default("default")
-  accentHex            String   @default("#1E6BFF")
+  accentHex            String   @default("#1A5AE0")
   logoUrl              String?
   versionRetentionDays Int      @default(365)
   allowedEmailDomains  String[] @default([])

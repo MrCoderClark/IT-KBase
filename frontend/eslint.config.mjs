@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // OpenAPI output — do not lint generated clients.
     "lib/api/generated/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
   {
     rules: {

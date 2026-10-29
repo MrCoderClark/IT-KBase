@@ -115,7 +115,7 @@ export function IntegrationsPanel({
   return (
     <>
       {message ? (
-        <p role="status" className={`mb-4 text-[13px] font-medium ${isError ? "text-danger" : "text-fg"}`}>
+        <p role="status" className={`mb-4 text-[13px] font-medium ${isError ? "text-danger-fg" : "text-fg"}`}>
           {message}
         </p>
       ) : null}
@@ -341,7 +341,7 @@ export function IntegrationsPanel({
                 }}
               >
                 <input type="hidden" name="id" value={selected.id} />
-                <Button type="submit" variant="outline" className="text-danger">
+                <Button type="submit" variant="outline" className="text-danger-fg">
                   Remove
                 </Button>
               </form>
@@ -389,7 +389,7 @@ function IntegrationCard({
             <span
               className={`rounded-full border px-2 py-0.5 text-[11px] ${
                 status === "connected"
-                  ? "border-success/40 text-success"
+                  ? "border-success/40 text-success-fg"
                   : status === "off"
                     ? "border-border text-fg-muted"
                     : "border-border text-fg-muted"

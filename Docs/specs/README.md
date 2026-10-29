@@ -17,6 +17,7 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 10 | `10-page-tree.md`          | Article parent/order, sidebar tree, move                     |
 | 11 | `11-article-notes.md`      | Field notes on an article                                    |
 | 12 | `12-per-page-permissions.md` | Narrow who may open a page; inherit down the tree          |
+| 13 | `13-a11y-keyboard.md`      | Playwright + axe commands; keyboard-only walkthrough       |
 
 Supporting:
 

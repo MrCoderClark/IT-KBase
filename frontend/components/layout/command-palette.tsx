@@ -292,7 +292,6 @@ export function SearchTrigger() {
     <button
       type="button"
       onClick={openPalette}
-      aria-label="Search articles, keywords, or solutions"
       className="group flex h-10 w-full max-w-[640px] items-center gap-3 rounded-sm border border-white/[0.08] bg-white/[0.04] px-3.5 text-left text-[14px] leading-5 text-sidebar-fg/70 transition-colors hover:bg-white/[0.06] hover:text-sidebar-fg"
     >
       <Search size={16} className="shrink-0 text-sidebar-fg/60" aria-hidden />

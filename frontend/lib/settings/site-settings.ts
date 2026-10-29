@@ -1,4 +1,5 @@
-export const DEFAULT_ACCENT = "#1E6BFF";
+/** Cobalt tuned for WCAG AA 4.5:1 on --canvas (#F6F8FB) at 13px. */
+export const DEFAULT_ACCENT = "#1A5AE0";
 export const DEFAULT_VERSION_RETENTION_DAYS = 365;
 export const SITE_SETTING_ID = "default";
 

@@ -50,23 +50,27 @@ Defined in CSS variables, consumed via Tailwind's `@theme`.
   /* text */
   --fg:                #0B1220;
   --fg-muted:          #475569;
-  --fg-subtle:         #64748B;
+  --fg-subtle:         #5E6B7C;    /* AA on --canvas at 11px */
   --fg-on-accent:      #FFFFFF;
 
   /* brand / accent */
-  --accent:            #1E6BFF;    /* cobalt */
-  --accent-hover:      #1A5EE0;
+  --accent:            #1A5AE0;    /* cobalt, AA on --canvas for 13px link text */
+  --accent-hover:      #1548C4;
   --accent-soft:       #E7EFFF;    /* tinted fill */
   --accent-ring:       #93B4FF;
 
-  /* status */
+  /* status — bright = dots/icons; *-fg = label text on *-soft (AA) */
   --success:           #10B981;
+  --success-fg:        #047857;
   --success-soft:      #E6F7F1;
   --warning:           #F59E0B;
+  --warning-fg:        #B45309;
   --warning-soft:      #FEF3E2;
   --danger:            #EF4444;
+  --danger-fg:         #B91C1C;
   --danger-soft:       #FDECEC;
   --info:              #3B82F6;
+  --info-fg:           #1D4ED8;
   --info-soft:         #E8F0FE;
 
   /* sidebar (always dark, both themes) */
@@ -92,7 +96,7 @@ Defined in CSS variables, consumed via Tailwind's `@theme`.
 
   --fg:                #E6EDF7;
   --fg-muted:          #94A3B8;
-  --fg-subtle:         #64748B;
+  --fg-subtle:         #64748B;    /* fine on dark canvas */
 
   --accent-soft:       rgba(30,107,255,0.14);
 }
@@ -101,7 +105,7 @@ Defined in CSS variables, consumed via Tailwind's `@theme`.
 ### 2.3 Usage rules
 
 - `--accent` is for primary buttons, active nav, links, numbered badges, and the "Edit" / "Upload File" CTAs. **Nothing else.**
-- Status colors never appear outside of their status chip, callout, or toast context.
+- Status colors never appear outside of their status chip, callout, or toast context. Chip/toast label text uses `*-fg` on `*-soft`; dots and icons keep the bright status hue.
 - Tag chips use `--accent-soft` background with `--accent` text (see mock: Windows 11, Password, Local Admin tags).
 
 ---
