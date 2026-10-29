@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -12,6 +12,8 @@
     "test:a11y": "playwright test",
     "test:a11y:report": "playwright show-report",
     "test:a11y:install": "playwright install chromium",
+    "test:lighthouse": "node scripts/lighthouse-article.mjs",
+    "test:lighthouse:auth": "playwright test --project=setup",
     "gen:types": "openapi-typescript lib/api/openapi.json -o lib/api/generated/ingestion.ts"
   },
   "dependencies": {
@@ -47,14 +49,22 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "chrome-launcher": "^1.2.2",
     "eslint": "^9",
     "eslint-config-next": "^16.4.3",
+    "lighthouse": "^13.6.0",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "packageManager": "pnpm@12.10.1",
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 16.4"
+  ],
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
   }

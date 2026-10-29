@@ -46,6 +46,8 @@ type SeedArticle = {
   title: string;
   summary: string | null;
   status: ArticleStatus;
+  /** Defaults to private. Public articles power anonymous / Lighthouse gates. */
+  visibility?: "private" | "public";
   readingTimeMinutes: number;
   version: string;
   categorySlug: string;
@@ -151,6 +153,7 @@ const ARTICLES: SeedArticle[] = [
     summary:
       "This article provides step-by-step instructions to reset the local administrator password on a Windows 11 device using built-in recovery tools.",
     status: ArticleStatus.published,
+    visibility: "public",
     readingTimeMinutes: 5,
     version: "1.2",
     categorySlug: "windows",
@@ -1182,12 +1185,14 @@ async function main() {
     const categoryId = catMap.get(a.categorySlug) ?? null;
 
     // Upsert the article itself
+    const visibility = a.visibility === "public" ? "public" : "private";
     const article = await prisma.article.upsert({
       where: { slug: a.slug },
       update: {
         title: a.title,
         summary: a.summary,
         status: a.status,
+        visibility,
         readingTimeMinutes: a.readingTimeMinutes,
         version: a.version,
         categoryId,
@@ -1202,6 +1207,7 @@ async function main() {
         title: a.title,
         summary: a.summary,
         status: a.status,
+        visibility,
         readingTimeMinutes: a.readingTimeMinutes,
         version: a.version,
         categoryId,
