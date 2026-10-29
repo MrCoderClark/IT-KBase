@@ -54,7 +54,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 19. ✅ **FastAPI repeats the role check.** Checked 2026-10-28. `backend/policy.py` mirrors the Next.js capability matrix; ingest and parse require `article.create`.
 20. ✅ **Audit list.** Checked 2026-10-28. `/admin/audit` lists `auth.audit_event` for admins; loopback peers show a LAN IPv4.
 21. ✅ **Security headers.** Checked 2026-10-28. `proxy.ts` sets HSTS, CSP (nonce + theme sha256 + strict-dynamic), Referrer-Policy, Permissions-Policy, nosniff, and X-Frame-Options DENY.
-22. **Integrations shell.** ServiceNow, Jira, and a Teams webhook are a placeholder an admin can open. No live ticket import yet.
+22. ✅ **Integrations shell.** Checked 2026-10-29. `/admin/integrations` saves enable + config for ServiceNow, Jira, Teams, and Slack; Test is a stub. Live calls wait.
 23. **Version retention.** Settings already stores how long versions are kept. This step is the job that actually deletes expired rows.
 
 ## 7. Hardening, then pilot
