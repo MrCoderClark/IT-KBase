@@ -110,7 +110,7 @@ These are the rules that distinguish this app from a vibe-coded prototype. Enfor
 
 | Layer                   | Choice                                                                 |
 | ----------------------- | ---------------------------------------------------------------------- |
-| Web framework           | **Next.js 15** (App Router, Server Components, Server Actions)         |
+| Web framework           | **Next.js ≥ 16.4.3** (App Router, Server Components, Server Actions)   |
 | Language (web)          | TypeScript (strict)                                                    |
 | Styling                 | **Tailwind CSS v4** with CSS variables for theme tokens                |
 | Component primitives    | **shadcn/ui** (Radix-based), customized — not stock                    |
@@ -128,11 +128,11 @@ These are the rules that distinguish this app from a vibe-coded prototype. Enfor
 | Object storage          | S3-compatible (MinIO in dev)                                           |
 | Auth                    | Opaque Postgres sessions, Next.js BFF, 60s HMAC assertion to FastAPI. [ADR 0001](Docs/specs/adr/0001-server-managed-sessions.md). OIDC is a later phase. |
 | Observability           | OpenTelemetry → Grafana/Tempo; structured JSON logs                    |
-| Testing                 | Vitest + Playwright (web), pytest (Python)                             |
+| Testing                 | `tsx --test` / ESLint / `tsc` (web), pytest + ruff (Python); Playwright later |
 | Package manager (web)   | pnpm                                                                   |
 | Package manager (py)    | uv                                                                     |
 
-**Do not add alternatives** (e.g. Chakra, MUI, Mantine, LangChain-the-framework, Prisma→Drizzle swap) without an ADR in `Docs/specs/adr/`.
+**Do not add alternatives** (e.g. Chakra, MUI, Mantine, LangChain-the-framework, Prisma→Drizzle swap) without an ADR in `Docs/specs/adr/`. Locked choices are recorded in [ADR 0003](Docs/specs/adr/0003-stack-choices.md).
 
 ---
 
