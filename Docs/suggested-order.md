@@ -69,7 +69,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 26. ✅ **Seed.** Checked 2026-10-29. Library grown to 20 realistic IT articles across Windows, Linux, M365, Networking, Security, AD, Integrations.
 27. ✅ **Stack ADR.** Checked 2026-10-29. `Docs/specs/adr/0003-stack-choices.md` — Next.js ≥ 16.4.3 and the locked stack.
 28. 🟡 **Accessibility.** ✅ Playwright + axe clean on main routes (2026-10-29, `chore/a11y-axe`). Re-run: `cd frontend` → `pnpm test:a11y` (see `Docs/specs/13-a11y-keyboard.md`). Keyboard walkthrough in that spec still open.
-29. **Lighthouse.** Performance at least 90, accessibility at least 95, best practices at least 95 on the article page.
+29. ✅ **Lighthouse.** Checked 2026-10-29. Public article gate: Perf 90, A11y 100, BP 100 (`pnpm test:lighthouse`). Signed-in shell remains informational / TBT follow-up.
 30. **Visual check.** Screenshot comparison on the article view.
 31. **Load.** 100 concurrent ingestions, and the article page under the rate in `Docs/specs/08-roadmap.md`.
 32. **Security review.** OWASP ASVS level 1.

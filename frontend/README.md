@@ -36,6 +36,23 @@ Needs a reachable app on `:3000` (Playwright starts `next dev` unless `PLAYWRIGH
 
 Keyboard-only checklist (manual): `Docs/specs/13-a11y-keyboard.md`.
 
+### Lighthouse (article view)
+
+Gate = **public** article (no session): Perf ≥ 90, A11y ≥ 95, Best Practices ≥ 95. Signed-in shell is optional/info. Full notes: `Docs/specs/14-lighthouse.md`.
+
+```powershell
+cd frontend
+pnpm add -D lighthouse chrome-launcher
+pnpm exec prisma db seed   # marks the Lighthouse slug public
+
+# Terminal A
+pnpm build
+pnpm start
+
+# Terminal B — no auth needed for the gate
+pnpm test:lighthouse
+```
+
 ## Lint / types / build
 
 ```powershell

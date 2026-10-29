@@ -83,11 +83,14 @@ Required response headers on all app routes:
 ```
 Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 Content-Security-Policy: default-src 'self'; img-src 'self' https: data: blob:;
-                         script-src 'self' 'strict-dynamic' <nonces>;
+                         script-src 'self' <nonce> <theme sha256> <React $RT sha256>;
                          style-src 'self' 'unsafe-inline';
                          connect-src 'self' https: (S3/MinIO PUT) plus local :8080/:9000 in dev;
                          frame-ancestors 'none'
-                         (Next.js 16 `proxy.ts` mints the nonce per request.)
+                         (Next.js 16 `proxy.ts` mints the nonce per request.
+                          'strict-dynamic' is deferred until Next applies nonces to
+                          all Suspense/boundary + Turbopack chunk script tags —
+                          see vercel/next.js#98015.)
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 X-Content-Type-Options: nosniff

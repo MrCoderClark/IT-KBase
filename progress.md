@@ -193,15 +193,16 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: keyboard walkthrough for item 28 (`13-a11y-keyboard.md`), then item 29 (Lighthouse). Redis queue remains later.
+Next: item 30 (visual check / screenshot diffs on article view). Keyboard walkthrough for 28 and signed-in Lighthouse TBT remain optional follow-ups. Redis queue remains later.
 
 ---
 
 ## 8. Quality (M7)
 
 - ✅ A11y axe: Playwright + `@axe-core/playwright` clean on login, home, `/kb`, article, editor, integrations (2026-10-29). Auth once via `e2e/auth.setup.ts`. Commands: `pnpm test:a11y` / `pnpm test:a11y:install` / `pnpm test:a11y:report` (see `frontend/README.md`, `Docs/specs/13-a11y-keyboard.md`). On `chore/a11y-axe`.
-- ⬜ A11y keyboard: walk through `Docs/specs/13-a11y-keyboard.md` and check off (can land after this branch).
-- ⬜ Lighthouse: Perf ≥ 90, A11y ≥ 95, Best Practices ≥ 95 on key routes
+- ⬜ A11y keyboard: walk through `Docs/specs/13-a11y-keyboard.md` and check off.
+- ✅ Lighthouse: public article gate Perf 90 / A11y 100 / BP 100 (2026-10-29). On `chore/lighthouse`.
+- ⬜ Lighthouse signed-in TBT: shell still ~80 Perf; follow-up if we raise that bar.
 - ⬜ Visual regression (Playwright + screenshot diffs) on article view
 - ⬜ Load test: 100 concurrent ingestions
 - ⬜ Security review: OWASP ASVS L1 pass

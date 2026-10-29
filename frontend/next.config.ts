@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     agentFeedback: true,
+    optimizePackageImports: ["lucide-react"],
     serverActions: {
       bodySizeLimit: "26mb",
     },

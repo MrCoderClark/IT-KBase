@@ -217,6 +217,7 @@ cd ..
 ```
 
 A11y details (install browsers, single-route filter, report): `frontend/README.md` and `Docs/specs/13-a11y-keyboard.md`.
+Lighthouse article gate: `Docs/specs/14-lighthouse.md` (`pnpm test:lighthouse` against a production `pnpm start`).
 
 Also:
 - Update `progress.md` (move items, add new ones, note blockers).

@@ -1,8 +1,5 @@
-"use client";
-
-import { useState, useCallback } from "react";
-import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CodeBlockCopy } from "@/components/kb/code-block-copy";
 
 /**
  * Dark code block with a copy affordance (top-right).
@@ -19,24 +16,9 @@ export function CodeBlock({
   language?: string;
   className?: string;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard API unavailable in some contexts */
-    }
-  }, [code]);
-
   return (
     <div
-      className={cn(
-        "group relative overflow-hidden rounded-md",
-        className,
-      )}
+      className={cn("group relative overflow-hidden rounded-md", className)}
       style={{ backgroundColor: "#0B1220" }}
     >
       {language ? (
@@ -45,18 +27,7 @@ export function CodeBlock({
         </span>
       ) : null}
 
-      <button
-        type="button"
-        aria-label={copied ? "Copied" : "Copy code"}
-        onClick={handleCopy}
-        className="absolute top-2.5 right-2.5 inline-flex size-7 items-center justify-center rounded-sm text-white/55 transition-colors hover:bg-white/[0.08] hover:text-white/80"
-      >
-        {copied ? (
-          <Check size={14} aria-hidden />
-        ) : (
-          <Copy size={14} aria-hidden />
-        )}
-      </button>
+      <CodeBlockCopy code={code} />
 
       <pre className="overflow-x-auto p-4 pt-5 font-mono text-[13.5px] leading-[22px] font-medium text-[#E6EDF7]">
         <code>{code}</code>

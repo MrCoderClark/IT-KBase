@@ -1,10 +1,15 @@
 /**
  * Response headers from Docs/specs/07-security.md §6.
- * CSP uses a per-request nonce (set by proxy.ts) plus 'strict-dynamic'.
- * The theme boot script is allowed by sha256 so the root layout never calls
- * headers() (that blocked prerender under cacheComponents).
+ * CSP uses a per-request nonce (set by proxy.ts).
+ *
+ * We intentionally omit 'strict-dynamic' for now: Next.js 16 still emits some
+ * Suspense/boundary and Turbopack chunk <script src> tags without the request
+ * nonce (vercel/next.js#98015). With 'strict-dynamic', host allowlisting is
+ * disabled so those chunks are blocked → console/CSP Best Practices failures.
+ * 'self' keeps same-origin bundles; theme + React $RT boots stay hash-pinned.
  */
 
+import { REACT_RT_BOOT_SCRIPT_SHA256 } from "./react-boot-script";
 import { THEME_INIT_SCRIPT_SHA256 } from "./theme-init-script";
 
 export function buildContentSecurityPolicy(nonce: string, isDev: boolean): string {
@@ -12,7 +17,7 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     "'self'",
     `'nonce-${nonce}'`,
     THEME_INIT_SCRIPT_SHA256,
-    "'strict-dynamic'",
+    REACT_RT_BOOT_SCRIPT_SHA256,
     ...(isDev ? ["'unsafe-eval'"] : []),
   ].join(" ");
 
