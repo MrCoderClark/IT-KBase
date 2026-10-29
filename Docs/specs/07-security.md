@@ -91,6 +91,13 @@ Content-Security-Policy: default-src 'self'; img-src 'self' https: data: blob:;
                           'strict-dynamic' is deferred until Next applies nonces to
                           all Suspense/boundary + Turbopack chunk script tags —
                           see vercel/next.js#98015.)
+                         `proxy.ts` is also the login wall: no session cookie →
+                          redirect to `/login` (except auth pages, `/api/*`, and
+                          public `/kb/[slug]` → `/p/[slug]` rewrite). Keeps
+                          `(app)/layout` from calling `redirect()` on ordinary
+                          anonymous hits, which false-triggers Cache Components
+                          instant-navigation validation in `next dev`
+                          (vercel/next.js#98711).
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 X-Content-Type-Options: nosniff

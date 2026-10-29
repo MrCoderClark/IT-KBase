@@ -13,7 +13,14 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   timeout: 60_000,
-  expect: { timeout: 15_000 },
+  expect: {
+    timeout: 15_000,
+    toHaveScreenshot: {
+      // Windows vs Linux CI can differ by a few AA pixels on fonts
+      maxDiffPixelRatio: 0.02,
+      animations: "disabled",
+    },
+  },
   use: {
     baseURL,
     trace: "on-first-retry",
@@ -24,10 +31,21 @@ export default defineConfig({
     {
       name: "chromium",
       dependencies: ["setup"],
-      testIgnore: /auth\.setup\.ts/,
+      testMatch: /a11y\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         storageState: authFile,
+      },
+    },
+    {
+      name: "visual",
+      dependencies: ["setup"],
+      testMatch: /visual\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: authFile,
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 1,
       },
     },
   ],
@@ -35,9 +53,9 @@ export default defineConfig({
     ? undefined
     : {
         command: "pnpm exec next dev --hostname 127.0.0.1 --port " + port,
-        url: baseURL,
+        // Public route — readiness must not hit the login wall on `/`.
+        url: `${baseURL}/login`,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },
 });
-

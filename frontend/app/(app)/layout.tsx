@@ -6,8 +6,10 @@ import { readSiteSettings } from "@/lib/settings/store";
 
 /**
  * Authenticated app shell. Article reads live here so in-app links stay
- * client-side. A published public article with no session is rewritten
- * to /p/[slug] by proxy.ts.
+ * client-side. Anonymous traffic is handled in proxy.ts first: public
+ * `/kb/[slug]` rewrites to `/p/[slug]`, everything else redirects to
+ * `/login` before this layout runs. RequireSession is defense-in-depth
+ * for a present-but-invalid cookie (proxy only sees the cookie name).
  */
 export default function AppLayout({
   children,
@@ -23,6 +25,7 @@ export default function AppLayout({
 
 async function RequireSession({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Prefer proxy redirect for anonymous hits; this path is the stale-cookie case.
   if (!session) redirect("/login");
   const settings = await readSiteSettings();
   return (

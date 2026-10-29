@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-29 (feat/slack-publish-webhook)
+Last updated: 2026-10-29 (chore/visual-regression)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 30 (visual check / screenshot diffs on article view). Keyboard walkthrough for 28 and signed-in Lighthouse TBT remain optional follow-ups. Redis queue remains later.
+Next: item 31 (load). Keyboard walkthrough for 28 and signed-in Lighthouse TBT remain optional follow-ups.
 
 ---
 
@@ -203,7 +203,7 @@ Next: item 30 (visual check / screenshot diffs on article view). Keyboard walkth
 - ⬜ A11y keyboard: walk through `Docs/specs/13-a11y-keyboard.md` and check off.
 - ✅ Lighthouse: public article gate Perf 90 / A11y 100 / BP 100 (2026-10-29). On `chore/lighthouse`.
 - ⬜ Lighthouse signed-in TBT: shell still ~80 Perf; follow-up if we raise that bar.
-- ⬜ Visual regression (Playwright + screenshot diffs) on article view
+- ✅ Visual regression: Playwright `visual` project — public + signed-in article baselines pass (2026-10-29). `pnpm test:visual` / `pnpm test:visual:update` (`Docs/specs/15-visual-regression.md`).
 - ⬜ Load test: 100 concurrent ingestions
 - ⬜ Security review: OWASP ASVS L1 pass
 

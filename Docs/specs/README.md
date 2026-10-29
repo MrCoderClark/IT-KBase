@@ -19,6 +19,7 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 12 | `12-per-page-permissions.md` | Narrow who may open a page; inherit down the tree          |
 | 13 | `13-a11y-keyboard.md`      | Playwright + axe commands; keyboard-only walkthrough       |
 | 14 | `14-lighthouse.md`         | Lighthouse thresholds + commands for the article view      |
+| 15 | `15-visual-regression.md`  | Playwright screenshot baselines for the article view      |
 
 Supporting:
 

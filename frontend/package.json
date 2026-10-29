@@ -9,9 +9,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"lib/**/*.test.ts\"",
-    "test:a11y": "playwright test",
+    "test:a11y": "playwright test --project=chromium",
     "test:a11y:report": "playwright show-report",
     "test:a11y:install": "playwright install chromium",
+    "test:visual": "playwright test --project=visual",
+    "test:visual:update": "playwright test --project=visual --update-snapshots",
     "test:lighthouse": "node scripts/lighthouse-article.mjs",
     "test:lighthouse:auth": "playwright test --project=setup",
     "gen:types": "openapi-typescript lib/api/openapi.json -o lib/api/generated/ingestion.ts"
