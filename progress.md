@@ -41,7 +41,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `Docs/specs/07-security.md` — authn/z, data handling, compliance
 - ✅ `Docs/specs/08-roadmap.md` — milestone detail and risks
 - ✅ `Docs/specs/adr/0001-server-managed-sessions.md` — opaque Postgres sessions, Next.js BFF, 60s assertion to FastAPI, login wall with a per-article public flag
-- ⬜ `Docs/specs/adr/0002-stack-choices.md` — record the remaining locked stack decisions
+- ✅ `Docs/specs/adr/0003-stack-choices.md` — locked stack (Next.js ≥ 16.4.3, FastAPI, Prisma 6, …). Checked 2026-10-29.
 - ✅ Scaffold `frontend/` (Next.js 16, React 19, Tailwind v4, Turbopack, TS strict)
 - ✅ Scaffold `backend/` (Python 3.12, uv) — package only; FastAPI entry not wired yet
 - ✅ Root `.gitignore` covering Python caches, venvs, env files, OS/editor cruft
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 27 (stack ADR). A scanned page was not tried. Redis queue remains later.
+Next: item 28 (accessibility). A scanned page was not tried. Redis queue remains later.
 
 ---
 
@@ -227,6 +227,7 @@ Next: item 27 (stack ADR). A scanned page was not tried. Redis queue remains lat
 | 2026-10-13 | shadcn `dialog` + `button` (Base UI). Init must not own `--accent` | shadcn's accent is a hover wash; TechBase accent stays cobalt `#1E6BFF` |
 | 2026-10-14 | Opaque server sessions in Postgres, not a browser JWT or Auth.js | Logout and role change must revoke access. FastAPI checks a 60s HMAC assertion and does not open the auth tables. [ADR 0001](Docs/specs/adr/0001-server-managed-sessions.md) |
 | 2026-10-14 | Login required, with a per-article public flag | Published + `visibility=public` is the only anonymous read. The rest of the app stays behind the session |
+| 2026-10-29 | Locked stack recorded as ADR 0003 | Next 16, FastAPI, Prisma 6, Tailwind/shadcn, uv/pnpm, OpenAPI→TS; alternatives need a new ADR. [ADR 0003](Docs/specs/adr/0003-stack-choices.md) |
 
 ---
 

@@ -5,7 +5,7 @@
 ```
                        ┌───────────────────────────────────────┐
                        │              Browser (SPA/SSR)        │
-                       │  Next.js 15 · Tailwind v4 · shadcn    │
+                       │  Next.js 16 · Tailwind v4 · shadcn    │
                        └───────────────┬───────────────────────┘
                                        │ HTTPS
                                        ▼
@@ -38,7 +38,7 @@
 
 ## 2. Services
 
-### 2.1 `apps/web` — Next.js 15
+### 2.1 `frontend/` — Next.js 16
 
 Responsibilities:
 
