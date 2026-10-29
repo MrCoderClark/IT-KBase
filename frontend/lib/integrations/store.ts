@@ -21,21 +21,37 @@ function asConfig(value: unknown): Record<string, string> {
   return out;
 }
 
+function toRecord(
+  kind: IntegrationKind,
+  row: {
+    enabled: boolean;
+    config: unknown;
+    lastTestAt: Date | null;
+    lastTestOk: boolean | null;
+    lastSyncAt: Date | null;
+    updatedAt: Date;
+  } | null,
+): IntegrationRecord {
+  return {
+    kind,
+    enabled: row?.enabled ?? false,
+    config: asConfig(row?.config),
+    lastTestAt: row?.lastTestAt ?? null,
+    lastTestOk: row?.lastTestOk ?? null,
+    lastSyncAt: row?.lastSyncAt ?? null,
+    updatedAt: row?.updatedAt ?? new Date(0),
+  };
+}
+
 export async function listIntegrations(): Promise<IntegrationRecord[]> {
   const rows = await prisma.integrationSetting.findMany();
   const byKind = new Map(rows.map((row) => [row.kind, row]));
-  return INTEGRATION_KINDS.map((kind) => {
-    const row = byKind.get(kind);
-    return {
-      kind,
-      enabled: row?.enabled ?? false,
-      config: asConfig(row?.config),
-      lastTestAt: row?.lastTestAt ?? null,
-      lastTestOk: row?.lastTestOk ?? null,
-      lastSyncAt: row?.lastSyncAt ?? null,
-      updatedAt: row?.updatedAt ?? new Date(0),
-    };
-  });
+  return INTEGRATION_KINDS.map((kind) => toRecord(kind, byKind.get(kind) ?? null));
+}
+
+export async function getIntegration(kind: IntegrationKind): Promise<IntegrationRecord> {
+  const row = await prisma.integrationSetting.findUnique({ where: { kind } });
+  return toRecord(kind, row);
 }
 
 export async function saveIntegration(input: {
@@ -58,8 +74,7 @@ export async function saveIntegration(input: {
   });
 }
 
-/** Placeholder test — records the attempt; no remote call. */
-export async function recordIntegrationTest(kind: IntegrationKind): Promise<void> {
+export async function markIntegrationTest(kind: IntegrationKind, ok: boolean): Promise<void> {
   const now = new Date();
   await prisma.integrationSetting.upsert({
     where: { kind },
@@ -68,11 +83,46 @@ export async function recordIntegrationTest(kind: IntegrationKind): Promise<void
       enabled: false,
       config: {},
       lastTestAt: now,
-      lastTestOk: false,
+      lastTestOk: ok,
     },
     update: {
       lastTestAt: now,
-      lastTestOk: false,
+      lastTestOk: ok,
+    },
+  });
+}
+
+export async function markIntegrationSynced(kind: IntegrationKind): Promise<void> {
+  const now = new Date();
+  await prisma.integrationSetting.upsert({
+    where: { kind },
+    create: {
+      kind,
+      enabled: true,
+      config: {},
+      lastSyncAt: now,
+    },
+    update: {
+      lastSyncAt: now,
+    },
+  });
+}
+
+/** Non-Slack kinds still record a stub until their live probe exists. */
+export async function recordIntegrationTestStub(kind: IntegrationKind): Promise<void> {
+  const now = new Date();
+  await prisma.integrationSetting.upsert({
+    where: { kind },
+    create: {
+      kind,
+      enabled: false,
+      config: {},
+      lastTestAt: now,
+      lastTestOk: null,
+    },
+    update: {
+      lastTestAt: now,
+      lastTestOk: null,
     },
   });
 }

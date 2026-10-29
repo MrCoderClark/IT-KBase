@@ -13,7 +13,7 @@ const fieldClass =
 export default function IntegrationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string; kind?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; kind?: string; m?: string }>;
 }) {
   return (
     <Suspense
@@ -31,7 +31,7 @@ export default function IntegrationsPage({
 async function IntegrationsPanel({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string; kind?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; kind?: string; m?: string }>;
 }) {
   const session = await getSession();
   if (!session || !can(session.role, "admin.manage")) {
@@ -45,7 +45,7 @@ async function IntegrationsPanel({
   const [params, rows] = await Promise.all([searchParams, listIntegrations()]);
   const byKind = new Map(rows.map((row) => [row.kind, row]));
   const focus = params.kind && isIntegrationKind(params.kind) ? params.kind : null;
-  const message = noticeMessage(params.e, params.notice, focus);
+  const message = noticeMessage(params.e, params.notice, focus, params.m);
 
   return (
     <ArticleListShell
@@ -127,7 +127,9 @@ function IntegrationCard({
           Test connection
         </Button>
         <p className="mt-2 text-[12px] text-fg-muted">
-          Records a test attempt. No remote call runs in this shell.
+          {meta.kind === "slack"
+            ? "Posts a short message to the webhook. Enable Slack and save the URL first."
+            : "Records a test attempt. No remote call runs for this integration yet."}
         </p>
       </form>
     </section>
@@ -145,7 +147,9 @@ function StatusChips({ row }: { row: IntegrationRecord }) {
         <dt className="sr-only">Last test</dt>
         <dd>
           {row.lastTestAt
-            ? `Tested ${formatWhen(row.lastTestAt)}${row.lastTestOk === false ? " (stub)" : ""}`
+            ? `Tested ${formatWhen(row.lastTestAt)}${
+                row.lastTestOk === true ? " (ok)" : row.lastTestOk === false ? " (failed)" : " (stub)"
+              }`
             : "Never tested"}
         </dd>
       </div>
@@ -173,11 +177,18 @@ function noticeMessage(
   error: string | undefined,
   notice: string | undefined,
   kind: string | null,
+  detail?: string,
 ): string | null {
   const label = kind ? INTEGRATIONS.find((row) => row.kind === kind)?.title : null;
   if (error === "kind") return "That integration is not supported.";
   if (error === "url") return "Use an http or https address, or leave the URL blank.";
+  if (error === "test") {
+    return detail?.trim() || (label ? `${label} test failed.` : "Connection test failed.");
+  }
   if (notice === "saved") return label ? `${label} settings saved.` : "Settings saved.";
+  if (notice === "test_ok") {
+    return label ? `${label} test succeeded. Check the channel for the message.` : "Connection test succeeded.";
+  }
   if (notice === "test") {
     return label
       ? `${label} test recorded. Live connection checks are not wired yet.`

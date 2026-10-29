@@ -57,6 +57,11 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 22. ✅ **Integrations shell.** Checked 2026-10-29. `/admin/integrations` saves enable + config for ServiceNow, Jira, Teams, and Slack; Test is a stub. Live calls wait.
 23. ✅ **Version retention.** Checked 2026-10-29. Daily cron + Settings “Run retention now” purge versions older than `versionRetentionDays`; current and draft rows are kept.
 
+## 6b. Live integrations (after the shell)
+
+- ✅ **Slack publish webhook.** Checked 2026-10-29. Real Test + post on publish when Slack is enabled.
+- **Modular integrations UI.** Catalog templates + DB-owned instances; Add via UI; Generic webhook for arbitrary platforms.
+
 ## 7. Hardening, then pilot
 
 24. **CI.** Lint, typecheck, and test on a pull request for the web app and the Python service.
