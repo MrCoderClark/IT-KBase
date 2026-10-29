@@ -4,9 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
-import { isIntegrationKind, metaFor } from "./kinds";
-import { testSlackWebhook } from "./slack";
-import { recordIntegrationTestStub, saveIntegration } from "./store";
+import { isTemplateId, templateById } from "./templates";
+import {
+  createIntegrationFromTemplate,
+  deleteIntegration,
+  getIntegrationById,
+  updateIntegration,
+} from "./store";
+import { testIntegrationConnection } from "./notify";
+import { isAllowedWebhookUrl, webhookHostsFor } from "./webhook";
 
 function requireAdmin() {
   return getSession().then((session) => {
@@ -27,47 +33,85 @@ function parseHttpUrl(raw: string): string | null {
   }
 }
 
+export async function addIntegration(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const templateId = String(formData.get("templateId") ?? "");
+  if (!isTemplateId(templateId)) redirect("/admin/integrations?e=template");
+
+  const template = templateById(templateId)!;
+  const name = String(formData.get("name") ?? "").trim() || template.name;
+  const description = String(formData.get("description") ?? "").trim();
+
+  const row = await createIntegrationFromTemplate({
+    templateId,
+    name,
+    description: description || undefined,
+  });
+
+  revalidatePath("/admin/integrations");
+  redirect(`/admin/integrations?notice=added&id=${row.id}`);
+}
+
 export async function saveIntegrationSettings(formData: FormData): Promise<void> {
   await requireAdmin();
-  const kindRaw = String(formData.get("kind") ?? "");
-  if (!isIntegrationKind(kindRaw)) redirect("/admin/integrations?e=kind");
-  const meta = metaFor(kindRaw);
+  const id = String(formData.get("id") ?? "");
+  const existing = await getIntegrationById(id);
+  if (!existing) redirect("/admin/integrations?e=missing");
 
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect(`/admin/integrations?e=name&id=${id}`);
+
+  const description = String(formData.get("description") ?? "").trim();
   const enabled = formData.get("enabled") === "on";
-  const config: Record<string, string> = {};
-  for (const field of meta.fields) {
+  const hosts = webhookHostsFor(existing);
+  const config: Record<string, string> = { ...existing.config };
+
+  for (const field of existing.fieldSchema) {
     const raw = String(formData.get(field.name) ?? "");
-    if (field.type === "url") {
+    if (field.type === "password" && !raw.trim()) {
+      // Keep the stored secret when the field is left blank.
+      continue;
+    }
+    if (field.type === "url" || field.name === existing.webhookUrlKey) {
       const parsed = parseHttpUrl(raw);
-      if (parsed === null) redirect(`/admin/integrations?e=url&kind=${kindRaw}`);
+      if (parsed === null) redirect(`/admin/integrations?e=url&id=${id}`);
+      if (field.name === existing.webhookUrlKey && parsed && !isAllowedWebhookUrl(parsed, hosts)) {
+        redirect(`/admin/integrations?e=host&id=${id}`);
+      }
       config[field.name] = parsed;
     } else {
       config[field.name] = raw.trim();
     }
   }
 
-  await saveIntegration({ kind: kindRaw, enabled, config });
+  await updateIntegration({ id, name, description, enabled, config });
   revalidatePath("/admin/integrations");
-  redirect(`/admin/integrations?notice=saved&kind=${kindRaw}`);
+  redirect(`/admin/integrations?notice=saved&id=${id}`);
+}
+
+export async function removeIntegration(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const existing = await getIntegrationById(id);
+  if (!existing) redirect("/admin/integrations?e=missing");
+
+  await deleteIntegration(id);
+  revalidatePath("/admin/integrations");
+  redirect("/admin/integrations?notice=removed");
 }
 
 export async function testIntegration(formData: FormData): Promise<void> {
   await requireAdmin();
-  const kindRaw = String(formData.get("kind") ?? "");
-  if (!isIntegrationKind(kindRaw)) redirect("/admin/integrations?e=kind");
+  const id = String(formData.get("id") ?? "");
+  const existing = await getIntegrationById(id);
+  if (!existing) redirect("/admin/integrations?e=missing");
 
-  if (kindRaw === "slack") {
-    const result = await testSlackWebhook();
-    revalidatePath("/admin/integrations");
-    if (!result.ok) {
-      redirect(
-        `/admin/integrations?e=test&kind=slack&m=${encodeURIComponent(result.error)}`,
-      );
-    }
-    redirect("/admin/integrations?notice=test_ok&kind=slack");
-  }
-
-  await recordIntegrationTestStub(kindRaw);
+  const result = await testIntegrationConnection(id);
   revalidatePath("/admin/integrations");
-  redirect(`/admin/integrations?notice=test&kind=${kindRaw}`);
+  if (!result.ok) {
+    redirect(
+      `/admin/integrations?e=test&id=${id}&m=${encodeURIComponent(result.error)}`,
+    );
+  }
+  redirect(`/admin/integrations?notice=test_ok&id=${id}`);
 }

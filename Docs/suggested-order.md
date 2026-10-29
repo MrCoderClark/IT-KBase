@@ -60,7 +60,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 ## 6b. Live integrations (after the shell)
 
 - ✅ **Slack publish webhook.** Checked 2026-10-29. Real Test + post on publish when Slack is enabled.
-- **Modular integrations UI.** Catalog templates + DB-owned instances; Add via UI; Generic webhook for arbitrary platforms.
+- ✅ **Modular integrations UI.** Checked 2026-10-29. Catalog templates + DB-owned instances; Add via UI; Generic webhook; publish fan-out.
 
 ## 7. Hardening, then pilot
 

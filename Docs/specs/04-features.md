@@ -208,13 +208,11 @@ Analytics shows the same audience a compact dashboard: totals by status, unique 
 
 **Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. A daily cron (and Run retention now) deletes versions older than that window, never removing the current or draft version. Password and passkey sign-in stay open. Feature flags come later.
 
-**Integrations** (placeholders in v1):
-- ServiceNow: outbound link from article to a Service Catalog item.
-- Jira: cite an article from a Jira ticket; show inbound links on the article's Related panel.
-- Teams: on publish, post to a configurable channel.
-- Slack: on publish, post to a channel via an incoming webhook. Test posts a real message; a successful publish updates last sync.
-
-Each integration page shows: enable toggle, config form, connection test, last-sync timestamp.
+**Integrations**:
+- Admins add instances from templates (Slack, Teams, Generic webhook, ServiceNow, Jira) on `/admin/integrations`. Multiple instances per template are allowed.
+- Card grid with status; Configure opens enable, name, fields, Test, and Remove.
+- Slack / Teams / Generic webhook: Test posts a real payload; enabled instances with `notifyOnPublish` fan out on article publish.
+- ServiceNow / Jira: store instance / catalog / project link config; live ticket import comes later.
 
 ---
 

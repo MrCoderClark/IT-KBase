@@ -140,8 +140,10 @@ PATCH  /api/admin/users/:id          # change role, deactivate
 GET    /api/admin/settings
 PATCH  /api/admin/settings
 GET    /api/admin/integrations
-PATCH  /api/admin/integrations/:kind # servicenow | jira | teams | slack
-POST   /api/admin/integrations/:kind/test
+POST   /api/admin/integrations              # create from templateId
+PATCH  /api/admin/integrations/:id
+DELETE /api/admin/integrations/:id
+POST   /api/admin/integrations/:id/test
 ```
 
 ### 2.6 Analytics
