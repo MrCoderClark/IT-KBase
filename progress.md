@@ -48,7 +48,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `backend/` → FastAPI skeleton (`/healthz`, `/readyz`, `/docs`, structlog JSON, Pydantic Settings, pytest + ruff config, 4 smoke tests)
 - ✅ Docker, Redis, SeaweedFS (S3-compat) already running externally — no compose file needed in-repo yet
 - ✅ CI: lint + typecheck + test on PR (web + python). `.github/workflows/ci.yml`. Local checks passed 2026-10-29.
-- ⬜ Generate TS client from Python OpenAPI
+- ✅ Generate TS client from Python OpenAPI → `frontend/lib/api/generated/ingestion.ts`. `pnpm gen:types` + CI drift check. Checked 2026-10-29.
 - ✅ Prisma schema (`frontend/prisma/schema.prisma`) matching `03-data-model.md`; pinned to Prisma 6 (v8 RC CLI dropped `migrate`)
 - ✅ `/kb` and `/kb/[slug]` read from Postgres; seed loads 4 users, 7 categories, tags, and 11 articles
 - 🟡 Seed data: 11 of ~20 articles across Windows, Linux, M365, Networking, Security, AD, Integrations
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 25 (generated API client). A scanned page was not tried. Redis queue remains later.
+Next: item 26 (seed toward ~20 articles) or 27 (stack ADR). A scanned page was not tried. Redis queue remains later.
 
 ---
 

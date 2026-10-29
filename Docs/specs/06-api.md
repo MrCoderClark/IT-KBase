@@ -1,6 +1,6 @@
 # 06 — API Contracts
 
-> HTTP contracts between the browser, Next.js, and the Python ingestion service. Pydantic in Python is the source of truth; OpenAPI is generated from it; TypeScript types are generated from the OpenAPI schema into `packages/types`.
+> HTTP contracts between the browser, Next.js, and the Python ingestion service. Pydantic in Python is the source of truth; OpenAPI is generated from it; TypeScript types are generated from the OpenAPI schema into `frontend/lib/api/generated/`.
 
 ## 1. Conventions
 
@@ -238,6 +238,6 @@ Exceeding returns `429` with `Retry-After`.
 
 ## 8. OpenAPI & type generation
 
-- The Python service exports `/openapi.json`.
-- `pnpm gen:types` runs `openapi-typescript` and writes `packages/types/src/ingestion.ts`.
-- Next.js uses these types for both internal and ingestion-facing code; drift between Python and TS fails CI.
+- The Python service exports `/openapi.json` (also written to `frontend/lib/api/openapi.json` via `backend/scripts/export_openapi.py`).
+- From `frontend/`, `pnpm gen:types` runs `openapi-typescript` and writes `frontend/lib/api/generated/ingestion.ts`.
+- Next.js imports those schemas for ingestion-facing code. CI regenerates both files and fails if they drift from git.
