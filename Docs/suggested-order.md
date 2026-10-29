@@ -64,7 +64,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 
 ## 7. Hardening, then pilot
 
-24. **CI.** Lint, typecheck, and test on a pull request for the web app and the Python service.
+24. ✅ **CI.** Checked 2026-10-29 locally. GitHub Actions on PR/main: frontend lint + typecheck + `tsx --test`; backend ruff + pytest.
 25. **Generated API client.** TypeScript types come from the Python OpenAPI schema.
 26. **Seed.** Grow the library from 11 articles toward the ~20 realistic IT articles in `progress.md`.
 27. **Stack ADR.** Write `Docs/specs/adr/0002-stack-choices.md` for the decisions already in `claude.md`.

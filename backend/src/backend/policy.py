@@ -47,9 +47,7 @@ _ALLOWED: dict[Capability, frozenset[Role]] = {
 
 
 def can(role: str | None, capability: Capability) -> bool:
-    if role not in _ALLOWED[capability]:
-        return False
-    return True
+    return role in _ALLOWED[capability]
 
 
 def require_capability(

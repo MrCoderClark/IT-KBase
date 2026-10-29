@@ -23,7 +23,6 @@ import {
   findMfaChallenge,
   findTotp,
   replaceRecoveryCodes,
-  saveMfaChallenge,
   savePendingTotp,
 } from "./mfa-store";
 import {

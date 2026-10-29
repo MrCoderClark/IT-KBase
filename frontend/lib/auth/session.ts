@@ -67,8 +67,7 @@ function isIpv6Loopback(ip: string): boolean {
 function primaryLanIpv4(): string | null {
   for (const entries of Object.values(networkInterfaces())) {
     for (const entry of entries ?? []) {
-      const family = entry.family;
-      const ipv4 = family === "IPv4" || family === 4;
+      const ipv4 = entry.family === "IPv4";
       if (ipv4 && !entry.internal) return entry.address;
     }
   }

@@ -35,7 +35,7 @@ export async function saveSiteSettings(formData: FormData): Promise<void> {
 }
 
 /** Admin-triggered retention pass (same rules as the cron job). */
-export async function runVersionRetentionNow(_formData: FormData): Promise<void> {
+export async function runVersionRetentionNow(): Promise<void> {
   const session = await getSession();
   if (!session || !can(session.role, "admin.manage")) redirect("/");
 

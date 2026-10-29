@@ -50,7 +50,8 @@ extend-exclude = [".venv", "dist", "build"]
 #   RUF      → ruff-native rules
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "PT", "RUF"]
 # Line length is enforced by the formatter, not the linter.
-ignore = ["E501"]
+# N815: Pydantic request/response models keep camelCase to match the web JSON.
+ignore = ["E501", "N815"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]            # asserts are the point in tests

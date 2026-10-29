@@ -137,7 +137,7 @@ export async function saveArticle(
     return { ok: false, error: "Use Publish to release this article." };
   }
 
-  let visibility = can(session.role, "article.makePublic")
+  const visibility = can(session.role, "article.makePublic")
     ? input.visibility === "public"
       ? "public"
       : "private"
@@ -375,7 +375,7 @@ export async function autosaveArticle(input: EditorDraft): Promise<AutosaveResul
   });
   if (denied) return { ok: false, error: denied };
 
-  let visibility = can(session.role, "article.makePublic")
+  const visibility = can(session.role, "article.makePublic")
     ? input.visibility === "public"
       ? "public"
       : "private"

@@ -139,7 +139,7 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
         message = str(exc.detail) if isinstance(exc.detail, str) else "The document could not be read."
         yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": message})
         return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": str(exc)})
         return
 

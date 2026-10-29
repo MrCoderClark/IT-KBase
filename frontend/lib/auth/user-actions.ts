@@ -147,7 +147,7 @@ async function emailTaken(email: string, exceptUserId?: string): Promise<boolean
 }
 
 export async function createUser(formData: FormData): Promise<void> {
-  const session = await requireAdmin();
+  await requireAdmin();
   const name = accountName(String(formData.get("name") ?? ""));
   if (!name) redirect("/admin/users?e=name");
   const email = accountEmail(String(formData.get("email") ?? ""));

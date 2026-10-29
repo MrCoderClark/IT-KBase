@@ -52,7 +52,7 @@ def download_object(key: str) -> bytes:
     bucket = get_storage_settings().bucket
     try:
         found = client.get_object(Bucket=bucket, Key=key)
-    except Exception as exc:  # noqa: BLE001 — a missing object should be a readable error
+    except Exception as exc:  # a missing object should be a readable error
         raise StorageError("That file is not in storage.") from exc
     body = found["Body"].read()
     if not isinstance(body, bytes):
