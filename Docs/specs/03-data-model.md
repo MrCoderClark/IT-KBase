@@ -428,6 +428,23 @@ model SiteSetting {
 
 `SiteSetting` is one row, `id` = `default`. Empty `allowedEmailDomains` means no domain list is stored yet. Login does not read it.
 
+```prisma
+model IntegrationSetting {
+  kind       String    @id // servicenow | jira | teams | slack
+  enabled    Boolean   @default(false)
+  config     Json      @default("{}")
+  lastTestAt DateTime?
+  lastTestOk Boolean?
+  lastSyncAt DateTime?
+  updatedAt  DateTime  @updatedAt
+
+  @@map("integration_setting")
+  @@schema("public")
+}
+```
+
+`IntegrationSetting` holds the admin integrations shell. Config is JSON per kind. Live ServiceNow / Jira / Teams / Slack calls are not wired; Test records `lastTestAt` with `lastTestOk=false` until a real probe exists.
+
 `User.identityId` points at `Identity.id`. The auth package does not foreign-key into `User`.
 
 ---

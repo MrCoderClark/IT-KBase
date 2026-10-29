@@ -212,6 +212,7 @@ Analytics shows the same audience a compact dashboard: totals by status, unique 
 - ServiceNow: outbound link from article to a Service Catalog item.
 - Jira: cite an article from a Jira ticket; show inbound links on the article's Related panel.
 - Teams: on publish, post to a configurable channel.
+- Slack: on publish, post to a channel via an incoming webhook.
 
 Each integration page shows: enable toggle, config form, connection test, last-sync timestamp.
 

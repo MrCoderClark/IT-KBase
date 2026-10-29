@@ -369,6 +369,20 @@ model SiteSetting {
   @@schema("public")
 }
 
+/// Admin integrations shell (ServiceNow, Jira, Teams, Slack). Live calls come later.
+model IntegrationSetting {
+  kind       String    @id
+  enabled    Boolean   @default(false)
+  config     Json      @default("{}")
+  lastTestAt DateTime?
+  lastTestOk Boolean?
+  lastSyncAt DateTime?
+  updatedAt  DateTime  @updatedAt
+
+  @@map("integration_setting")
+  @@schema("public")
+}
+
 // ---------------------------------------------------------------------------
 // Auth schema — owned by the auth module. No relation to User.
 // See Docs/specs/adr/0001-server-managed-sessions.md
