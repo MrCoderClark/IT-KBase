@@ -22,19 +22,23 @@ pnpm test
 # First time only: install Chromium for Playwright
 pnpm exec playwright install chromium
 
-# Full suite (auth setup once, then login + signed-in routes)
+# Axe suite (auth setup once, then routes)
 pnpm test:a11y
 
 # One route by name
-pnpm exec playwright test e2e/a11y.spec.ts -g "kb list"
+pnpm exec playwright test e2e/a11y.spec.ts -g "kb list" --project=chromium
+
+# Visual regression (article public + signed-in snapshots)
+pnpm test:visual:update
+pnpm test:visual
 
 # Last HTML report
 pnpm exec playwright show-report
 ```
 
-Needs a reachable app on `:3000` (Playwright starts `next dev` unless `PLAYWRIGHT_BASE_URL` is set) and a seeded Joe Clark account. Auth cookies are written once to `e2e/.auth/` (gitignored). Repeated full logins can hit the login rate limit.
+Needs a reachable app on `:3000` (Playwright starts `next dev` unless `PLAYWRIGHT_BASE_URL` is set) and a seeded Joe Clark account. Auth cookies are written once to `e2e/.auth/` (gitignored). Repeated full logins can hit the login rate limit. Public visual/Lighthouse slug must be `visibility: public`.
 
-Keyboard-only checklist (manual): `Docs/specs/13-a11y-keyboard.md`.
+Keyboard-only checklist: `Docs/specs/13-a11y-keyboard.md`. Visual baselines: `Docs/specs/15-visual-regression.md`.
 
 ### Lighthouse (article view)
 
