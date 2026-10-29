@@ -1,36 +1,20 @@
+import type { components } from "@/lib/api/generated/ingestion";
 import type { EditorDraft } from "@/lib/editor/draft";
 import { blankDraft } from "@/lib/editor/draft";
 
-export interface ParsedStep {
-  title: string;
-  body: string;
-  code: string;
-  images?: string[];
-}
-
-export interface ParsedCallout {
-  title: string;
-  body: string;
-}
-
-/** JSON from POST /v1/parse/docx. */
-export interface ParsedDraft {
-  title: string;
-  summary: string;
-  overviewTitle: string;
-  overview: string;
-  prerequisitesTitle: string;
-  prerequisites: string[];
-  stepsTitle: string;
-  steps: ParsedStep[];
-  verificationTitle: string;
-  verification: string[];
-  verificationCode: string;
-  troubleshootingTitle: string;
-  troubleshooting: ParsedCallout[];
-}
+export type ParsedStep = components["schemas"]["ParsedStep"];
+export type ParsedCallout = components["schemas"]["ParsedCallout"];
+/** JSON from POST /v1/parse/docx and the ingest draft payload. */
+export type ParsedDraft = components["schemas"]["ParsedDraft"];
+export type IngestBody = components["schemas"]["IngestBody"];
+/** `/ingest` streams SSE, so OpenAPI has no IngestResult schema — draft is nested in events. */
 
 export function parsedToDraft(parsed: ParsedDraft): EditorDraft {
+  const prerequisites = parsed.prerequisites ?? [];
+  const steps = parsed.steps ?? [];
+  const verification = parsed.verification ?? [];
+  const troubleshooting = parsed.troubleshooting ?? [];
+
   const draft = blankDraft();
   draft.title = parsed.title;
   draft.summary = parsed.summary;
@@ -43,15 +27,15 @@ export function parsedToDraft(parsed: ParsedDraft): EditorDraft {
           prose: parsed.overview,
         };
       case "prerequisites":
-        return parsed.prerequisites.length > 0
-          ? { ...section, title: parsed.prerequisitesTitle, items: parsed.prerequisites }
+        return prerequisites.length > 0
+          ? { ...section, title: parsed.prerequisitesTitle, items: prerequisites }
           : section;
       case "steps":
-        return parsed.steps.length > 0
+        return steps.length > 0
           ? {
               ...section,
               title: parsed.stepsTitle,
-              steps: parsed.steps.map((step) => ({
+              steps: steps.map((step) => ({
                 title: step.title,
                 body: step.body,
                 code: step.code,
@@ -61,21 +45,21 @@ export function parsedToDraft(parsed: ParsedDraft): EditorDraft {
             }
           : section;
       case "verification":
-        return parsed.verification.length > 0 || parsed.verificationCode
+        return verification.length > 0 || parsed.verificationCode
           ? {
               ...section,
               title: parsed.verificationTitle,
-              items: parsed.verification.length > 0 ? parsed.verification : [""],
+              items: verification.length > 0 ? verification : [""],
               code: parsed.verificationCode,
               language: parsed.verificationCode ? "text" : section.language,
             }
           : section;
       case "troubleshooting":
-        return parsed.troubleshooting.length > 0
+        return troubleshooting.length > 0
           ? {
               ...section,
               title: parsed.troubleshootingTitle,
-              callouts: parsed.troubleshooting.map((callout) => ({
+              callouts: troubleshooting.map((callout) => ({
                 variant: "warning" as const,
                 title: callout.title,
                 body: callout.body,

@@ -71,3 +71,45 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+  openapi-types:
+    name: OpenAPI types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/.python-version
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.10.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install backend
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Install frontend
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate OpenAPI + types
+        run: |
+          cd backend
+          uv run python scripts/export_openapi.py
+          cd ../frontend
+          pnpm gen:types
+
+      - name: Check for drift
+        run: git diff --exit-code -- frontend/lib/api/openapi.json frontend/lib/api/generated/ingestion.ts

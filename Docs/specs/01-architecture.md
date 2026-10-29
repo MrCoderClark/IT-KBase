@@ -180,6 +180,6 @@ The current slice does steps 1–3, then the browser opens `GET /api/jobs/{id}/s
 
 - Monorepo via **pnpm workspaces** + **Turborepo** for the TS side.
 - Python side uses **uv** workspaces (`services/ingestion` as a member).
-- Shared types generated: Python Pydantic → OpenAPI → `openapi-typescript` → `packages/types`.
+- Shared types generated: Python Pydantic → OpenAPI → `openapi-typescript` → `frontend/lib/api/generated/`.
 - Lint: ESLint (web), ruff (python). Format: Prettier, ruff format.
 - Pre-commit: lefthook running lint-staged + ruff.

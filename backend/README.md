@@ -61,6 +61,22 @@ uv run ruff format .
 CI will fail on either. `ruff format` is the autofixer; `ruff check --fix` can
 auto-apply some lint fixes.
 
+## OpenAPI → TypeScript
+
+From `backend/`:
+
+```powershell
+uv run python scripts/export_openapi.py
+```
+
+That writes `frontend/lib/api/openapi.json`. Then from `frontend/`:
+
+```powershell
+pnpm gen:types
+```
+
+CI regenerates both and fails if they drift from git.
+
 ## Configuration
 
 All env vars are prefixed `TB_` and loaded by Pydantic Settings. A `.env` file
