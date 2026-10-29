@@ -206,7 +206,7 @@ Analytics shows the same audience a compact dashboard: totals by status, unique 
 
 **Audit**: an admin can open `/admin/audit` and read `auth.audit_event` rows (when, action, account email, IP, client). Newest first, 50 per page. Article business `audit_log` stays a later feature.
 
-**Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. Versions are not deleted yet, and password and passkey sign-in stay open. Feature flags come later.
+**Settings**: an admin can set the accent color, an optional logo URL, how many days article versions are kept, and which email domains may be used when an identity provider is added. The signed-in shell uses the accent and the logo. A daily cron (and Run retention now) deletes versions older than that window, never removing the current or draft version. Password and passkey sign-in stay open. Feature flags come later.
 
 **Integrations** (placeholders in v1):
 - ServiceNow: outbound link from article to a Service Catalog item.

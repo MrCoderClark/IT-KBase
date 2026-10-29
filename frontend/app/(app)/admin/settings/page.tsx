@@ -1,9 +1,10 @@
 import { Suspense } from "react";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { Button } from "@/components/ui/button";
+import { RetentionSubmit } from "./_components/retention-submit";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
-import { saveSiteSettings } from "@/lib/settings/actions";
+import { runVersionRetentionNow, saveSiteSettings } from "@/lib/settings/actions";
 import { readSiteSettings } from "@/lib/settings/store";
 
 const fieldClass =
@@ -12,7 +13,7 @@ const fieldClass =
 export default function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; deleted?: string }>;
 }) {
   return (
     <Suspense
@@ -30,7 +31,7 @@ export default function SettingsPage({
 async function SettingsPanel({
   searchParams,
 }: {
-  searchParams: Promise<{ e?: string; notice?: string }>;
+  searchParams: Promise<{ e?: string; notice?: string; deleted?: string }>;
 }) {
   const session = await getSession();
   if (!session || !can(session.role, "admin.manage")) {
@@ -42,6 +43,13 @@ async function SettingsPanel({
   }
 
   const [params, settings] = await Promise.all([searchParams, readSiteSettings()]);
+  const deletedCount = Number.parseInt(params.deleted ?? "", 10);
+  const retentionDone = params.notice === "retention";
+  const retentionMessage = retentionDone
+    ? Number.isFinite(deletedCount)
+      ? `Retention run finished. Removed ${deletedCount} expired version${deletedCount === 1 ? "" : "s"}. Current and draft versions were kept.`
+      : "Retention run finished."
+    : null;
   const message =
     params.e === "accent"
       ? "Accent must be a color like #1E6BFF."
@@ -110,7 +118,10 @@ async function SettingsPanel({
             defaultValue={settings.versionRetentionDays}
             className={fieldClass}
           />
-          <p className="text-[12px] text-fg-muted">Saved for later. Versions are not deleted yet.</p>
+          <p className="text-[12px] text-fg-muted">
+            Versions older than this are removed by the daily job. The current and draft versions of each article are
+            never deleted.
+          </p>
         </div>
 
         <div className="space-y-1">
@@ -131,6 +142,27 @@ async function SettingsPanel({
         </div>
 
         <Button type="submit">Save settings</Button>
+      </form>
+
+      <form
+        id="version-retention"
+        action={runVersionRetentionNow}
+        className="mt-4 max-w-xl scroll-mt-6 rounded-xl border border-border bg-surface p-5"
+      >
+        <h2 className="text-[13px] font-semibold text-fg">Version retention</h2>
+        <p className="mt-1 text-[12px] text-fg-muted">
+          Run the same purge the daily cron uses. Safe to run anytime — only expired non-current, non-draft rows are
+          removed.
+        </p>
+        {retentionMessage ? (
+          <p
+            role="status"
+            className="mt-3 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-[13px] font-medium text-fg"
+          >
+            {retentionMessage}
+          </p>
+        ) : null}
+        <RetentionSubmit />
       </form>
     </ArticleListShell>
   );

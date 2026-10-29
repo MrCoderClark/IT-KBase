@@ -8,7 +8,7 @@ This file is the behavior for that slice. `04-features.md` F11 points here.
 
 Every editor save inserts an `ArticleVersion` and sets `Article.currentVersionId` to it. The version string comes from `nextArticleVersion`: the first save is `1.0`, a later save bumps the minor number, and a major publish resets the minor number (`1.4` → `2.0`). Sections and blocks belong to that version row. The note is `Published from the editor` or `Saved from the editor`.
 
-`article.rollback` is admin-only. A reviewer can publish. Settings stores `versionRetentionDays`. Nothing deletes old versions.
+`article.rollback` is admin-only. A reviewer can publish. Settings stores `versionRetentionDays`. A daily job (`GET /api/cron/purge-versions`, Bearer `CRON_SECRET`) and Settings → Run retention now delete versions older than that window. Rows pointed at by `currentVersionId` or `draftVersionId` are never removed.
 
 Each save creates new section and block ids. A later version does not reuse the previous block id, so a diff cannot yet tell a move from a delete plus an insert.
 
@@ -58,7 +58,6 @@ Restore refuses a version that is already current, and refuses a version that be
 
 ## Not in this slice
 
-- Deleting versions when they pass `versionRetentionDays`.
 - A character-level diff, or treating a moved block as a move.
 - Comments, a page tree, or a permission grant on one article.
 - Authors and readers browsing history.
