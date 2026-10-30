@@ -143,7 +143,7 @@ async def _one(
         if not payload.get("draft"):
             return False, ms, f"{job_id} missing draft"
         return True, ms, job_id
-    except Exception as exc:  # noqa: BLE001 — surface any transport failure
+    except Exception as exc:
         ms = (time.perf_counter() - t0) * 1000
         return False, ms, f"{job_id} {type(exc).__name__}: {exc}"
 
