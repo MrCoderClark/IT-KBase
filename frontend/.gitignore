@@ -36,8 +36,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — keep examples committable (matches root .gitignore)
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # vercel
 .vercel

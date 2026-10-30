@@ -72,7 +72,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 29. ✅ **Lighthouse.** Checked 2026-10-29. Public article gate: Perf 90, A11y 100, BP 100 (`pnpm test:lighthouse`). Signed-in shell remains informational / TBT follow-up.
 30. ✅ **Visual check.** Checked 2026-10-29. Playwright baselines for public + signed-in article (`pnpm test:visual`, `Docs/specs/15-visual-regression.md`).
 31. ✅ **Load.** Checked 2026-10-30. Article SSR health gate + 100 concurrent ingest (`Docs/specs/16-load.md`). Roadmap 1k rps remains a CDN/cache follow-up.
-32. **Security review.** OWASP ASVS level 1.
+32. ✅ **Security review.** Checked 2026-10-30. ASVS L1 checklist (`Docs/specs/17-security-asvs-l1.md`); prod `pnpm audit` + `pip-audit` clean; origin checks on mutating `/api/*`.
 33. **Pilot.** Import real Word and PDF runbooks, sit with the IT team, and write the go or no-go note.
 
 ## Decide before the pilot, do not build yet
