@@ -57,6 +57,16 @@ pnpm start
 pnpm test:lighthouse
 ```
 
+### Load (article detail)
+
+Local SSR health gate (errors / p99 / floor RPS). Roadmap 1k rps needs cache/CDN — see `Docs/specs/16-load.md`. Production styles need PostCSS Tailwind (`pnpm add -D @tailwindcss/postcss postcss` once), then rebuild.
+
+```powershell
+cd frontend
+# Terminal A: pnpm build ; pnpm start
+pnpm test:load:article
+```
+
 ## Lint / types / build
 
 ```powershell

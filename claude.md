@@ -219,6 +219,7 @@ cd ..
 A11y details (install browsers, single-route filter, report): `frontend/README.md` and `Docs/specs/13-a11y-keyboard.md`.
 Lighthouse article gate: `Docs/specs/14-lighthouse.md` (`pnpm test:lighthouse` against a production `pnpm start`).
 Visual regression: `Docs/specs/15-visual-regression.md` (`pnpm test:visual` / `pnpm test:visual:update`).
+Load: `Docs/specs/16-load.md` (`pnpm test:load:article`; `uv run python scripts/load_ingest.py` with AI off).
 
 Also:
 - Update `progress.md` (move items, add new ones, note blockers).

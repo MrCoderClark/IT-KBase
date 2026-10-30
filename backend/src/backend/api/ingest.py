@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Iterator
 
@@ -86,7 +87,9 @@ def build_ingest_router(dependency) -> APIRouter:
                 },
             )
 
-        draft = _read_draft(body)
+        # S3 + parse are blocking. Keep them off the event loop so concurrent
+        # requests can still clear the 60s assertion dependency promptly.
+        draft = await asyncio.to_thread(_read_draft, body)
         log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=draft.title)
         return IngestResult(jobId=body.jobId, draft=draft)
 

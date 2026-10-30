@@ -71,7 +71,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 28. 🟡 **Accessibility.** ✅ Playwright + axe clean on main routes (2026-10-29, `chore/a11y-axe`). Re-run: `cd frontend` → `pnpm test:a11y` (see `Docs/specs/13-a11y-keyboard.md`). Keyboard walkthrough in that spec still open.
 29. ✅ **Lighthouse.** Checked 2026-10-29. Public article gate: Perf 90, A11y 100, BP 100 (`pnpm test:lighthouse`). Signed-in shell remains informational / TBT follow-up.
 30. ✅ **Visual check.** Checked 2026-10-29. Playwright baselines for public + signed-in article (`pnpm test:visual`, `Docs/specs/15-visual-regression.md`).
-31. **Load.** 100 concurrent ingestions, and the article page under the rate in `Docs/specs/08-roadmap.md`.
+31. ✅ **Load.** Checked 2026-10-30. Article SSR health gate + 100 concurrent ingest (`Docs/specs/16-load.md`). Roadmap 1k rps remains a CDN/cache follow-up.
 32. **Security review.** OWASP ASVS level 1.
 33. **Pilot.** Import real Word and PDF runbooks, sit with the IT team, and write the go or no-go note.
 
