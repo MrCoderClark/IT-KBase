@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { buildContentSecurityPolicy, SECURITY_HEADERS } from "@/lib/security/headers";
+import { applySecurityHeaders, buildContentSecurityPolicy } from "@/lib/security/headers";
 
 const SESSION_COOKIE = process.env.AUTH_COOKIE_NAME ?? "__Host-tb_session";
 
@@ -44,12 +44,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("Content-Security-Policy", csp);
 
   const response = nextOrGate(request, requestHeaders);
-
-  response.headers.set("Content-Security-Policy", csp);
-  for (const header of SECURITY_HEADERS) {
-    response.headers.set(header.key, header.value);
-  }
-
+  applySecurityHeaders(response.headers, csp);
   return response;
 }
 

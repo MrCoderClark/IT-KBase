@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-30 (chore/security-asvs-l1)
+Last updated: 2026-10-30 (docs/pilot)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -22,7 +22,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
 | M7 | Hardening, a11y audit, perf        | Week 11       | ⬜     |
-| M8 | Pilot release to internal IT       | Week 12       | ⬜     |
+| M8 | Pilot release to internal IT       | Week 12       | 🟡 scaffold done; live Evidence deferred |
 
 ---
 
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 33 (pilot). Keyboard walkthrough for 28, signed-in Lighthouse TBT, article 1k rps via CDN/cache, and `tb_csrf` double-submit remain optional follow-ups.
+Next: live pilot Evidence + Go/No-Go when IT admins Create/Import (`Docs/pilot/go-no-go.md`). Optional: keyboard walkthrough (28), signed-in Lighthouse TBT, CDN 1k rps, `tb_csrf`.
 
 ---
 
@@ -230,15 +230,19 @@ Next: item 33 (pilot). Keyboard walkthrough for 28, signed-in Lighthouse TBT, ar
 | 2026-10-14 | Opaque server sessions in Postgres, not a browser JWT or Auth.js | Logout and role change must revoke access. FastAPI checks a 60s HMAC assertion and does not open the auth tables. [ADR 0001](Docs/specs/adr/0001-server-managed-sessions.md) |
 | 2026-10-14 | Login required, with a per-article public flag | Published + `visibility=public` is the only anonymous read. The rest of the app stays behind the session |
 | 2026-10-29 | Locked stack recorded as ADR 0003 | Next 16, FastAPI, Prisma 6, Tailwind/shadcn, uv/pnpm, OpenAPI→TS; alternatives need a new ADR. [ADR 0003](Docs/specs/adr/0003-stack-choices.md) |
+| 2026-10-30 | Pilot is single-tenant | No tenant id in schema for M8; multi-tenant stays post-pilot. |
+| 2026-10-30 | Prod LLM = current OpenAI-compatible stack | Same `AI_*` / OpenRouter path as local; interface stays pluggable. |
+| 2026-10-30 | Pilot auth = password + optional MFA/passkeys | Entra/OIDC not required for M8; stays post-pilot. |
+| 2026-10-30 | Pilot uses current local env as-is | No separate preview host to start; GA may still want TLS/dedicated host. |
 
 ---
 
 ## 10. Open questions
 
-- ⬜ Do we need multi-tenant from day one, or single-tenant with a tenant-id baked in for later?
-- ⬜ Which LLM provider is primary in prod — self-hosted (vLLM + Llama 3.1 70B) or managed (OpenAI/Anthropic)? Keep interface pluggable regardless.
-- ⬜ Is SSO (OIDC) a pilot requirement or post-pilot?
-- ⬜ PDF OCR for scanned docs — in scope for M3 or deferred?
+- ✅ Single-tenant for pilot (2026-10-30). Multi-tenant later.
+- ✅ Primary prod LLM = current OpenAI-compatible (`AI_*`) stack (2026-10-30).
+- ✅ Pilot SSO not required — current auth methods (2026-10-30).
+- ⬜ PDF OCR for scanned docs — deferred post-pilot unless pilot evidence says otherwise?
 
 ---
 

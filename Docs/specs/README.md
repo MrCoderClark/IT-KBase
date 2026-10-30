@@ -22,10 +22,12 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 15 | `15-visual-regression.md`  | Playwright screenshot baselines for the article view      |
 | 16 | `16-load.md`               | Article 1k rps + 100 concurrent ingest load gates          |
 | 17 | `17-security-asvs-l1.md`   | OWASP ASVS Level 1 pilot checklist + evidence              |
+| 18 | `18-pilot.md`             | Pilot kickoff decisions, import/office-hours checklist     |
 
 Supporting:
 
 - `../mocks/` — PNG mocks and Figma exports. North-star visual target.
+- `../pilot/` — Go/No-Go report for M8 (`go-no-go.md`).
 - `adr/` — Architecture Decision Records. [0001](adr/0001-server-managed-sessions.md) replaces Auth.js and Redis sessions.
 
 ## How to change a spec
