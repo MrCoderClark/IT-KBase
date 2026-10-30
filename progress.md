@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-30 (chore/load-test)
+Last updated: 2026-10-30 (chore/security-asvs-l1)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -193,7 +193,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: item 32 (security review). Keyboard walkthrough for 28, signed-in Lighthouse TBT, and article 1k rps via CDN/cache remain optional follow-ups.
+Next: item 33 (pilot). Keyboard walkthrough for 28, signed-in Lighthouse TBT, article 1k rps via CDN/cache, and `tb_csrf` double-submit remain optional follow-ups.
 
 ---
 
@@ -205,7 +205,7 @@ Next: item 32 (security review). Keyboard walkthrough for 28, signed-in Lighthou
 - ⬜ Lighthouse signed-in TBT: shell still ~80 Perf; follow-up if we raise that bar.
 - ✅ Visual regression: Playwright `visual` project — public + signed-in article baselines pass (2026-10-29). `pnpm test:visual` / `pnpm test:visual:update` (`Docs/specs/15-visual-regression.md`).
 - ✅ Load test: article SSR health ~43 rps / p99 423ms; 100 concurrent ingest PASS (2026-10-30). `pnpm test:load:article` / `uv run python scripts/load_ingest.py` (`Docs/specs/16-load.md`). Webpack production needs `@tailwindcss/postcss`; ingest uses `asyncio.to_thread` so assertions clear under concurrency. Roadmap 1k rps = CDN/cache follow-up.
-- ⬜ Security review: OWASP ASVS L1 pass
+- ✅ Security review: ASVS L1 checklist (`Docs/specs/17-security-asvs-l1.md`) checked 2026-10-30. Origin gate on mutating upload/view APIs; `.env.example`; CI `security-audit` (`pnpm audit --prod` + `pip-audit`); `deepmerge-ts@8.0.2` override; removed runtime `shadcn` CLI dep.
 
 ---
 

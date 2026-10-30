@@ -150,7 +150,7 @@ GDPR / local-equivalent: data export and deletion endpoints exposed to admins.
 
 ## 12. Compliance target (initial)
 
-- **OWASP ASVS Level 1** must pass before pilot.
+- **OWASP ASVS Level 1** must pass before pilot. Checklist and evidence: [`17-security-asvs-l1.md`](17-security-asvs-l1.md).
 - **SOC 2 Type I** readiness within 6 months of GA (controls documented, evidence collected).
 - GDPR DSR workflow in place (export + delete).
 

@@ -72,6 +72,43 @@ jobs:
       - name: Test
         run: uv run pytest
 
+  security-audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.10.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/.python-version
+
+      - name: Frontend audit (high+, production tree)
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          # Runtime deps only — CLI tools (e.g. shadcn via dlx) are not in the prod tree.
+          pnpm audit --prod --audit-level=high
+
+      - name: Backend audit
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uvx pip-audit
+
   openapi-types:
     name: OpenAPI types
     runs-on: ubuntu-latest

@@ -2,8 +2,11 @@ import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { keyOwnedBy, safeFileName, sourceKindOf, withinUploadLimit } from "@/lib/ingestion/object-key";
+import { forbidBadOrigin } from "@/lib/security/request-origin";
 
 export async function POST(request: Request): Promise<Response> {
+  const blocked = forbidBadOrigin(request);
+  if (blocked) return blocked;
   const session = await getSession();
   if (!session) return Response.json({ error: "Sign in to continue." }, { status: 401 });
   if (!can(session.role, "article.create")) {

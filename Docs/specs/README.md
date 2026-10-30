@@ -21,6 +21,7 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 14 | `14-lighthouse.md`         | Lighthouse thresholds + commands for the article view      |
 | 15 | `15-visual-regression.md`  | Playwright screenshot baselines for the article view      |
 | 16 | `16-load.md`               | Article 1k rps + 100 concurrent ingest load gates          |
+| 17 | `17-security-asvs-l1.md`   | OWASP ASVS Level 1 pilot checklist + evidence              |
 
 Supporting:
 

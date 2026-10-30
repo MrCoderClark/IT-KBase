@@ -6,13 +6,16 @@ import { prisma } from "@/lib/db";
 import { articleViewerKey, viewDay } from "@/lib/kb/article-views";
 import { passesPageGate } from "@/lib/kb/page-access";
 import { effectiveArticleAccess } from "@/lib/queries/page-access";
+import { forbidBadOrigin } from "@/lib/security/request-origin";
 
 const VIEWER_COOKIE = "tb_viewer";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
+  const blocked = forbidBadOrigin(request);
+  if (blocked) return blocked;
   const { id } = await context.params;
   const article = await prisma.article.findUnique({
     where: { id },
