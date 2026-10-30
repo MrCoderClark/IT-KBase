@@ -51,6 +51,18 @@ uv run pytest
 
 Expected: 4 passing tests (healthz, readyz, openapi, docs).
 
+### Load (100 concurrent ingest)
+
+Spec: `Docs/specs/16-load.md`. Start the service with object storage and **empty** `AI_API_KEY`, then:
+
+```powershell
+cd backend
+$env:AI_API_KEY = ""
+uv run backend
+# other terminal:
+uv run python scripts/load_ingest.py
+```
+
 ## Lint + format
 
 ```powershell

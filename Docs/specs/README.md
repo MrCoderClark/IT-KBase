@@ -20,6 +20,7 @@ Numbered specs are the source of truth for product, design, and engineering. Rea
 | 13 | `13-a11y-keyboard.md`      | Playwright + axe commands; keyboard-only walkthrough       |
 | 14 | `14-lighthouse.md`         | Lighthouse thresholds + commands for the article view      |
 | 15 | `15-visual-regression.md`  | Playwright screenshot baselines for the article view      |
+| 16 | `16-load.md`               | Article 1k rps + 100 concurrent ingest load gates          |
 
 Supporting:
 
