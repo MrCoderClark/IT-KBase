@@ -70,3 +70,14 @@ export const SECURITY_HEADERS: ReadonlyArray<{ key: string; value: string }> = [
     value: "DENY",
   },
 ];
+
+/** Apply CSP + fixed headers onto a response (used by `proxy.ts`). */
+export function applySecurityHeaders(
+  headers: { set(name: string, value: string): void },
+  csp: string,
+): void {
+  headers.set("Content-Security-Policy", csp);
+  for (const header of SECURITY_HEADERS) {
+    headers.set(header.key, header.value);
+  }
+}

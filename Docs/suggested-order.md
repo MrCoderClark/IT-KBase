@@ -73,13 +73,13 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 30. ✅ **Visual check.** Checked 2026-10-29. Playwright baselines for public + signed-in article (`pnpm test:visual`, `Docs/specs/15-visual-regression.md`).
 31. ✅ **Load.** Checked 2026-10-30. Article SSR health gate + 100 concurrent ingest (`Docs/specs/16-load.md`). Roadmap 1k rps remains a CDN/cache follow-up.
 32. ✅ **Security review.** Checked 2026-10-30. ASVS L1 checklist (`Docs/specs/17-security-asvs-l1.md`); prod `pnpm audit` + `pip-audit` clean; origin checks on mutating `/api/*`.
-33. **Pilot.** Import real Word and PDF runbooks, sit with the IT team, and write the go or no-go note.
+33. 🟡 **Pilot.** Scaffold ready (`Docs/specs/18-pilot.md`, `Docs/pilot/go-no-go.md`): D1–D3 set, env/seed/headers accepted. Live Evidence + Go/No-Go when IT admins Create/Import.
 
 ## Decide before the pilot, do not build yet
 
-- Single tenant for the pilot, or a tenant id from day one.
-- Which model is primary in production. The interface stays pluggable either way.
-- Whether Entra ID or another SSO login is required for the pilot.
+- ✅ Single tenant for the pilot (2026-10-30). Multi-tenant / tenant id stays post-pilot.
+- ✅ Primary production LLM = current OpenAI-compatible (`AI_*` / OpenRouter) stack; interface stays pluggable (2026-10-30).
+- ✅ Pilot auth = current methods (password + optional MFA/passkeys); Entra/OIDC post-pilot (2026-10-30).
 
 ## After the pilot
 

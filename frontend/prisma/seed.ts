@@ -75,6 +75,8 @@ const USERS = [
     name: "Marcus Rivera",
     role: Role.reviewer,
   },
+  // Helpdesk L1 (Sam persona) — pilot reader seat
+  { email: "sam.lee@techbase.local", name: "Sam Lee", role: Role.reader },
 ];
 
 // ---------------------------------------------------------------------------

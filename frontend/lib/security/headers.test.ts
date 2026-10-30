@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildContentSecurityPolicy, SECURITY_HEADERS } from "./headers";
+import {
+  applySecurityHeaders,
+  buildContentSecurityPolicy,
+  SECURITY_HEADERS,
+} from "./headers";
 import { REACT_RT_BOOT_SCRIPT_SHA256 } from "./react-boot-script";
 import { THEME_INIT_SCRIPT_SHA256 } from "./theme-init-script";
 
@@ -37,5 +41,15 @@ describe("security headers", () => {
     const csp = buildContentSecurityPolicy("devnonce", true);
     assert.match(csp, /unsafe-eval/);
     assert.doesNotMatch(csp, /upgrade-insecure-requests/);
+  });
+
+  it("smoke: applySecurityHeaders sets CSP and every fixed header", () => {
+    const headers = new Headers();
+    const csp = buildContentSecurityPolicy("smoke-nonce", false);
+    applySecurityHeaders(headers, csp);
+    assert.equal(headers.get("Content-Security-Policy"), csp);
+    for (const row of SECURITY_HEADERS) {
+      assert.equal(headers.get(row.key), row.value, row.key);
+    }
   });
 });
