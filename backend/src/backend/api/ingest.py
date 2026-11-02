@@ -9,8 +9,7 @@ from collections.abc import Iterator
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from opentelemetry import trace
-from opentelemetry.context import attach, detach
-from opentelemetry.trace import Status, StatusCode
+from opentelemetry.trace import Span, Status, StatusCode
 from pydantic import BaseModel, Field
 
 from auth_py import Principal
@@ -26,7 +25,7 @@ from backend.storage import (
     presign_put,
     put_object,
 )
-from backend.telemetry import get_logger, get_tracer
+from backend.telemetry import get_logger, get_tracer, iter_with_context
 
 log = get_logger(__name__)
 
@@ -139,82 +138,87 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
             "tb.size_bytes": body.sizeBytes,
         },
     )
-    token = attach(trace.set_span_in_context(span))
     try:
-        try:
-            data = download_object(body.s3Key)
-        except StorageError as exc:
-            span.set_status(Status(StatusCode.ERROR, str(exc)))
-            fail = event(body.jobId, "parsing", "failed", detail=str(exc), progress=0)
-            yield _sse("progress", fail.model_dump())
-            yield _sse("failed", {"jobId": body.jobId, "code": "storage", "message": str(exc)})
-            return
-
-        if len(data) > _MAX_BYTES:
-            message = "That file is larger than 25 MB."
-            span.set_status(Status(StatusCode.ERROR, message))
-            yield _sse("failed", {"jobId": body.jobId, "code": "too_large", "message": message})
-            return
-
-        stages: list[dict] = []
-        try:
-            for item in iter_draft_from_bytes(
-                data, body.fileName, job_id=body.jobId, source_key=body.s3Key
-            ):
-                if isinstance(item, ProgressEvent):
-                    payload = item.model_dump()
-                    if item.durationMs is not None:
-                        stages.append(
-                            {
-                                "stage": item.stage,
-                                "durationMs": item.durationMs,
-                                "detail": item.detail,
-                            }
-                        )
-                    yield _sse("progress", payload)
-                    continue
-                log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=item.title)
-                outcome = (
-                    "succeeded_with_warnings"
-                    if item.lowConfidence or item.lowFidelitySource or item.validationWarnings
-                    else "succeeded"
-                )
-                span.set_attribute("tb.outcome", outcome)
-                span.set_attribute("tb.title", item.title)
-                yield _sse(
-                    "done",
-                    {
-                        "jobId": body.jobId,
-                        "draft": item.model_dump(),
-                        "outcome": outcome,
-                        "warnings": list(item.validationWarnings),
-                        "trace": {
-                            "stages": stages,
-                            "totalMs": sum(int(row["durationMs"]) for row in stages),
-                        },
-                    },
-                )
-                return
-        except HTTPException as exc:
-            message = (
-                str(exc.detail) if isinstance(exc.detail, str) else "The document could not be read."
-            )
-            span.set_status(Status(StatusCode.ERROR, message))
-            yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": message})
-            return
-        except Exception as exc:
-            span.set_status(Status(StatusCode.ERROR, str(exc)))
-            yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": str(exc)})
-            return
-
-        span.set_status(Status(StatusCode.ERROR, "empty"))
-        yield _sse(
-            "failed",
-            {"jobId": body.jobId, "code": "parse", "message": "That document has no text to import."},
-        )
+        # StreamingResponse drives this generator via iterate_in_threadpool, which
+        # runs each next() in a fresh copy of the request context. Attach the job
+        # span per step instead of once across yields (see iter_with_context).
+        yield from iter_with_context(_ingest_events(body, span), trace.set_span_in_context(span))
     finally:
-        detach(token)
         span.end()
+
+
+def _ingest_events(body: IngestBody, span: Span) -> Iterator[str]:
+    try:
+        data = download_object(body.s3Key)
+    except StorageError as exc:
+        span.set_status(Status(StatusCode.ERROR, str(exc)))
+        fail = event(body.jobId, "parsing", "failed", detail=str(exc), progress=0)
+        yield _sse("progress", fail.model_dump())
+        yield _sse("failed", {"jobId": body.jobId, "code": "storage", "message": str(exc)})
+        return
+
+    if len(data) > _MAX_BYTES:
+        message = "That file is larger than 25 MB."
+        span.set_status(Status(StatusCode.ERROR, message))
+        yield _sse("failed", {"jobId": body.jobId, "code": "too_large", "message": message})
+        return
+
+    stages: list[dict] = []
+    try:
+        for item in iter_draft_from_bytes(
+            data, body.fileName, job_id=body.jobId, source_key=body.s3Key
+        ):
+            if isinstance(item, ProgressEvent):
+                payload = item.model_dump()
+                if item.durationMs is not None:
+                    stages.append(
+                        {
+                            "stage": item.stage,
+                            "durationMs": item.durationMs,
+                            "detail": item.detail,
+                        }
+                    )
+                yield _sse("progress", payload)
+                continue
+            log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=item.title)
+            outcome = (
+                "succeeded_with_warnings"
+                if item.lowConfidence or item.lowFidelitySource or item.validationWarnings
+                else "succeeded"
+            )
+            span.set_attribute("tb.outcome", outcome)
+            span.set_attribute("tb.title", item.title)
+            yield _sse(
+                "done",
+                {
+                    "jobId": body.jobId,
+                    "draft": item.model_dump(),
+                    "outcome": outcome,
+                    "warnings": list(item.validationWarnings),
+                    "trace": {
+                        "stages": stages,
+                        "totalMs": sum(int(row["durationMs"]) for row in stages),
+                    },
+                },
+            )
+            return
+    except HTTPException as exc:
+        message = (
+            str(exc.detail) if isinstance(exc.detail, str) else "The document could not be read."
+        )
+        span.set_status(Status(StatusCode.ERROR, message))
+        yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": message})
+        return
+    except Exception as exc:
+        span.set_status(Status(StatusCode.ERROR, str(exc)))
+        yield _sse("failed", {"jobId": body.jobId, "code": "parse", "message": str(exc)})
+        return
+
+    span.set_status(Status(StatusCode.ERROR, "empty"))
+    yield _sse(
+        "failed",
+        {"jobId": body.jobId, "code": "parse", "message": "That document has no text to import."},
+    )
 
 
 def _read_draft(body: IngestBody) -> ParsedDraft:

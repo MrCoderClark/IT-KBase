@@ -9,12 +9,12 @@ business-logic-heavy. Routers live under `backend.api.*`.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from opentelemetry.context import attach, detach
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from auth_py import parse_assertion_keys, require_principal
 from backend.api.health import router as health_router
@@ -33,13 +33,33 @@ from backend.telemetry import (
 log = get_logger(__name__)
 
 
-class TraceContextMiddleware(BaseHTTPMiddleware):
-    """Attach W3C ``traceparent`` from the caller so ingest spans nest correctly."""
+class TraceContextMiddleware:
+    """Extract W3C ``traceparent`` from inbound headers and activate it for the request.
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        token = attach(extract_context(dict(request.headers)))
+    Must be a pure ASGI middleware rather than a ``BaseHTTPMiddleware`` subclass:
+    ``BaseHTTPMiddleware`` wraps the inner request in a child asyncio task via
+    anyio's ``TaskGroup``, and OpenTelemetry's ``attach``/``detach`` tokens are
+    scoped to the task that produced them. Running ``detach`` in the child's
+    context raises ``ValueError: Token ... was created in a different Context``.
+    Pure ASGI keeps the whole request in a single asyncio context so detach
+    works and ingest spans nest cleanly under the caller's trace.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = {
+            k.decode("latin-1").lower(): v.decode("latin-1")
+            for k, v in scope.get("headers", [])
+        }
+        token = attach(extract_context(headers))
         try:
-            return await call_next(request)
+            await self.app(scope, receive, send)
         finally:
             detach(token)
 

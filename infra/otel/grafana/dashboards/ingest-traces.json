@@ -30,23 +30,15 @@
       "targets": [
         {
           "datasource": { "type": "tempo", "uid": "tempo" },
-          "queryType": "traceqlSearch",
+          "queryType": "traceql",
           "refId": "A",
-          "filters": [
-            {
-              "id": "service-name",
-              "operator": "=",
-              "scope": "resource",
-              "tag": "service.name",
-              "value": ["techbase-ingestion"],
-              "valueType": "string"
-            }
-          ],
+          "query": "{ resource.service.name = \"techbase-ingestion\" }",
+          "tableType": "traces",
           "limit": 20
         }
       ],
       "title": "Recent FastAPI ingest traces",
-      "type": "traces"
+      "type": "table"
     },
     {
       "datasource": { "type": "tempo", "uid": "tempo" },
@@ -56,23 +48,15 @@
       "targets": [
         {
           "datasource": { "type": "tempo", "uid": "tempo" },
-          "queryType": "traceqlSearch",
+          "queryType": "traceql",
           "refId": "A",
-          "filters": [
-            {
-              "id": "service-name",
-              "operator": "=",
-              "scope": "resource",
-              "tag": "service.name",
-              "value": ["techbase-web-ingest"],
-              "valueType": "string"
-            }
-          ],
+          "query": "{ resource.service.name = \"techbase-web-ingest\" }",
+          "tableType": "traces",
           "limit": 20
         }
       ],
       "title": "Recent Next ingest-worker traces",
-      "type": "traces"
+      "type": "table"
     },
     {
       "datasource": { "type": "tempo", "uid": "tempo" },
@@ -85,11 +69,12 @@
           "queryType": "traceql",
           "refId": "A",
           "query": "{ resource.service.name =~ \"techbase.*\" && status = error }",
+          "tableType": "traces",
           "limit": 20
         }
       ],
       "title": "Failed ingest spans (status=error)",
-      "type": "traces"
+      "type": "table"
     }
   ],
   "schemaVersion": 39,
