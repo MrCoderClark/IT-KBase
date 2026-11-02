@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types/article";
 import type { EditorCallout, EditorDraft, EditorSection, EditorStep } from "@/lib/editor/draft";
 import { slugifyTitle } from "@/lib/editor/draft";
+import { stepImagePieces } from "@/lib/editor/step-images";
 
 /**
  * Map the live editor draft into the Article shape the read view renders.
@@ -101,27 +102,13 @@ function blocksFor(section: EditorSection, sectionId: string): Block[] {
     case "steps": {
       const steps = section.steps.filter(hasStep);
       steps.forEach((step, index) => {
-        push({
-          kind: "step",
-          stepNumber: index + 1,
-          title: step.title.trim(),
-          content: asProse(step.body),
-        });
+        emitOrderedStep(step, index + 1, push);
         if (step.code.trim()) {
           push({
             kind: "code",
             code: step.code.replace(/\r\n/g, "\n"),
             language: step.language.trim() || "text",
           });
-        }
-        for (const image of step.images ?? []) {
-          if (image.trim()) {
-            push({
-              kind: "image",
-              imageUrl: image,
-              imageAlt: "Screenshot from the Word document",
-            });
-          }
         }
       });
       break;
@@ -155,6 +142,53 @@ function calloutBlock(callout: EditorCallout): Extract<BlockDraft, { kind: "call
     title: callout.title.trim(),
     content: asProse(callout.body),
   };
+}
+
+function emitOrderedStep(
+  step: EditorStep,
+  stepNumber: number,
+  push: (block: BlockDraft) => void,
+): void {
+  const pieces = stepImagePieces(step.body, step.images);
+  let opened = false;
+  for (const piece of pieces) {
+    if (piece.type === "text") {
+      if (!opened) {
+        push({
+          kind: "step",
+          stepNumber,
+          title: step.title.trim(),
+          content: asProse(piece.text),
+        });
+        opened = true;
+      } else {
+        push({ kind: "prose", content: asProse(piece.text) });
+      }
+      continue;
+    }
+    if (!opened) {
+      push({
+        kind: "step",
+        stepNumber,
+        title: step.title.trim(),
+        content: "",
+      });
+      opened = true;
+    }
+    push({
+      kind: "image",
+      imageUrl: piece.url,
+      imageAlt: "Screenshot from the imported document",
+    });
+  }
+  if (!opened) {
+    push({
+      kind: "step",
+      stepNumber,
+      title: step.title.trim(),
+      content: "",
+    });
+  }
 }
 
 function asProse(value: string): string {

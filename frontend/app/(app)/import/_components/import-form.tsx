@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { IMPORT_STAGES, stageIndex, type ImportStageId } from "@/lib/ingestion/stages";
 import { formatDuration } from "@/lib/ingestion/trace";
@@ -19,6 +19,8 @@ export function ImportForm() {
   const [totalMs, setTotalMs] = useState<number | null>(null);
   const busyRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sourceRef = useRef<EventSource | null>(null);
+  const redirectTimerRef = useRef<number | null>(null);
 
   function reject(message: string) {
     if (inputRef.current) inputRef.current.value = "";
@@ -40,10 +42,45 @@ export function ImportForm() {
     setError(null);
   }
 
+  /** Clear file + progress so a return visit to /import is a blank form. */
+  function resetForm() {
+    if (redirectTimerRef.current != null) {
+      window.clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    sourceRef.current?.close();
+    sourceRef.current = null;
+    if (inputRef.current) inputRef.current.value = "";
+    setFileName(null);
+    setDragOver(false);
+    setError(null);
+    setPhase("idle");
+    setActiveStage(null);
+    setDoneStages(new Set());
+    setDurations({});
+    setTotalMs(null);
+    busyRef.current = false;
+  }
+
   function resetBusy() {
     setPhase("idle");
     busyRef.current = false;
   }
+
+  useEffect(() => {
+    // Soft-nav / bfcache can restore this client tree with a finished job still on screen.
+    resetForm();
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetForm();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      if (redirectTimerRef.current != null) window.clearTimeout(redirectTimerRef.current);
+      sourceRef.current?.close();
+      sourceRef.current = null;
+    };
+  }, []);
 
   function watchJob(jobId: string) {
     setPhase("running");
@@ -52,7 +89,9 @@ export function ImportForm() {
     setDurations({});
     setTotalMs(null);
     let settled = false;
+    sourceRef.current?.close();
     const source = new EventSource(`/api/jobs/${jobId}/stream`);
+    sourceRef.current = source;
 
     source.addEventListener("progress", (message) => {
       const data = JSON.parse((message as MessageEvent).data) as {
@@ -83,6 +122,7 @@ export function ImportForm() {
         trace?: { stages?: { stage: string; durationMs: number }[]; totalMs?: number };
       };
       source.close();
+      sourceRef.current = null;
       setDoneStages(new Set(IMPORT_STAGES.map((stage) => stage.id)));
       setActiveStage("done");
       if (data.trace?.stages?.length) {
@@ -98,8 +138,12 @@ export function ImportForm() {
         resetBusy();
         return;
       }
-      window.setTimeout(() => {
-        router.push(`/kb/${data.slug}/edit?notice=imported`);
+      const slug = data.slug;
+      redirectTimerRef.current = window.setTimeout(() => {
+        redirectTimerRef.current = null;
+        // Clear before navigate so the router cache doesn't restore a finished job UI.
+        resetForm();
+        router.push(`/kb/${slug}/edit?notice=imported`);
       }, 1200);
     });
 
@@ -108,6 +152,7 @@ export function ImportForm() {
       settled = true;
       const data = JSON.parse((message as MessageEvent).data) as { message?: string };
       source.close();
+      sourceRef.current = null;
       setError(data.message ?? "The document could not be read.");
       resetBusy();
     });
@@ -116,6 +161,7 @@ export function ImportForm() {
       if (settled) return;
       settled = true;
       source.close();
+      sourceRef.current = null;
       setError("The import connection closed before the draft was ready. Start the import again.");
       resetBusy();
     };
@@ -240,9 +286,9 @@ export function ImportForm() {
           {fileName ?? "Drop a .docx or .pdf here, or choose a file"}
         </span>
         <span className="text-[12px] leading-5 text-fg-subtle">
-          Word or PDF, up to 25 MB. A numbered procedure becomes steps. In a Word
-          file, each picture stays with the step it follows. A scanned PDF page is
-          noted and left unread.
+          Word or PDF, up to 25 MB. A numbered procedure becomes steps. Pictures stay
+          with the step they follow (Word and PDF). A scanned PDF page with almost no
+          text is noted and left unread (OCR later).
         </span>
         <input
           ref={inputRef}

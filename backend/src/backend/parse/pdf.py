@@ -2,26 +2,35 @@
 
 pdfplumber reads each page from top to bottom. A short known heading, or a
 line in a larger font, opens a section. Numbered lines become steps through
-the Word assembler. The reader does not reconstruct a poster, columns, or
-any one page design. A page with a picture and almost no text is recorded
-and left unread. Text recognition of scans is later.
+the Word assembler. Embedded screenshots are kept on the step they follow
+(same data-URL shape as Word). A page with a picture and almost no text is
+recorded and left unread. Text recognition of scans is later.
 """
 
 from __future__ import annotations
 
+import base64
 import re
 from collections import defaultdict
 from io import BytesIO
 
 import pdfplumber
+from PIL import Image
 
-from backend.parse.docx import DocxError, _Line, assemble_draft, section_kind
+from backend.parse.docx import (
+    _MAX_IMAGE_BYTES,
+    DocxError,
+    _Line,
+    assemble_draft,
+    section_kind,
+)
 from backend.parse.models import ParsedDraft
 
 _PAGE_NUMBER = re.compile(r"^\d{1,4}$")
 _STEP_LINE = re.compile(r"^(?:step\s+)?\d+[.)]\s+\S", re.IGNORECASE)
 _MIN_TEXT = 25
 _HEADING_WORDS = 6
+_MIN_IMAGE_PT = 40.0
 
 
 class PdfError(Exception):
@@ -76,12 +85,14 @@ def _page_lines(page) -> tuple[list[_Line], bool]:
     except Exception:  # fall back to plain text when word positions fail
         words = []
     rows = _rows(words) if words else _rows_from_text(text)
-    if not rows and not text:
+    events: list[tuple[float, _Line]] = [*_classify_rows(rows), *_image_events(images)]
+    if not events and not text:
         return [], False
-    return _classify_rows(rows), False
+    events.sort(key=lambda item: item[0])
+    return [line for _top, line in events], False
 
 
-def _rows(words: list[dict]) -> list[tuple[str, float]]:
+def _rows(words: list[dict]) -> list[tuple[str, float, float]]:
     bands: dict[int, list[dict]] = defaultdict(list)
     for word in words:
         top = word.get("top")
@@ -89,52 +100,142 @@ def _rows(words: list[dict]) -> list[tuple[str, float]]:
             continue
         bands[round(top)].append(word)
 
-    rows: list[tuple[str, float]] = []
+    rows: list[tuple[str, float, float]] = []
     for top in sorted(bands):
         group = sorted(bands[top], key=lambda word: word.get("x0") or 0)
         text = _line_text(group)
         if not text or _PAGE_NUMBER.match(text):
             continue
         sizes = [float(word["size"]) for word in group if isinstance(word.get("size"), (int, float))]
-        rows.append((text, max(sizes) if sizes else 0.0))
+        rows.append((text, max(sizes) if sizes else 0.0, float(top)))
     return _merge_wraps(rows)
 
 
-def _rows_from_text(text: str) -> list[tuple[str, float]]:
-    rows: list[tuple[str, float]] = []
-    for raw in text.splitlines():
+def _rows_from_text(text: str) -> list[tuple[str, float, float]]:
+    rows: list[tuple[str, float, float]] = []
+    for index, raw in enumerate(text.splitlines()):
         line = _normalize_line(raw)
         if line and not _PAGE_NUMBER.match(line):
-            rows.append((line, 0.0))
+            rows.append((line, 0.0, float(index)))
     return _merge_wraps(rows)
 
 
-def _merge_wraps(rows: list[tuple[str, float]]) -> list[tuple[str, float]]:
-    merged: list[tuple[str, float]] = []
-    for text, size in rows:
+def _merge_wraps(rows: list[tuple[str, float, float]]) -> list[tuple[str, float, float]]:
+    merged: list[tuple[str, float, float]] = []
+    for text, size, top in rows:
         if merged and merged[-1][0].endswith("-") and text[:1].islower():
-            previous, previous_size = merged[-1]
-            merged[-1] = (previous[:-1] + text, max(previous_size, size))
+            previous, previous_size, previous_top = merged[-1]
+            merged[-1] = (previous[:-1] + text, max(previous_size, size), previous_top)
             continue
-        merged.append((text, size))
+        merged.append((text, size, top))
     return merged
 
 
-def _classify_rows(rows: list[tuple[str, float]]) -> list[_Line]:
-    sizes = sorted(size for _, size in rows if size > 0)
-    median = sizes[len(sizes) // 2] if sizes else 0.0
-    lines: list[_Line] = []
-    for text, size in rows:
-        display = _is_display(size, median) and len(text) <= 120
-        numbered = bool(_STEP_LINE.match(text)) and not display
-        if section_kind(text) and not numbered and _is_short_heading(text):
-            lines.append(_Line(text=text, heading=True, level=1))
+def _classify_rows(rows: list[tuple[str, float, float]]) -> list[tuple[float, _Line]]:
+    lines: list[tuple[float, _Line]] = []
+    for text, _size, top in rows:
+        # Numbered procedure lines first — GUI guides often set "2. Confirm…"
+        # in a larger face; treating that as a heading would park later screenshots
+        # in a custom section where images are dropped.
+        if _STEP_LINE.match(text):
+            lines.append((top, _Line(text=text, numbered=True)))
             continue
-        if display:
-            lines.append(_Line(text=text, heading=True, level=2))
+        if section_kind(text) and _is_short_heading(text):
+            lines.append((top, _Line(text=text, heading=True, level=1)))
             continue
-        lines.append(_Line(text=text, numbered=numbered))
+        lines.append((top, _Line(text=text)))
     return lines
+
+
+def _image_events(images: list[dict]) -> list[tuple[float, _Line]]:
+    events: list[tuple[float, _Line]] = []
+    seen: set[int] = set()
+    for image in images:
+        url = _image_data_url(image, seen)
+        if not url:
+            continue
+        top = image.get("top")
+        if not isinstance(top, (int, float)):
+            top = 0.0
+        events.append((float(top), _Line(text="", images=[url])))
+    return events
+
+
+def _image_data_url(image: dict, seen: set[int]) -> str | None:
+    if image.get("imagemask"):
+        return None
+    width = float(image.get("width") or 0)
+    height = float(image.get("height") or 0)
+    if width < _MIN_IMAGE_PT or height < _MIN_IMAGE_PT:
+        return None
+    stream = image.get("stream")
+    if stream is None:
+        return None
+    stream_id = id(stream)
+    if stream_id in seen:
+        return None
+    seen.add(stream_id)
+    try:
+        raw = stream.get_data()
+    except Exception:
+        return None
+    if not raw or len(raw) > _MAX_IMAGE_BYTES:
+        return None
+
+    filters = _filter_names(getattr(stream, "attrs", {}) or {})
+    if "DCTDecode" in filters:
+        return _data_url("image/jpeg", raw)
+    if "JPXDecode" in filters:
+        return _data_url("image/jp2", raw)
+
+    attrs = getattr(stream, "attrs", {}) or {}
+    pixel_w = int(attrs.get("Width") or 0)
+    pixel_h = int(attrs.get("Height") or 0)
+    if pixel_w < 1 or pixel_h < 1:
+        return None
+    mode = _pil_mode(attrs.get("ColorSpace"))
+    if mode is None:
+        return None
+    expected = pixel_w * pixel_h * len(mode)
+    if len(raw) < expected:
+        return None
+    try:
+        picture = Image.frombytes(mode, (pixel_w, pixel_h), raw[:expected])
+        if mode == "CMYK":
+            picture = picture.convert("RGB")
+        buffer = BytesIO()
+        picture.save(buffer, format="PNG", optimize=True)
+        png = buffer.getvalue()
+    except Exception:
+        return None
+    if not png or len(png) > _MAX_IMAGE_BYTES:
+        return None
+    return _data_url("image/png", png)
+
+
+def _filter_names(attrs: dict) -> set[str]:
+    raw = attrs.get("Filter")
+    if raw is None:
+        return set()
+    if isinstance(raw, list | tuple):
+        return {str(item).lstrip("/") for item in raw}
+    return {str(raw).lstrip("/")}
+
+
+def _pil_mode(color_space: object) -> str | None:
+    name = str(color_space).lstrip("/")
+    if "DeviceGray" in name or name == "G":
+        return "L"
+    if "DeviceRGB" in name or name == "RGB":
+        return "RGB"
+    if "DeviceCMYK" in name or name == "CMYK":
+        return "CMYK"
+    return None
+
+
+def _data_url(content_type: str, blob: bytes) -> str:
+    encoded = base64.b64encode(blob).decode("ascii")
+    return f"data:{content_type};base64,{encoded}"
 
 
 def _is_short_heading(text: str) -> bool:
@@ -220,12 +321,6 @@ def _collapse_tracking(text: str) -> str:
     if letters:
         chunks.append(letters)
     return " ".join(chunks)
-
-
-def _is_display(size: float, median: float) -> bool:
-    if size <= 0 or median <= 0:
-        return False
-    return size >= median + 1.5
 
 
 def _metadata_title(metadata: object) -> str:

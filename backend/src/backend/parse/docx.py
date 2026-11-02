@@ -42,6 +42,9 @@ _KINDS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 _STEP_START = re.compile(r"^(?:step\s+)?\d+[.)]\s+\S", re.IGNORECASE)
+# Placed in step.body where a screenshot belongs so the web app can emit
+# image blocks in document order instead of stacking them after the step.
+STEP_IMG_MARK = "@@TB_IMG@@"
 
 
 class DocxError(Exception):
@@ -463,6 +466,15 @@ def _promote_procedure(lines: list[_Line]) -> tuple[list[ParsedStep], list[_Line
     return _steps(lines[first:]), lines[:first]
 
 
+def _append_step_images(step: ParsedStep, urls: list[str]) -> None:
+    """Keep screenshots in document order via body markers + images[]."""
+    for url in urls:
+        if not url:
+            continue
+        step.images.append(url)
+        step.body = _join_para(step.body, STEP_IMG_MARK)
+
+
 def _steps(lines: list[_Line]) -> list[ParsedStep]:
     if not any(_is_step_start(line) for line in lines):
         return _loose_steps(lines)
@@ -471,21 +483,24 @@ def _steps(lines: list[_Line]) -> list[ParsedStep]:
     current: ParsedStep | None = None
     for line in lines:
         if line.images and current is not None and not _is_step_start(line):
-            current.images.extend(line.images)
+            _append_step_images(current, line.images)
         if line.code:
             if current is None:
-                current = ParsedStep(title="Command", code=line.text, images=list(line.images))
+                current = ParsedStep(title="Command", code=line.text, images=[])
                 steps.append(current)
+                _append_step_images(current, line.images)
             else:
                 current.code = _join_code(current.code, line.text)
+                _append_step_images(current, line.images)
             continue
         if not line.text:
             continue
         if _is_step_start(line) or line.heading or current is None:
             raw = _strip_number(line.text) if _is_step_start(line) else line.text
             title, extra = _split_title(raw)
-            current = ParsedStep(title=title or "Step", body=extra, images=list(line.images))
+            current = ParsedStep(title=title or "Step", body=extra, images=[])
             steps.append(current)
+            _append_step_images(current, line.images)
             continue
         current.body = _join_para(current.body, line.text)
     return [step for step in steps if step.title or step.body or step.code or step.images]
@@ -497,19 +512,21 @@ def _loose_steps(lines: list[_Line]) -> list[ParsedStep]:
     for line in lines:
         if not line.text:
             if line.images and current is not None:
-                current.images.extend(line.images)
+                _append_step_images(current, line.images)
             continue
         if line.code:
             if current is None:
-                current = ParsedStep(title="Command", code=line.text, images=list(line.images))
+                current = ParsedStep(title="Command", code=line.text, images=[])
                 steps.append(current)
+                _append_step_images(current, line.images)
             else:
                 current.code = _join_code(current.code, line.text)
-                current.images.extend(line.images)
+                _append_step_images(current, line.images)
             continue
         title, extra = _split_title(line.text)
-        current = ParsedStep(title=title or "Step", body=extra, images=list(line.images))
+        current = ParsedStep(title=title or "Step", body=extra, images=[])
         steps.append(current)
+        _append_step_images(current, line.images)
     return [step for step in steps if step.title or step.body or step.code or step.images]
 
 

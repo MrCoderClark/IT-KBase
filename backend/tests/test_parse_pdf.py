@@ -7,6 +7,7 @@ import base64
 import pytest
 from fastapi.testclient import TestClient
 from fpdf import FPDF
+from PIL import Image
 
 from backend.parse.pdf import PdfError, _collapse_tracking, _rows, parse_pdf
 
@@ -83,6 +84,31 @@ def test_a_picture_page_is_noted_and_not_read(tmp_path) -> None:
     assert "not available yet" in draft.readingNotes
 
 
+def test_screenshots_stay_on_the_step_they_follow(tmp_path) -> None:
+    # Larger than the 40pt minimum so the screenshot is kept (icon-sized embeds are skipped).
+    image = tmp_path / "shot.png"
+    Image.new("RGB", (220, 140), color=(30, 90, 200)).save(image)
+
+    pdf = _pdf()
+    pdf.set_title("Join Entra ID")
+    pdf.add_page()
+    _line(pdf, "1. Open Settings", 12)
+    _line(pdf, "Use the Accounts page.", 12)
+    pdf.image(str(image), x=20, y=pdf.get_y() + 4, w=90)
+    pdf.ln(55)
+    _line(pdf, "2. Click Access work or school", 12)
+
+    draft = parse_pdf(_bytes(pdf), "entra.pdf")
+
+    assert draft.steps[0].title == "Open Settings"
+    assert draft.steps[0].images
+    assert draft.steps[0].images[0].startswith("data:image/")
+    assert "@@TB_IMG@@" in draft.steps[0].body
+    assert draft.steps[0].body.index("@@TB_IMG@@") > draft.steps[0].body.index("Accounts")
+    assert draft.steps[1].title == "Click Access work or school"
+    assert draft.steps[1].images == []
+
+
 def test_a_scan_only_pdf_is_refused(tmp_path) -> None:
     image = tmp_path / "dot.png"
     image.write_bytes(_PNG)
@@ -94,7 +120,7 @@ def test_a_scan_only_pdf_is_refused(tmp_path) -> None:
         parse_pdf(_bytes(pdf), "scan.pdf")
 
 
-def test_a_large_title_does_not_turn_the_page_into_steps() -> None:
+def test_a_single_numbered_title_does_not_become_a_procedure() -> None:
     pdf = _pdf()
     pdf.set_title("WFNJ Flow Process")
     pdf.add_page()
@@ -104,10 +130,12 @@ def test_a_large_title_does_not_turn_the_page_into_steps() -> None:
 
     draft = parse_pdf(_bytes(pdf), "wfnj.pdf")
 
+    # Promote needs two numbered starts; one title alone stays prose.
     assert draft.steps == []
-    assert "Referral Outreach" in draft.overview
-    assert "save the excel file" in f"{draft.summary} {draft.overview}"
-    assert "Data Import Wizard" in f"{draft.summary} {draft.overview}"
+    blob = f"{draft.summary} {draft.overview}"
+    assert "Referral Outreach" in blob
+    assert "save the excel file" in blob
+    assert "Data Import Wizard" in blob
 
 
 def test_a_wrapped_sentence_is_not_a_section() -> None:
@@ -142,7 +170,7 @@ def test_a_wide_gap_in_spaced_letters_stays_a_word_space() -> None:
 
     rows = _rows(words)
 
-    assert rows == [("OUTREACH TO", 11.0)]
+    assert rows == [("OUTREACH TO", 11.0, 10.0)]
 
 
 def test_non_pdf_bytes_are_refused() -> None:

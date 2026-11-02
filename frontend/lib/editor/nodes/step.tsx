@@ -9,6 +9,7 @@ import {
 import { X } from "lucide-react";
 import { ProseField } from "@/components/kb/editor/prose-field";
 import { StepBadge } from "@/components/kb/step-badge";
+import { STEP_IMG_MARK, bodyWithoutImageMarks } from "@/lib/editor/step-images";
 
 export const KbStep = Node.create({
   name: "kbStep",
@@ -70,8 +71,17 @@ function KbStepView({ node, updateAttributes, deleteNode, getPos, editor }: Node
           ) : null}
         </div>
         <ProseField
-          value={body}
-          onChange={(next) => updateAttributes({ body: next })}
+          value={bodyWithoutImageMarks(body)}
+          onChange={(next) => {
+            const display = bodyWithoutImageMarks(body);
+            if (next === display) return;
+            // Editing drops mid-step marker positions; keep screenshots at the end.
+            const suffix =
+              images.length > 0
+                ? `\n\n${images.map(() => STEP_IMG_MARK).join("\n\n")}`
+                : "";
+            updateAttributes({ body: `${next.trim()}${suffix}`.trim() });
+          }}
           placeholder="What to do."
           ariaLabel={`Step ${number} body`}
           minHeight="4.5rem"
@@ -79,13 +89,13 @@ function KbStepView({ node, updateAttributes, deleteNode, getPos, editor }: Node
         {images.length > 0 ? (
           <div className="flex flex-col gap-2">
             {images.map((src, index) => (
-              // Imported screenshot from the Word document.
+              // Imported screenshot — read view interleaves these; editor lists them.
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={`${number}-${index}`}
                 src={src}
-                alt="Screenshot from the Word document"
-                className="max-h-64 rounded-lg border border-border"
+                alt="Screenshot from the imported document"
+                className="max-h-64 w-full object-contain rounded-lg border border-border"
               />
             ))}
           </div>

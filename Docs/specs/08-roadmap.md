@@ -54,7 +54,7 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 - ✅ Upload UI (dropzone, presign, S3 PUT).
 - ✅ BullMQ queue + Node worker (`pnpm worker:ingest`) calling FastAPI; Redis stream `jobs:{id}:events` for SSE. Without `REDIS_URL`, stream route still runs in-process.
 - ✅ DOCX parser (python-docx).
-- 🟡 PDF parser (pdfplumber primary); unstructured fallback later; OCR post-pilot.
+- ✅ PDF parser (pdfplumber); scanned pages noted and skipped; unstructured fallback later; OCR post-pilot.
 - 🟡 Segment → candidate section heuristic (heading map in parsers; fuller LLM-oriented segmenter later).
 - 🟡 Structure via OpenAI-compatible client + one repair; formal `KBExtractor` / `FakeExtractor` package shape later.
 - 🟡 Pydantic / JSON validation with one-shot repair (full validator suite later).
