@@ -59,7 +59,11 @@ async function LoginForm({
         <p className="text-[12px] text-white/50">Internal use</p>
       </aside>
 
-      <main className="flex items-center justify-center bg-canvas px-6 py-16">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex items-center justify-center bg-canvas px-6 py-16 outline-none"
+      >
         <div className="w-full max-w-sm">
           <form action={login}>
           <h2 className="text-[20px] font-semibold text-fg">Sign in</h2>

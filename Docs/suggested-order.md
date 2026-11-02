@@ -68,7 +68,7 @@ Login, roles, MFA, passkeys, users, and settings already work. Spec: `Docs/specs
 25. ✅ **Generated API client.** OpenAPI → `frontend/lib/api/generated/ingestion.ts`; CI fails on drift.
 26. ✅ **Seed.** Checked 2026-10-29. Library grown to 20 realistic IT articles across Windows, Linux, M365, Networking, Security, AD, Integrations.
 27. ✅ **Stack ADR.** Checked 2026-10-29. `Docs/specs/adr/0003-stack-choices.md` — Next.js ≥ 16.4.3 and the locked stack.
-28. 🟡 **Accessibility.** ✅ Playwright + axe clean on main routes (2026-10-29, `chore/a11y-axe`). Re-run: `cd frontend` → `pnpm test:a11y` (see `Docs/specs/13-a11y-keyboard.md`). Keyboard walkthrough in that spec still open.
+28. ✅ **Accessibility.** Playwright + axe clean on main routes (2026-10-29, `chore/a11y-axe`). Keyboard walkthrough passed 2026-11-02 in Cursor browser (Chromium) as Joe Clark: login form order, shell/`/kb`/article/editor, `Ctrl+K` Escape, integrations Add focus + Escape. Skip link + `#main-content` added on `chore/a11y-keyboard`.
 29. ✅ **Lighthouse.** Checked 2026-10-29. Public article gate: Perf 90, A11y 100, BP 100 (`pnpm test:lighthouse`). Signed-in shell remains informational / TBT follow-up.
 30. ✅ **Visual check.** Checked 2026-10-29. Playwright baselines for public + signed-in article (`pnpm test:visual`, `Docs/specs/15-visual-regression.md`).
 31. ✅ **Load.** Checked 2026-10-30. Article SSR health gate + 100 concurrent ingest (`Docs/specs/16-load.md`). Roadmap 1k rps remains a CDN/cache follow-up.

@@ -122,7 +122,7 @@ Also shipped in this era (specs 09–12): page tree, field notes (replies/@menti
 
 **Outcome**: production-ready.
 
-- 🟡 A11y: axe-core clean on key routes; **keyboard-only walkthrough** still open (`13-a11y-keyboard.md`).
+- ✅ A11y: axe-core clean on key routes; keyboard walkthrough passed 2026-11-02 (`13-a11y-keyboard.md`).
 - ✅ Visual regression on article view (`15-visual-regression.md`).
 - 🟡 Load test: **100 concurrent ingestions** ✅; **1k rps** on article detail ⬜ (local SSR health gate ~43 rps; CDN/cache follow-up) — `16-load.md`.
 - ✅ OWASP ASVS L1 checklist (`17-security-asvs-l1.md`).

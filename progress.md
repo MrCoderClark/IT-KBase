@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-11-02 (feat/kb-extractor)
+Last updated: 2026-11-02 (chore/a11y-keyboard)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -21,7 +21,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M4 | Search, categories, tags           | Week 7        | ✅ |
 | M5 | Auth, roles, admin console         | Week 8        | ✅ (OIDC/SAML/orgs post-pilot) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ✅ |
-| M7 | Hardening, a11y audit, perf        | Week 11       | 🟡 (keyboard walkthrough, 1k rps, OTel open) |
+| M7 | Hardening, a11y audit, perf        | Week 11       | 🟡 (1k rps, OTel open) |
 | M8 | Pilot release to internal IT       | Week 12       | 🟡 scaffold done; live Evidence deferred |
 
 ---
@@ -194,14 +194,14 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: live pilot Evidence + Go/No-Go when IT admins Create/Import (`Docs/pilot/go-no-go.md`). Optional: keyboard walkthrough (28), signed-in Lighthouse TBT, CDN 1k rps, `tb_csrf`.
+Next: live pilot Evidence + Go/No-Go when IT admins Create/Import (`Docs/pilot/go-no-go.md`). Optional: signed-in Lighthouse TBT, CDN 1k rps, `tb_csrf`.
 
 ---
 
 ## 8. Quality (M7)
 
 - ✅ A11y axe: Playwright + `@axe-core/playwright` clean on login, home, `/kb`, article, editor, integrations (2026-10-29). Auth once via `e2e/auth.setup.ts`. Commands: `pnpm test:a11y` / `pnpm test:a11y:install` / `pnpm test:a11y:report` (see `frontend/README.md`, `Docs/specs/13-a11y-keyboard.md`). On `chore/a11y-axe`.
-- ⬜ A11y keyboard: walk through `Docs/specs/13-a11y-keyboard.md` and check off.
+- ✅ A11y keyboard: walkthrough passed 2026-11-02 (Cursor Chromium, Joe Clark). Skip link + `#main-content`; Add-integration dialog autofocuses Display name. On `chore/a11y-keyboard`.
 - ✅ Lighthouse: public article gate Perf 90 / A11y 100 / BP 100 (2026-10-29). On `chore/lighthouse`.
 - ⬜ Lighthouse signed-in TBT: shell still ~80 Perf; follow-up if we raise that bar.
 - ✅ Visual regression: Playwright `visual` project — public + signed-in article baselines pass (2026-10-29). `pnpm test:visual` / `pnpm test:visual:update` (`Docs/specs/15-visual-regression.md`).
