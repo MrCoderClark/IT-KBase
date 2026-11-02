@@ -57,9 +57,9 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 - ✅ PDF parser (pdfplumber); scanned pages noted and skipped; unstructured fallback later; OCR post-pilot.
 - ✅ Segment → candidate section heuristic (`backend/parse/segments.py`; kinds are suggestions for the LLM).
 - ✅ Structure via `KBExtractor` (`OpenAICompatibleExtractor` default, `FakeExtractor` for tests) + one repair.
-- 🟡 Pydantic / JSON validation with one-shot repair (full validator suite later).
+- ✅ Pydantic / JSON validation with one-shot repair + post-extract checks (`backend/parse/validate.py`).
 - ✅ SSE progress stream.
-- 🟡 Fallback to a human-fixable draft on repeated failure (parser draft kept).
+- ✅ Fallback to a human-fixable draft on repeated failure (`lowConfidence` / `succeeded_with_warnings`).
 - ✅ Artifact bundle persisted to S3 for 7 days (`uploads/{yyyy}/{mm}/{jobId}/artifact.json` + source copy; `uv run ingest replay`).
 - 🟡 Stage timings on job + stepper; OpenTelemetry later.
 

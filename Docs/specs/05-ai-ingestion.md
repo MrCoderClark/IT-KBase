@@ -112,16 +112,17 @@ Implementations:
 
 ### 3.5 Validate
 
-- Parse LLM output with Pydantic `ArticleDraftModel`.
-- On validation error:
+- Parse LLM output with Pydantic (`ParsedDraft` / written-draft models in the extractor).
+- On JSON / shape validation error in extract:
   - **One repair pass**: send the error list back to the model with "fix only the validation errors; keep the rest identical" instruction.
-  - On second failure: produce a `low_confidence_draft` with every segment as a `custom` section (no shape promises), and mark the job `succeeded_with_warnings`.
-- Post-validation checks:
+  - On second failure: keep the parser draft for the validate stage.
+- Post-extract checks (`backend/parse/validate.py`):
+  - Soft-fix: clip title/summary, drop empty steps, strip bad image URLs, clear unknown callout variants.
   - Title is present and ≤ 160 chars.
-  - At least one section exists.
-  - All `step` blocks have `number >= 1` and are sequential within their section.
-  - No `callout.variant` outside the enum.
-  - All referenced images exist in the uploaded artifact (if any).
+  - At least one section with content exists.
+  - Step image refs are `data:` or `http(s):`.
+  - No `callout.variant` outside `info | important | warning | success`.
+  - On hard failure: build a **low-confidence** draft from parser segments (freeform overview, parser steps/images kept), set `draft.lowConfidence` + `validationWarnings`, and mark the job `succeeded_with_warnings` (SSE `done.outcome`).
 
 ### 3.6 Persist
 

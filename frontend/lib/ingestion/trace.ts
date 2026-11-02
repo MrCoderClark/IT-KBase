@@ -7,6 +7,8 @@ export type StageTiming = {
 export type IngestTrace = {
   stages: StageTiming[];
   totalMs: number;
+  outcome?: "succeeded" | "succeeded_with_warnings";
+  warnings?: string[];
 };
 
 export function emptyTrace(): IngestTrace {
@@ -24,6 +26,7 @@ export function recordStage(
     { stage, durationMs: Math.max(0, Math.round(durationMs)), detail },
   ];
   return {
+    ...trace,
     stages,
     totalMs: stages.reduce((sum, item) => sum + item.durationMs, 0),
   };

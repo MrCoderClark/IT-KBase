@@ -217,9 +217,16 @@ export interface components {
              * @default
              */
             title: string;
+            /** Variant */
+            variant?: ("info" | "important" | "warning" | "success") | null;
         };
         /** ParsedDraft */
         ParsedDraft: {
+            /**
+             * Lowconfidence
+             * @default false
+             */
+            lowConfidence: boolean;
             /**
              * Overview
              * @default
@@ -258,6 +265,8 @@ export interface components {
              * @default Troubleshooting
              */
             troubleshootingTitle: string;
+            /** Validationwarnings */
+            validationWarnings?: string[];
             /** Verification */
             verification?: string[];
             /**
