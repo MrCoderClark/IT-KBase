@@ -14,7 +14,7 @@ Word import already lands a draft, keeps pictures on numbered steps, and fills a
 2. ✅ **Structure call with one repair.** `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Invalid JSON gets one repair, then the parser draft is kept. A section already in the file is still kept. ✅ Segmenter candidate kinds (`backend/parse/segments.py`, 2026-11-02). ✅ Post-extract validate + low-confidence / `succeeded_with_warnings` (`feat/ingest-validate`, 2026-11-02).
 3. ✅ **Store the file, then start a job.** Checked 2026-10-27. `Scan_To_Network_Share.docx` was stored, `POST /ingest` returned the job, and `/kb/scan-to-network-share` opened as a draft with an overview and eight steps. The stepper is item 4.
 4. ✅ **Live progress.** Checked 2026-10-27. `Reset Local Computer Account Passwordv2.docx` moved through the stepper and opened `/kb/reset-local-admin-password` as a draft. Redis streams wait for the queue.
-5. ✅ **One traced run.** Checked 2026-10-27. Stage durations show on the import stepper, land on `IngestionJob.trace`, and return from `GET /api/jobs/{id}`. ✅ S3 artifact bundle + `uv run ingest replay` (2026-11-02, `feat/ingest-artifacts`). ✅ OpenTelemetry ingest spans + `traceparent` through the queue (`feat/ingest-otel`, 2026-11-02). Grafana dashboards wait (M7).
+5. ✅ **One traced run.** Checked 2026-10-27. Stage durations show on the import stepper, land on `IngestionJob.trace`, and return from `GET /api/jobs/{id}`. ✅ S3 artifact bundle + `uv run ingest replay` (2026-11-02, `feat/ingest-artifacts`). ✅ OpenTelemetry ingest spans + `traceparent` (`feat/ingest-otel`). ✅ Local Tempo/Grafana (`infra/otel/`, `chore/otel-dashboards`, 2026-11-02).
 
 ## 2. Finish the editor
 

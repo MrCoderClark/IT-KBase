@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-11-02 (feat/ingest-unstructured)
+Last updated: 2026-11-02 (chore/otel-dashboards)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -21,7 +21,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M4 | Search, categories, tags           | Week 7        | ✅ |
 | M5 | Auth, roles, admin console         | Week 8        | ✅ (OIDC/SAML/orgs post-pilot) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ✅ |
-| M7 | Hardening, a11y audit, perf        | Week 11       | 🟡 (1k rps, OTel open) |
+| M7 | Hardening, a11y audit, perf        | Week 11       | 🟡 (1k rps CDN/cache; Prometheus metrics later) |
 | M8 | Pilot release to internal IT       | Week 12       | 🟡 scaffold done; live Evidence deferred |
 
 ---
@@ -126,7 +126,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Parse/ingest calls `get_extractor().structure`. A section the text does not support stays empty; invalid JSON gets one repair, then the parser draft is kept. Checked on `feat/kb-extractor`.
 - ✅ Python: one repair pass on invalid structure JSON + post-extract validate (title/sections/images/callouts); low-confidence parser fallback + `succeeded_with_warnings`. Checked on `feat/ingest-validate`.
 - ✅ Node worker emits progress events to Redis stream `jobs:{id}:events` (Python still streams SSE to the worker over HTTP).
-- ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. ✅ OpenTelemetry: ingest spans + W3C `traceparent` Next → BullMQ → FastAPI (`OTEL_EXPORTER_OTLP_ENDPOINT` optional). Dashboards later (M7).
+- ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. ✅ OpenTelemetry spans + W3C `traceparent`. ✅ Local Tempo + Grafana ingest dashboard (`infra/otel/`, `Docs/specs/19-observability.md`). Prometheus metrics later.
 - ✅ Artifact bundle: `uploads/{yyyy}/{mm}/{jobId}/artifact.json` + source copy with 7-day Expires; LLM prompt/response when used; `uv run ingest replay {jobId}`. Checked on `feat/ingest-artifacts`.
 
 ---
@@ -196,7 +196,7 @@ These turn TechBase from a flat article list into a structured knowledge system.
 | 3 | **Field notes** | `11-article-notes.md` | ✅ Post and delete checked on an article. Replies and @mentions wait |
 | 4 | **Per-page permissions** | `12-per-page-permissions.md` | ✅ Inherit / library / role_floor; enforced on detail, lists, tree, search. Checked 2026-10-28 |
 
-Next: live pilot Evidence + Go/No-Go when IT admins Create/Import (`Docs/pilot/go-no-go.md`). Optional: signed-in Lighthouse TBT, CDN 1k rps, `tb_csrf`.
+Next (build): CDN/cache path toward article 1k rps (`16-load.md`), Prometheus golden signals, or field-note replies/@mentions. Optional: signed-in Lighthouse TBT, `tb_csrf`.
 
 ---
 
@@ -209,6 +209,7 @@ Next: live pilot Evidence + Go/No-Go when IT admins Create/Import (`Docs/pilot/g
 - ✅ Visual regression: Playwright `visual` project — public + signed-in article baselines pass (2026-10-29). `pnpm test:visual` / `pnpm test:visual:update` (`Docs/specs/15-visual-regression.md`).
 - ✅ Load test: article SSR health ~43 rps / p99 423ms; 100 concurrent ingest PASS (2026-10-30). `pnpm test:load:article` / `uv run python scripts/load_ingest.py` (`Docs/specs/16-load.md`). Webpack production needs `@tailwindcss/postcss`; ingest uses `asyncio.to_thread` so assertions clear under concurrency. Roadmap 1k rps = CDN/cache follow-up.
 - ✅ Security review: ASVS L1 checklist (`Docs/specs/17-security-asvs-l1.md`) checked 2026-10-30. Origin gate on mutating upload/view APIs; `.env.example`; CI `security-audit` (`pnpm audit --prod` + `pip-audit`); `deepmerge-ts@8.0.2` override; removed runtime `shadcn` CLI dep.
+- ✅ Observability local: Tempo + Grafana for ingest traces (`infra/otel/`, `Docs/specs/19-observability.md`). On `chore/otel-dashboards`. Prometheus metrics and CDN 1k rps remain open.
 
 ---
 
