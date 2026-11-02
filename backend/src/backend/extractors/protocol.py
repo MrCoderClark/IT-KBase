@@ -1,7 +1,7 @@
 """Pluggable LLM structure step (spec 05 §3.4).
 
-NormDoc / Segment land when the fuller segmenter ships. Until then the parser
-draft is the input and output shape (`ParsedDraft` ≈ DraftProto).
+The parser draft remains the working shape (`ParsedDraft` ≈ DraftProto).
+Candidate segments travel on `draft.ingestSegments` (excluded from API JSON).
 """
 
 from __future__ import annotations
@@ -13,5 +13,5 @@ from backend.parse.models import ParsedDraft
 
 class KBExtractor(Protocol):
     def structure(self, draft: ParsedDraft) -> ParsedDraft:
-        """Return a structured article draft from parser output."""
+        """Return a structured article draft from parser output + segments."""
         ...

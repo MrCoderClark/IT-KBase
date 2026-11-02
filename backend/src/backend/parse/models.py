@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -33,3 +35,5 @@ class ParsedDraft(BaseModel):
     troubleshooting: list[ParsedCallout] = Field(default_factory=list)
     # Folded into overview after the model fills blank sections. Not sent to the browser.
     readingNotes: str = Field(default="", exclude=True)
+    # Segmenter output for extract + artifacts. Not sent to the browser.
+    ingestSegments: list[dict[str, Any]] = Field(default_factory=list, exclude=True)

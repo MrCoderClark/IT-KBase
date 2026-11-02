@@ -150,7 +150,7 @@ Browser subscribes to `/api/jobs/{id}/stream` (Server-Sent Events) and renders t
 ## 5. Determinism & reproducibility
 
 - Each successful ingest writes an artifact bundle to S3 (and a sibling `source.docx` / `source.pdf` copy). JSON key: `uploads/{yyyy}/{mm}/{jobId}/artifact.json`. Objects set `Expires` for **7 days**. Payload fields:
-  - `rawDoc` (sha256, bytes, objectKey to the source copy), `normDoc`, `segments` (heading-map stand-in until the fuller segmenter)
+  - `rawDoc` (sha256, bytes, objectKey to the source copy), `normDoc`, `segments` (from `backend/parse/segments.py` candidate kinds)
   - `llm` (prompt + response + repaired flag) when the model ran; otherwise null
   - `draftProto` (after extract, before validation fold)
   - final `draft`

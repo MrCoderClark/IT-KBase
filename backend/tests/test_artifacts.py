@@ -37,7 +37,7 @@ def test_artifact_keys_use_year_month_job() -> None:
 
 def test_segments_follow_parser_sections() -> None:
     segments = segments_from_draft(_draft())
-    kinds = [row["kind"] for row in segments]
+    kinds = [row["candidateKind"] for row in segments]
     assert kinds == ["overview", "steps"]
 
 
