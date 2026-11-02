@@ -123,6 +123,8 @@ in the current working directory is picked up in dev. See
 | `TB_S3_SECRET_KEY` | empty               |                                             |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | empty     | Optional. OTLP HTTP base or `…/v1/traces`. Without it, ingest spans stay local. |
 
+When `python-docx` or `pdfplumber` cannot read a file, the service tries the `unstructured` fallback and marks the draft `lowFidelitySource`. OCR for scanned PDFs is still later.
+
 The browser PUTs the file, so the bucket has to allow this site (`Access-Control-Allow-Origin` for the Next origin, method `PUT`, and the `Content-Type` header). Prefer `TB_S3_ENDPOINT=http://localhost:8333` (not `127.0.0.1`) when the app is opened as `http://localhost:…` — a signed URL on `127.0.0.1` is a different origin and Chrome often blocks it with “Failed to fetch” and no visible PUT. Restart this process after changing `.env`. Restarting Next.js does not reload it.
 
 ## Layout

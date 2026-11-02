@@ -13,6 +13,7 @@ from backend.extractors.protocol import KBExtractor
 from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
 from backend.parse.pdf import PdfError, parse_pdf
+from backend.parse.unstructured_fallback import UnstructuredError, parse_unstructured
 from backend.parse.validate import validate_draft
 from backend.policy import require_capability
 from backend.progress import ProgressEvent, StageClock
@@ -166,10 +167,28 @@ def _iter_finish(
     yield clock.start("parsing", detail="Reading the document", progress=0.08)
     try:
         parser_draft = parse(data, name)
-    except (DocxError, PdfError) as exc:
-        yield record(clock.finish("parsing", "failed", detail=str(exc), progress=0.08))
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    yield record(clock.finish("parsing", "succeeded", detail=name, progress=0.28))
+        parse_detail = name
+    except (DocxError, PdfError) as primary:
+        log.warning(
+            "parse.primary_failed",
+            error=str(primary),
+            filename=name,
+            job_id=job_id,
+        )
+        try:
+            parser_draft = parse_unstructured(data, name)
+            parse_detail = f"{name} (low fidelity)"
+            log.info(
+                "parse.unstructured_fallback",
+                filename=name,
+                job_id=job_id,
+                title=parser_draft.title,
+            )
+        except UnstructuredError as fallback:
+            detail = str(primary)
+            yield record(clock.finish("parsing", "failed", detail=detail, progress=0.08))
+            raise HTTPException(status_code=422, detail=detail) from fallback
+    yield record(clock.finish("parsing", "succeeded", detail=parse_detail, progress=0.28))
 
     yield clock.start("segmenting", detail="Mapping headings", progress=0.32)
     segment_count = len(parser_draft.ingestSegments or [])

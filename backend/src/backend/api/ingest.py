@@ -176,7 +176,7 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
                 log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=item.title)
                 outcome = (
                     "succeeded_with_warnings"
-                    if item.lowConfidence or item.validationWarnings
+                    if item.lowConfidence or item.lowFidelitySource or item.validationWarnings
                     else "succeeded"
                 )
                 span.set_attribute("tb.outcome", outcome)

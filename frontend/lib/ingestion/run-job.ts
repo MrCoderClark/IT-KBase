@@ -278,6 +278,7 @@ async function* runIngestionJobBody(
   const withWarnings =
     trace.outcome === "succeeded_with_warnings" ||
     Boolean(draft.lowConfidence) ||
+    Boolean(draft.lowFidelitySource) ||
     Boolean(draft.validationWarnings?.length);
   const warnings = trace.warnings?.length
     ? trace.warnings
