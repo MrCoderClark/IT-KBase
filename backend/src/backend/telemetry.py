@@ -13,11 +13,11 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 
 import structlog
 from opentelemetry import propagate, trace
-from opentelemetry.context import Context
+from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -131,3 +131,34 @@ def inject_context(carrier: dict[str, str], ctx: Context | None = None) -> dict[
     """Write W3C trace headers into ``carrier`` (mutates and returns it)."""
     propagate.inject(carrier, context=ctx)
     return carrier
+
+
+_EXHAUSTED = object()
+
+
+def iter_with_context[T](gen: Iterator[T], ctx: Context) -> Iterator[T]:
+    """Yield from ``gen`` with ``ctx`` active only while each item is produced.
+
+    Starlette drives sync iterators through ``iterate_in_threadpool``, and anyio
+    runs every ``next()`` in a fresh copy of the request context. One ``attach``
+    before the first yield and one ``detach`` after the last therefore land in
+    different contexts (OTel logs "Failed to detach context"), and the attached
+    span is not current for later steps. Attaching and detaching inside each
+    step keeps both calls in the same context.
+    """
+    try:
+        while True:
+            token = attach(ctx)
+            try:
+                item = next(gen, _EXHAUSTED)
+            finally:
+                detach(token)
+            if item is _EXHAUSTED:
+                return
+            yield item
+    finally:
+        token = attach(ctx)
+        try:
+            gen.close()
+        finally:
+            detach(token)
