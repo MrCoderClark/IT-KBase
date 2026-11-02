@@ -11,7 +11,7 @@ The browser gets an object key from `POST /api/upload/presign`, PUTs the `.docx`
 1. **High structural fidelity**: produce the canonical section shape (Overview / Prerequisites / Steps / Verification / Troubleshooting / Related) when the source clearly has it, and a best-effort mapping when it doesn't.
 2. **No silent lies**: if the LLM returns malformed or hallucinated content, fail loudly or repair, never pretend.
 3. **Nothing lost**: on any kind of failure, the user can still open the raw extracted text as a draft.
-4. **Observable**: every pipeline run has a trace with per-stage timings and a persisted artifact for debugging.
+4. **Observable**: every pipeline run has a trace with per-stage timings, a persisted artifact for debugging, and OpenTelemetry spans (`ingest.enqueue` → `ingest.run` → `ingest.job` → `ingest.{stage}`) linked by W3C `traceparent`.
 
 ## 2. End-to-end flow
 

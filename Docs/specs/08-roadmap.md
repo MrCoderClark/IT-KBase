@@ -47,7 +47,7 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 
 ---
 
-## M3 — Ingestion (Week 5–6) — 🟡
+## M3 — Ingestion (Week 5–6) — ✅ (OCR / unstructured post-pilot)
 
 **Outcome**: a user can upload a DOCX or PDF, see live progress, and land in a structured draft within ~60s for a 10-page doc.
 
@@ -61,7 +61,7 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 - ✅ SSE progress stream.
 - ✅ Fallback to a human-fixable draft on repeated failure (`lowConfidence` / `succeeded_with_warnings`).
 - ✅ Artifact bundle persisted to S3 for 7 days (`uploads/{yyyy}/{mm}/{jobId}/artifact.json` + source copy; `uv run ingest replay`).
-- 🟡 Stage timings on job + stepper; OpenTelemetry later.
+- ✅ Stage timings on job + stepper; OpenTelemetry ingest spans + W3C `traceparent` (Next → BullMQ → FastAPI). Dashboards stay M7.
 
 ---
 

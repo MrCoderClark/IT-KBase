@@ -38,10 +38,11 @@ describe("parseArticleFacets", () => {
 
 describe("updatedWithinCutoff", () => {
   it("is roughly N days before now", () => {
-    const before = Date.now() - 7 * 24 * 60 * 60 * 1000 - 2000;
+    // Match calendar-day math (setDate), not fixed 24h blocks — DST shifts break ms math.
+    const expected = new Date();
+    expected.setDate(expected.getDate() - 7);
     const cutoff = updatedWithinCutoff("7d").getTime();
-    const after = Date.now() - 7 * 24 * 60 * 60 * 1000 + 2000;
-    assert.ok(cutoff >= before && cutoff <= after);
+    assert.ok(Math.abs(cutoff - expected.getTime()) < 2000);
   });
 });
 

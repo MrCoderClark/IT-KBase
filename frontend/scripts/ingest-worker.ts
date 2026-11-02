@@ -7,15 +7,18 @@
  *   pnpm worker:ingest
  */
 
+import { context } from "@opentelemetry/api";
 import { Worker } from "bullmq";
 import { publishJobEvent, trimJobEvents } from "../lib/ingestion/job-events";
 import { INGEST_QUEUE_NAME, type IngestJobData } from "../lib/ingestion/queue";
 import { runIngestionJob } from "../lib/ingestion/run-job";
 import { appSessionForUserId } from "../lib/ingestion/worker-session";
+import { contextFromCarrier, ensureIngestOtel } from "../lib/otel/ingest";
 import { getRedis, redisConfigured } from "../lib/redis";
 import { loadEnvFiles } from "./load-env";
 
 loadEnvFiles();
+ensureIngestOtel();
 
 async function main() {
   if (!redisConfigured()) {
@@ -31,7 +34,7 @@ async function main() {
   const worker = new Worker<IngestJobData>(
     INGEST_QUEUE_NAME,
     async (job) => {
-      const { jobId, userId } = job.data;
+      const { jobId, userId, traceparent, tracestate } = job.data;
       console.info(JSON.stringify({ event: "ingest.worker.start", jobId, userId }));
       const session = await appSessionForUserId(userId);
       if (!session) {
@@ -41,9 +44,12 @@ async function main() {
         });
         return;
       }
-      for await (const item of runIngestionJob(session, jobId)) {
-        await publishJobEvent(jobId, item);
-      }
+      const parent = contextFromCarrier({ traceparent, tracestate });
+      await context.with(parent, async () => {
+        for await (const item of runIngestionJob(session, jobId)) {
+          await publishJobEvent(jobId, item);
+        }
+      });
       await trimJobEvents(jobId, redis);
       console.info(JSON.stringify({ event: "ingest.worker.done", jobId }));
     },

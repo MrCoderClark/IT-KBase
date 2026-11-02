@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-11-02 (feat/ingest-validate)
+Last updated: 2026-11-02 (feat/ingest-otel)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M0 | Foundations: specs + repo scaffold | Week 1        | ✅ (external Postgres/Redis/S3; no in-repo compose) |
 | M1 | Article detail view matches mock   | Week 3        | ✅ |
 | M2 | Create / edit article (manual)     | Week 4        | ✅ |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (artifacts, OTel, unstructured later) |
+| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (unstructured/OCR later; OTel dashboards → M7) |
 | M4 | Search, categories, tags           | Week 7        | ✅ |
 | M5 | Auth, roles, admin console         | Week 8        | ✅ (OIDC/SAML/orgs post-pilot) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ✅ |
@@ -125,7 +125,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Parse/ingest calls `get_extractor().structure`. A section the text does not support stays empty; invalid JSON gets one repair, then the parser draft is kept. Checked on `feat/kb-extractor`.
 - ✅ Python: one repair pass on invalid structure JSON + post-extract validate (title/sections/images/callouts); low-confidence parser fallback + `succeeded_with_warnings`. Checked on `feat/ingest-validate`.
 - ✅ Node worker emits progress events to Redis stream `jobs:{id}:events` (Python still streams SSE to the worker over HTTP).
-- ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. OpenTelemetry later.
+- ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. ✅ OpenTelemetry: ingest spans + W3C `traceparent` Next → BullMQ → FastAPI (`OTEL_EXPORTER_OTLP_ENDPOINT` optional). Dashboards later (M7).
 - ✅ Artifact bundle: `uploads/{yyyy}/{mm}/{jobId}/artifact.json` + source copy with 7-day Expires; LLM prompt/response when used; `uv run ingest replay {jobId}`. Checked on `feat/ingest-artifacts`.
 
 ---
