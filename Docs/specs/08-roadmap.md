@@ -55,7 +55,7 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 - ✅ BullMQ queue + Node worker (`pnpm worker:ingest`) calling FastAPI; Redis stream `jobs:{id}:events` for SSE. Without `REDIS_URL`, stream route still runs in-process.
 - ✅ DOCX parser (python-docx).
 - ✅ PDF parser (pdfplumber); scanned pages noted and skipped; unstructured fallback later; OCR post-pilot.
-- 🟡 Segment → candidate section heuristic (heading map in parsers; fuller LLM-oriented segmenter later).
+- ✅ Segment → candidate section heuristic (`backend/parse/segments.py`; kinds are suggestions for the LLM).
 - ✅ Structure via `KBExtractor` (`OpenAICompatibleExtractor` default, `FakeExtractor` for tests) + one repair.
 - 🟡 Pydantic / JSON validation with one-shot repair (full validator suite later).
 - ✅ SSE progress stream.

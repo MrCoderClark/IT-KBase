@@ -171,7 +171,15 @@ def _iter_finish(
     yield record(clock.finish("parsing", "succeeded", detail=name, progress=0.28))
 
     yield clock.start("segmenting", detail="Mapping headings", progress=0.32)
-    yield record(clock.finish("segmenting", "succeeded", detail="Sections ready", progress=0.4))
+    segment_count = len(parser_draft.ingestSegments or [])
+    yield record(
+        clock.finish(
+            "segmenting",
+            "succeeded",
+            detail=f"{segment_count} segment{'s' if segment_count != 1 else ''}",
+            progress=0.4,
+        )
+    )
 
     yield clock.start("extracting", detail="Structuring the article", progress=0.45)
     active = extractor if extractor is not None else get_extractor()

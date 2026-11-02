@@ -24,6 +24,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 from backend.parse.models import ParsedCallout, ParsedDraft, ParsedStep
+from backend.parse.segments import section_kind, segment_lines, segments_as_dicts
 
 _MAX_CHARS = 200_000
 _MAX_IMAGES = 12
@@ -31,15 +32,6 @@ _MAX_IMAGE_BYTES = 5_000_000
 _SUMMARY_LIMIT = 280
 _TITLE_LIMIT = 180
 _DECIMAL_FORMATS = {"decimal", "decimalZero"}
-
-# Earlier rows win, so "Troubleshooting steps" stays troubleshooting.
-_KINDS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("troubleshooting", ("troubleshoot", "known issue", "faq")),
-    ("prerequisites", ("prerequisite", "requirement", "before you begin", "what you need")),
-    ("verification", ("verification", "verify", "expected result")),
-    ("steps", ("step-by-step", "step by step", "procedure", "instructions", "walkthrough", "how to", "step")),
-    ("overview", ("overview", "summary", "introduction", "purpose", "background")),
-)
 
 _STEP_START = re.compile(r"^(?:step\s+)?\d+[.)]\s+\S", re.IGNORECASE)
 # Placed in step.body where a screenshot belongs so the web app can emit
@@ -98,12 +90,10 @@ def assemble_draft(filename: str, lines: list[_Line], *, title: str = "") -> Par
     draft = parser.finish()
     if not _has_body(draft):
         raise DocxError("That document has no text to import.")
+    draft.ingestSegments = segments_as_dicts(
+        segment_lines(lines, doc_title=draft.title)
+    )
     return draft
-
-
-def section_kind(title: str) -> str | None:
-    """Known section name, or None when the line is ordinary text."""
-    return _classify(title)
 
 
 def parse_docx(data: bytes, filename: str) -> ParsedDraft:
@@ -159,6 +149,7 @@ class _Parser:
         self.current: _Section | None = None
         self.budget = _Budget()
         self.image_count = 0
+        self.flat: list[_Line] = []
 
     def add_heading(self, text: str, level: int) -> None:
         text = self.budget.take(text)
@@ -166,7 +157,7 @@ class _Parser:
             return
         if self.core_title and text.casefold() == self.core_title.casefold():
             return
-        kind = _classify(text)
+        kind = section_kind(text)
         if (
             kind is None
             and not self.core_title
@@ -177,6 +168,7 @@ class _Parser:
             self.title_heading = text[:_TITLE_LIMIT]
             self.title_level = level
             return
+        self.flat.append(_Line(text=text, heading=True, level=level))
         if kind is not None:
             self._start(kind, text, level)
             return
@@ -196,6 +188,17 @@ class _Parser:
             self.image_count += len(line.images)
         if not line.text and not line.images:
             return
+        self.flat.append(
+            _Line(
+                text=line.text,
+                list_item=line.list_item,
+                numbered=line.numbered,
+                code=line.code,
+                heading=line.heading,
+                level=line.level,
+                images=list(line.images),
+            )
+        )
         if self.current is None:
             self.intro.append(line)
         else:
@@ -263,8 +266,9 @@ class _Parser:
             steps = promoted
 
         title = self.core_title or self.title_heading or _title_from_filename(self.filename)
+        resolved = title or "Imported article"
         return ParsedDraft(
-            title=title or "Imported article",
+            title=resolved,
             summary=summary,
             overviewTitle=overview_title,
             overview="\n\n".join(part for part in overview_parts if part).strip(),
@@ -277,31 +281,12 @@ class _Parser:
             verificationCode="\n".join(verification_code).strip(),
             troubleshootingTitle=troubleshooting_title,
             troubleshooting=troubleshooting,
+            ingestSegments=segments_as_dicts(segment_lines(self.flat, doc_title=resolved)),
         )
 
     def _start(self, kind: str, title: str, level: int) -> None:
         self.current = _Section(kind=kind, title=title[:120], level=level)
         self.sections.append(self.current)
-
-
-def _classify(title: str) -> str | None:
-    """Match a heading, not a sentence that merely contains the word.
-
-    "Prerequisites" hits "prerequisite". "First step is to save the file"
-    stays body text, because "step" is not the heading.
-    """
-    lowered = " ".join(title.casefold().split())
-    if not lowered or len(lowered) > 80:
-        return None
-    words = lowered.split()
-    for kind, phrases in _KINDS:
-        for phrase in phrases:
-            if " " in phrase:
-                if lowered.startswith(phrase):
-                    return kind
-            elif words[0].startswith(phrase):
-                return kind
-    return None
 
 
 def _iter_blocks(document: DocumentObject):

@@ -55,13 +55,16 @@ def source_object_key(job_id: str, file_name: str, when: datetime | None = None)
 
 
 def segments_from_draft(draft: ParsedDraft) -> list[dict[str, Any]]:
-    """Heading-map stand-in until the fuller segmenter ships."""
+    """Prefer the segmenter output; fall back to folding the parsed draft."""
+    if draft.ingestSegments:
+        return list(draft.ingestSegments)
     segments: list[dict[str, Any]] = []
     if draft.overview.strip():
         segments.append(
             {
                 "title": draft.overviewTitle or "Overview",
-                "kind": "overview",
+                "headingLevel": 1,
+                "candidateKind": "overview",
                 "blocks": [{"type": "text", "text": draft.overview}],
             }
         )
@@ -69,21 +72,21 @@ def segments_from_draft(draft: ParsedDraft) -> list[dict[str, Any]]:
         segments.append(
             {
                 "title": draft.prerequisitesTitle or "Prerequisites",
-                "kind": "prerequisites",
-                "blocks": [{"type": "checklist", "items": list(draft.prerequisites)}],
+                "headingLevel": 1,
+                "candidateKind": "prerequisites",
+                "blocks": [{"type": "text", "text": "\n".join(draft.prerequisites)}],
             }
         )
     if draft.steps:
         segments.append(
             {
                 "title": draft.stepsTitle or "Step-by-Step Instructions",
-                "kind": "steps",
+                "headingLevel": 1,
+                "candidateKind": "steps",
                 "blocks": [
                     {
-                        "type": "step",
-                        "title": step.title,
-                        "body": step.body,
-                        "code": step.code,
+                        "type": "text",
+                        "text": f"{step.title}\n{step.body}".strip(),
                         "images": list(step.images),
                     }
                     for step in draft.steps
@@ -94,9 +97,10 @@ def segments_from_draft(draft: ParsedDraft) -> list[dict[str, Any]]:
         segments.append(
             {
                 "title": draft.verificationTitle or "Verification",
-                "kind": "verification",
+                "headingLevel": 1,
+                "candidateKind": "verification",
                 "blocks": [
-                    {"type": "checklist", "items": list(draft.verification)},
+                    {"type": "text", "text": "\n".join(draft.verification)},
                     *(
                         [{"type": "code", "text": draft.verificationCode}]
                         if draft.verificationCode.strip()
@@ -109,9 +113,10 @@ def segments_from_draft(draft: ParsedDraft) -> list[dict[str, Any]]:
         segments.append(
             {
                 "title": draft.troubleshootingTitle or "Troubleshooting",
-                "kind": "troubleshooting",
+                "headingLevel": 1,
+                "candidateKind": "troubleshooting",
                 "blocks": [
-                    {"type": "callout", "title": item.title, "body": item.body}
+                    {"type": "text", "text": f"{item.title}\n{item.body}".strip()}
                     for item in draft.troubleshooting
                 ],
             }

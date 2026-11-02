@@ -14,6 +14,7 @@ from urllib import error, request
 from pydantic import BaseModel, ValidationError
 
 from backend.parse.models import ParsedCallout, ParsedDraft, ParsedStep
+from backend.parse.segments import Segment, segments_to_prompt
 from backend.telemetry import get_logger
 
 log = get_logger(__name__)
@@ -90,13 +91,22 @@ class OpenAICompatibleExtractor:
         source = _source_text(draft)
         if not source:
             return draft
+        segments = _segments_from_draft(draft)
+        if segments:
+            prompt = (
+                _PROMPT.removesuffix("Material:\n")
+                + segments_to_prompt(segments)
+                + "\n\nMaterial:\n"
+                + source
+            )
+        else:
+            prompt = _PROMPT + source
 
         def ask(message: str) -> str:
             if self._complete is not None:
                 return self._complete(message)
             return _complete_chat(self._api_key, self._model, self._base_url, message)
 
-        prompt = _PROMPT + source
         try:
             raw = ask(prompt)
         except (OSError, error.URLError, ValueError) as exc:
@@ -199,6 +209,17 @@ def _strings(items: list[str], limit: int, length: int) -> list[str]:
 
 def _clip(text: str, limit: int) -> str:
     return " ".join(text.split())[:limit].strip()
+
+
+def _segments_from_draft(draft: ParsedDraft) -> list[Segment]:
+    rows = draft.ingestSegments or []
+    out: list[Segment] = []
+    for row in rows:
+        try:
+            out.append(Segment.model_validate(row))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 def _source_text(draft: ParsedDraft) -> str:

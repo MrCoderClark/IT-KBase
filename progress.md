@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-11-02 (feat/ingest-artifacts)
+Last updated: 2026-11-02 (feat/ingest-segmenter)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -121,7 +121,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
 - ✅ Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber) + `/ingest` for stored PDFs. Picture/scanned pages noted in Overview; scan-only PDFs refused. Unstructured fallback later. Checked on `feat/pdf-ingest`.
-- 🟡 Heading map is inside the docx parser. The fuller segmenter that only suggests kinds to an LLM is later
+- ✅ Segmenter: H1/H2 opens a segment with `candidateKind` suggestion; attached as `ingestSegments` on the parser draft; extract prompt + artifacts consume it. Checked on `feat/ingest-segmenter`.
 - ✅ `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Parse/ingest calls `get_extractor().structure`. A section the text does not support stays empty; invalid JSON gets one repair, then the parser draft is kept. Checked on `feat/kb-extractor`.
 - ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.
 - ✅ Node worker emits progress events to Redis stream `jobs:{id}:events` (Python still streams SSE to the worker over HTTP).
