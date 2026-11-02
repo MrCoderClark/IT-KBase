@@ -116,6 +116,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/uploads/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Upload
+         * @description Receive file bytes from the Next BFF and write them to object storage.
+         */
+        put: operations["put_upload_v1_uploads_object_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/uploads/presign": {
         parameters: {
             query?: never;
@@ -478,6 +498,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PrincipalResponse"];
                 };
+            };
+        };
+    };
+    put_upload_v1_uploads_object_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
