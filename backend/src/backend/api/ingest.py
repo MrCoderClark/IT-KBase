@@ -142,7 +142,9 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
 
     stages: list[dict] = []
     try:
-        for item in iter_draft_from_bytes(data, body.fileName, job_id=body.jobId):
+        for item in iter_draft_from_bytes(
+            data, body.fileName, job_id=body.jobId, source_key=body.s3Key
+        ):
             if isinstance(item, ProgressEvent):
                 payload = item.model_dump()
                 if item.durationMs is not None:
@@ -189,7 +191,7 @@ def _read_draft(body: IngestBody) -> ParsedDraft:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if len(data) > _MAX_BYTES:
         raise HTTPException(status_code=413, detail="That file is larger than 25 MB.")
-    return draft_from_bytes(data, body.fileName, job_id=body.jobId)
+    return draft_from_bytes(data, body.fileName, job_id=body.jobId, source_key=body.s3Key)
 
 
 def _sse(event_name: str, data: dict) -> str:

@@ -81,8 +81,10 @@ class OpenAICompatibleExtractor:
         self._model = model
         self._base_url = base_url
         self._complete = complete
+        self.last_llm: dict[str, str | bool] | None = None
 
     def structure(self, draft: ParsedDraft) -> ParsedDraft:
+        self.last_llm = None
         if not self._api_key.strip():
             return draft
         source = _source_text(draft)
@@ -94,19 +96,25 @@ class OpenAICompatibleExtractor:
                 return self._complete(message)
             return _complete_chat(self._api_key, self._model, self._base_url, message)
 
+        prompt = _PROMPT + source
         try:
-            raw = ask(_PROMPT + source)
+            raw = ask(prompt)
         except (OSError, error.URLError, ValueError) as exc:
             log.warning("structure.failed", error=type(exc).__name__)
             return draft
 
+        repaired = False
         try:
             written = _parse_draft(raw)
         except (json.JSONDecodeError, ValidationError, ValueError) as exc:
-            written = _repair(ask, source, raw, exc)
-            if written is None:
+            repaired_result = _repair(ask, source, raw, exc)
+            if repaired_result is None:
+                self.last_llm = {"prompt": prompt, "response": raw, "repaired": False}
                 return draft
+            written, raw = repaired_result
+            repaired = True
 
+        self.last_llm = {"prompt": prompt, "response": raw, "repaired": repaired}
         merged = _merge(draft, written)
         log.info("structure.written", title=merged.title)
         return merged
@@ -117,7 +125,7 @@ def _repair(
     source: str,
     previous: str,
     exc: Exception,
-) -> _WrittenDraft | None:
+) -> tuple[_WrittenDraft, str] | None:
     message = f"{_REPAIR}\nErrors:\n{exc}\n\nPrevious response:\n{previous}\n\nMaterial:\n{source}"
     try:
         raw = ask(message)
@@ -125,7 +133,7 @@ def _repair(
     except (OSError, error.URLError, json.JSONDecodeError, ValidationError, ValueError) as repair_exc:
         log.warning("structure.repair_failed", error=type(repair_exc).__name__)
         return None
-    return written
+    return written, raw
 
 
 def _merge(draft: ParsedDraft, written: _WrittenDraft) -> ParsedDraft:

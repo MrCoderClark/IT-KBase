@@ -6,6 +6,7 @@ The browser PUTs the file. This service only signs that PUT and later reads the 
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from backend.config import get_storage_settings
@@ -45,16 +46,43 @@ def presign_put(key: str, content_type: str) -> tuple[str, dict[str, str]]:
     return url, {"Content-Type": content_type}
 
 
-def put_object(key: str, data: bytes, content_type: str) -> None:
+def put_object(
+    key: str,
+    data: bytes,
+    content_type: str,
+    *,
+    expires_in_days: int | None = None,
+) -> None:
     """Server-side write used by the Next upload proxy (avoids browser→S3 CORS)."""
     if not key_allowed(key):
         raise StorageError("That file is not in storage.")
     client = _client()
     bucket = get_storage_settings().bucket
+    extra: dict[str, object] = {}
+    if expires_in_days is not None and expires_in_days > 0:
+        extra["Expires"] = datetime.now(UTC) + timedelta(days=expires_in_days)
     try:
-        client.put_object(Bucket=bucket, Key=key, Body=data, ContentType=content_type)
+        client.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+            **extra,
+        )
     except Exception as exc:
         raise StorageError("The file could not be stored.") from exc
+
+
+def object_exists(key: str) -> bool:
+    if not key_allowed(key):
+        return False
+    client = _client()
+    bucket = get_storage_settings().bucket
+    try:
+        client.head_object(Bucket=bucket, Key=key)
+    except Exception:
+        return False
+    return True
 
 
 def download_object(key: str) -> bytes:
