@@ -227,8 +227,11 @@ export interface components {
              * @default false
              */
             lowConfidence: boolean;
-            /** Lowfidelitysource */
-            lowFidelitySource?: boolean;
+            /**
+             * Lowfidelitysource
+             * @default false
+             */
+            lowFidelitySource: boolean;
             /**
              * Overview
              * @default
