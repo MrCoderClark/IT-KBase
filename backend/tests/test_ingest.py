@@ -16,6 +16,7 @@ from fpdf import FPDF
 from auth_py.assertion import AssertionClaims, mint_assertion
 from backend.app import create_app
 from backend.config import get_settings
+from backend.extractors import FakeExtractor
 
 _PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
@@ -23,12 +24,6 @@ _PNG = base64.b64decode(
 
 NOW = datetime(2026, 10, 14, 16, 0, tzinfo=UTC)
 SECRET = b"test-assertion-key"
-
-
-class _EmptyAi:
-    api_key = ""
-    model = ""
-    base_url = ""
 
 
 class _FrozenClock:
@@ -152,7 +147,7 @@ def test_ingest_refuses_another_users_key(authed: TestClient, monkeypatch: pytes
 def test_ingest_reads_the_stored_docx(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     data = _docx()
     monkeypatch.setattr("backend.api.ingest.download_object", lambda _key: data)
-    monkeypatch.setattr("backend.api.parse.get_ai_settings", lambda: _EmptyAi())
+    monkeypatch.setattr("backend.api.parse.get_extractor", lambda: FakeExtractor())
     response = authed.post(
         "/ingest",
         headers=_headers(monkeypatch),
@@ -173,7 +168,7 @@ def test_ingest_reads_the_stored_docx(authed: TestClient, monkeypatch: pytest.Mo
 def test_ingest_stream_emits_stage_events(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     data = _docx()
     monkeypatch.setattr("backend.api.ingest.download_object", lambda _key: data)
-    monkeypatch.setattr("backend.api.parse.get_ai_settings", lambda: _EmptyAi())
+    monkeypatch.setattr("backend.api.parse.get_extractor", lambda: FakeExtractor())
     response = authed.post(
         "/ingest",
         headers={**_headers(monkeypatch), "Accept": "text/event-stream"},
@@ -245,7 +240,7 @@ def test_put_object_writes_through_storage(authed: TestClient, monkeypatch: pyte
 def test_ingest_reads_the_stored_pdf(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     data = _pdf()
     monkeypatch.setattr("backend.api.ingest.download_object", lambda _key: data)
-    monkeypatch.setattr("backend.api.parse.get_ai_settings", lambda: _EmptyAi())
+    monkeypatch.setattr("backend.api.parse.get_extractor", lambda: FakeExtractor())
     response = authed.post(
         "/ingest",
         headers=_headers(monkeypatch),
@@ -270,7 +265,7 @@ def test_ingest_stream_folds_scanned_page_notes(
 ) -> None:
     data = _pdf(with_scan_page=True)
     monkeypatch.setattr("backend.api.ingest.download_object", lambda _key: data)
-    monkeypatch.setattr("backend.api.parse.get_ai_settings", lambda: _EmptyAi())
+    monkeypatch.setattr("backend.api.parse.get_extractor", lambda: FakeExtractor())
     response = authed.post(
         "/ingest",
         headers={**_headers(monkeypatch), "Accept": "text/event-stream"},

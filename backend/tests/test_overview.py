@@ -1,9 +1,9 @@
-"""The model structures extracted text. It does not invent a missing section."""
+"""OpenAICompatibleExtractor structures extracted text. It does not invent a missing section."""
 
 from __future__ import annotations
 
+from backend.extractors import OpenAICompatibleExtractor
 from backend.parse.models import ParsedDraft, ParsedStep
-from backend.parse.overview import structure_draft
 
 
 def _procedure() -> ParsedDraft:
@@ -21,6 +21,15 @@ def _procedure() -> ParsedDraft:
     )
 
 
+def _extractor(complete) -> OpenAICompatibleExtractor:
+    return OpenAICompatibleExtractor(
+        api_key="test",
+        model="gpt-4o-mini",
+        base_url="https://api.openai.com/v1",
+        complete=complete,
+    )
+
+
 def test_the_model_structures_the_extracted_body() -> None:
     seen: list[str] = []
 
@@ -35,13 +44,7 @@ def test_the_model_structures_the_extracted_body() -> None:
             ' "troubleshooting": []}'
         )
 
-    filled = structure_draft(
-        _procedure(),
-        api_key="test",
-        model="gpt-4o-mini",
-        base_url="https://api.openai.com/v1",
-        complete=complete,
-    )
+    filled = _extractor(complete).structure(_procedure())
 
     assert "recycle bin" in filled.overview
     assert filled.summary.startswith("Restore")
@@ -55,13 +58,9 @@ def test_the_model_structures_the_extracted_body() -> None:
 def test_an_empty_model_section_keeps_the_extracted_one() -> None:
     draft = _procedure().model_copy(update={"overview": "Already written."})
 
-    filled = structure_draft(
-        draft,
-        api_key="test",
-        model="gpt-4o-mini",
-        base_url="https://api.openai.com/v1",
-        complete=lambda _message: '{"verification": ["The restored file is in the original folder."]}',
-    )
+    filled = _extractor(
+        lambda _message: '{"verification": ["The restored file is in the original folder."]}'
+    ).structure(draft)
 
     assert filled.overview == "Already written."
     assert filled.verification == ["The restored file is in the original folder."]
@@ -77,12 +76,8 @@ def test_invalid_json_is_repaired_once() -> None:
             return '{"verification": "not-a-list"}'
         return '{"overview": "County referrals are entered as leads.", "verification": [], "troubleshooting": []}'
 
-    filled = structure_draft(
-        ParsedDraft(title="WFNJ Flow Process", overview="BCBSS faxes referrals.\n\nF1\n\nEnter the lead."),
-        api_key="test",
-        model="gpt-4o-mini",
-        base_url="https://api.openai.com/v1",
-        complete=complete,
+    filled = _extractor(complete).structure(
+        ParsedDraft(title="WFNJ Flow Process", overview="BCBSS faxes referrals.\n\nF1\n\nEnter the lead.")
     )
 
     assert len(calls) == 2
@@ -93,25 +88,18 @@ def test_invalid_json_is_repaired_once() -> None:
 
 
 def test_a_second_invalid_response_leaves_the_parser_draft() -> None:
-    filled = structure_draft(
-        _procedure(),
-        api_key="test",
-        model="gpt-4o-mini",
-        base_url="https://api.openai.com/v1",
-        complete=lambda _message: "not json",
-    )
+    filled = _extractor(lambda _message: "not json").structure(_procedure())
 
     assert filled.overview == "Sign in.\n\nOpen the recycle bin."
     assert filled.steps[0].title == "Log into Microsoft OneDrive"
 
 
 def test_missing_api_key_skips_the_model() -> None:
-    filled = structure_draft(
-        _procedure(),
+    filled = OpenAICompatibleExtractor(
         api_key="",
         model="gpt-4o-mini",
         base_url="https://api.openai.com/v1",
         complete=lambda _message: "should not be called",
-    )
+    ).structure(_procedure())
 
     assert filled.overview == "Sign in.\n\nOpen the recycle bin."
