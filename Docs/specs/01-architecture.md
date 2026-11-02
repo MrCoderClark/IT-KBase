@@ -119,15 +119,14 @@ Three roles, one dependency:
 1. User drops a DOCX in the Import page.
 2. Next.js requests a presigned PUT, client uploads directly to S3.
 3. Client calls `POST /api/upload/complete` with the S3 key.
-4. Next.js creates an `IngestionJob` row (`status=queued`), enqueues BullMQ `ingest` job.
-5. Python service (worker) picks up the job, downloads from S3.
-6. Pipeline runs: parse → segment → extract → structure → validate. Each stage pushes an event to `jobs:{id}:events` (Redis stream).
-7. Client holds an SSE connection to `/api/jobs/{id}/stream`, which proxies the Redis stream.
-8. On success, Python calls `POST /api/internal/articles` with the structured draft (service-token auth).
-9. Next.js persists the draft, returns the article id.
-10. Python emits a final `done` event with the slug; UI navigates to the draft.
+4. Next.js creates an `IngestionJob` row (`status=queued`), enqueues BullMQ `ingest` job (when `REDIS_URL` is set).
+5. Node ingest worker picks up the job and calls FastAPI `POST /ingest` (SSE). Python downloads from S3 and runs the pipeline.
+6. Pipeline runs: parse → segment → extract → structure → validate. The Node worker pushes each stage event to `jobs:{id}:events` (Redis stream).
+7. Client holds an SSE connection to `/api/jobs/{id}/stream`, which tails the Redis stream (or runs the job in-process when Redis is unset).
+8. On success, the Node worker persists the draft via `saveArticleForSession` (same path as the editor).
+9. A final `done` event with the slug is published; UI navigates to the draft.
 
-The current slice does steps 1–3, then the browser opens `GET /api/jobs/{id}/stream`. That route calls `POST /ingest` with SSE, forwards stage events, saves the draft, and emits `done`. Steps 4–5 and 6–7 as a BullMQ worker writing Redis are later. The file bytes do not go through a Next server action.
+Current slice: steps 1–9 with a Node BullMQ worker + Redis streams when `REDIS_URL` is set; otherwise the stream route is the in-process fallback. The file bytes do not go through a Next server action. A dedicated Python BullMQ consumer and `POST /api/internal/articles` are not required for this path.
 
 ## 4. Data flow — read
 

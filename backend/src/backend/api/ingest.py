@@ -7,7 +7,7 @@ import json
 from collections.abc import Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from auth_py import Principal
@@ -15,12 +15,13 @@ from backend.api.parse import draft_from_bytes, iter_draft_from_bytes
 from backend.parse.models import ParsedDraft
 from backend.policy import require_capability
 from backend.progress import ProgressEvent, event
-from backend.storage import StorageError, download_object, key_owned, object_key, presign_put
+from backend.storage import StorageError, download_object, key_owned, object_key, presign_put, put_object
 from backend.telemetry import get_logger
 
 log = get_logger(__name__)
 
 _MAX_BYTES = 25 * 1024 * 1024
+_OBJECT_KEY_HEADER = "x-tb-object-key"
 
 
 class PresignBody(BaseModel):
@@ -62,6 +63,28 @@ def build_ingest_router(dependency) -> APIRouter:
         except StorageError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return PresignResult(key=key, url=url, headers=headers)
+
+    @router.put("/v1/uploads/object", status_code=204)
+    async def put_upload(
+        request: Request,
+        principal: Principal = get_principal,
+    ) -> Response:
+        """Receive file bytes from the Next BFF and write them to object storage."""
+        _require_importer(principal)
+        key = (request.headers.get(_OBJECT_KEY_HEADER) or "").strip()
+        if not key_owned(key, principal.user_id or "user"):
+            raise HTTPException(status_code=422, detail="That file is not in storage.")
+        content_type = (request.headers.get("content-type") or "application/octet-stream").split(";")[0].strip()
+        data = await request.body()
+        if len(data) < 1:
+            raise HTTPException(status_code=422, detail="The upload was empty.")
+        if len(data) > _MAX_BYTES:
+            raise HTTPException(status_code=413, detail="That file is larger than 25 MB.")
+        try:
+            await asyncio.to_thread(put_object, key, data, content_type or "application/octet-stream")
+        except StorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return Response(status_code=204)
 
     @router.post("/ingest")
     async def ingest(

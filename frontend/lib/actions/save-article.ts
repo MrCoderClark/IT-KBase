@@ -9,7 +9,7 @@ import {
   type SectionKind,
 } from "@prisma/client";
 import { articleSaveError, can } from "@/lib/auth/policy";
-import { getSession } from "@/lib/auth/session";
+import { getSession, type AppSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import {
   type EditorCallout,
@@ -64,7 +64,16 @@ export async function saveArticle(
 ): Promise<SaveResult> {
   const session = await getSession();
   if (!session) return { ok: false, error: "Sign in to continue." };
+  return saveArticleForSession(session, input, bump, notes);
+}
 
+/** Same as `saveArticle` for workers that already have an `AppSession` (no cookies). */
+export async function saveArticleForSession(
+  session: AppSession,
+  input: EditorDraft,
+  bump: VersionBump = "patch",
+  notes?: string,
+): Promise<SaveResult> {
   const publishing = bump === "minor" || bump === "major";
   const status: ArticleStatus = publishing ? "published" : input.status;
   const title = input.title.trim();
@@ -286,9 +295,13 @@ export async function saveArticle(
     }
   }
 
-  revalidatePath("/kb");
-  revalidatePath(`/kb/${slug}`);
-  revalidatePath(`/kb/${slug}/edit`);
+  try {
+    revalidatePath("/kb");
+    revalidatePath(`/kb/${slug}`);
+    revalidatePath(`/kb/${slug}/edit`);
+  } catch {
+    // Outside a Next request (e.g. ingest worker) cache tags are not available.
+  }
   return { ok: true, slug };
 }
 

@@ -2,7 +2,7 @@
 
 Follow this top to bottom. One item is one branch. When an item is done, check it here and move the matching line in `progress.md`.
 
-`progress.md` is the record of what already shipped. This file is only the order of what is left. Specs stay the source of truth for behavior. The milestone table at the top of `progress.md` is behind the detailed sections. M4, M5, and M6 are mostly built.
+`progress.md` is the record of what already shipped. This file is only the order of what is left. Specs stay the source of truth for behavior. The milestone table at the top of `progress.md` and `Docs/specs/08-roadmap.md` track the same status (updated 2026-10-30).
 
 Do not start an item further down because it looks smaller. The ingestion path is the one the specs still call the product.
 

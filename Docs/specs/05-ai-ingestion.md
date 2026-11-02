@@ -4,7 +4,7 @@
 
 ## 0. First slice
 
-The browser PUTs a `.docx` or `.pdf` to object storage, then Next creates an `IngestionJob` and returns the job id. The import page opens `GET /api/jobs/{id}/stream`. That route calls `POST /ingest` with `Accept: text/event-stream`, forwards parse → segment → extract → validate events with `durationMs`, saves the draft, and emits `done` with the slug and a `trace` of stage timings. The same trace is stored on `IngestionJob.trace` and returned by `GET /api/jobs/{id}`. The file bytes do not go through a Next server action. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. There is still no BullMQ worker and no Redis event stream; those stay the flow in §2 and §4. The full S3 artifact bundle in §5 is later. `POST /v1/parse/docx` and `POST /v1/parse/pdf` remain and run the same reader. Storage uses `TB_S3_ENDPOINT`, `TB_S3_BUCKET`, `TB_S3_REGION`, `TB_S3_ACCESS_KEY`, and `TB_S3_SECRET_KEY` on the Python service. The bucket has to allow the browser to PUT.
+The browser gets an object key from `POST /api/upload/presign`, PUTs the `.docx` or `.pdf` to same-origin `PUT /api/upload/object` (Next forwards bytes to FastAPI → SeaweedFS; avoids brittle browser→S3 CORS), then Next creates an `IngestionJob` and returns the job id. Direct browser PUTs to a presigned S3 URL remain available for load scripts. When `REDIS_URL` is set, `POST /api/upload/complete` enqueues BullMQ queue `ingest`; a Node worker (`pnpm worker:ingest`) runs `runIngestionJob`, which calls FastAPI `POST /ingest` with `Accept: text/event-stream`, publishes stage events to Redis stream `jobs:{id}:events`, and saves the draft. The import page opens `GET /api/jobs/{id}/stream`, which tails that Redis stream (or, if `REDIS_URL` is unset, runs the job in-process as a local fallback). Events include `durationMs`; `done` carries the slug and a `trace` of stage timings. The same trace is stored on `IngestionJob.trace` and returned by `GET /api/jobs/{id}`. The file bytes do not go through a Next server action. A PDF page that is a picture with almost no text is noted and left unread. When `AI_API_KEY` is set, the model structures that extracted text into the article and returns JSON. A section the text does not support is left empty. Invalid JSON gets one repair, then the parser draft is kept. The call is OpenAI-compatible (`AI_BASE_URL`, `AI_MODEL`), including OpenRouter. The full S3 artifact bundle in §5 is later. `POST /v1/parse/docx` and `POST /v1/parse/pdf` remain and run the same reader. Storage uses `TB_S3_ENDPOINT`, `TB_S3_BUCKET`, `TB_S3_REGION`, `TB_S3_ACCESS_KEY`, and `TB_S3_SECRET_KEY` on the Python service. The bucket has to allow the browser to PUT.
 
 ## 1. Goals
 
@@ -27,7 +27,7 @@ Browser  ──PUT──▶  │       S3         │
                    ┌───────────────────┐
                    │  BullMQ "ingest"  │
                    └────────┬──────────┘
-                            │ worker: Python ingestion
+                            │ Node worker → FastAPI /ingest (SSE)
                             ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 1: parse       (docx | pdf)         → RawDoc      │
@@ -38,7 +38,7 @@ Browser  ──PUT──▶  │       S3         │
 │ Stage 4: extract     (LLM: text → typed   → DraftProto  │
 │                       article blocks)                    │
 │ Stage 5: validate    (Pydantic + repair)  → Draft       │
-│ Stage 6: persist     (POST to Next.js)    → articleId   │
+│ Stage 6: persist     (saveArticleForSession) → articleId│
 └─────────────────────────────────────────────────────────┘
                             │  (events on each stage)
                             ▼
@@ -47,6 +47,8 @@ Browser  ──PUT──▶  │       S3         │
                             ▼
                      SSE → Browser UI
 ```
+
+Without `REDIS_URL`, step “enqueues BullMQ” is skipped and the SSE route runs the same pipeline in-process.
 
 ## 3. Stage detail
 

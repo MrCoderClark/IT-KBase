@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  webpack: (config) => {
+    // BullMQ optionally imports Valkey Glide; we use ioredis only.
+    config.resolve = config.resolve ?? {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@valkey/valkey-glide": false,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
