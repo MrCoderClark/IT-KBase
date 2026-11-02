@@ -15,7 +15,14 @@ from backend.api.parse import draft_from_bytes, iter_draft_from_bytes
 from backend.parse.models import ParsedDraft
 from backend.policy import require_capability
 from backend.progress import ProgressEvent, event
-from backend.storage import StorageError, download_object, key_owned, object_key, presign_put, put_object
+from backend.storage import (
+    StorageError,
+    download_object,
+    key_owned,
+    object_key,
+    presign_put,
+    put_object,
+)
 from backend.telemetry import get_logger
 
 log = get_logger(__name__)

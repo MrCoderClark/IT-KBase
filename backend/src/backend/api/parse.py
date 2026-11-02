@@ -7,10 +7,9 @@ from collections.abc import Callable, Iterator
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 from auth_py import Principal
-from backend.config import get_ai_settings
+from backend.extractors import get_extractor
 from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
-from backend.parse.overview import structure_draft
 from backend.parse.pdf import PdfError, parse_pdf
 from backend.policy import require_capability
 from backend.progress import ProgressEvent, StageClock
@@ -133,14 +132,8 @@ def _iter_finish(
     yield clock.start("segmenting", detail="Mapping headings", progress=0.32)
     yield record(clock.finish("segmenting", "succeeded", detail="Sections ready", progress=0.4))
 
-    ai = get_ai_settings()
     yield clock.start("extracting", detail="Structuring the article", progress=0.45)
-    draft = structure_draft(
-        draft,
-        api_key=ai.api_key,
-        model=ai.model,
-        base_url=ai.base_url,
-    )
+    draft = get_extractor().structure(draft)
     yield record(
         clock.finish("extracting", "succeeded", detail=draft.title or name, progress=0.82)
     )

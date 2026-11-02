@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-10-30 (docs/pilot)
+Last updated: 2026-11-02 (feat/kb-extractor)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -122,7 +122,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
 - ✅ Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber) + `/ingest` for stored PDFs. Picture/scanned pages noted in Overview; scan-only PDFs refused. Unstructured fallback later. Checked on `feat/pdf-ingest`.
 - 🟡 Heading map is inside the docx parser. The fuller segmenter that only suggests kinds to an LLM is later
-- 🟡 The model structures the extracted text into the article. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
+- ✅ `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Parse/ingest calls `get_extractor().structure`. A section the text does not support stays empty; invalid JSON gets one repair, then the parser draft is kept. Checked on `feat/kb-extractor`.
 - ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.
 - ✅ Node worker emits progress events to Redis stream `jobs:{id}:events` (Python still streams SSE to the worker over HTTP).
 - ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. Full S3 artifact bundle and OpenTelemetry are later.
