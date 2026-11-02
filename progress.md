@@ -113,14 +113,14 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 ## 4. Ingestion (M3)
 
-- 🟡 `/import` accepts one `.docx` or `.pdf` up to 25MB. A scanned PDF page is noted and not read. OCR is later.
+- ✅ `/import` accepts one `.docx` or `.pdf` up to 25MB. A scanned PDF page is noted and not read. OCR is later.
 - ✅ S3 presigned-upload flow. The browser PUTs the file. `TB_S3_*` lives on the Python service. Checked 2026-10-27: `Scan_To_Network_Share.docx` landed in the `uploads` bucket.
 - ✅ `POST /ingest` reads that object, returns `jobId` and the draft. Next saves the article and links the job. Checked on `/kb/scan-to-network-share` (draft, overview, eight steps).
 - ✅ BullMQ `ingest` queue + Node worker (`pnpm worker:ingest`). `REDIS_URL` enqueues on complete; worker publishes to Redis stream `jobs:{id}:events`. Unset `REDIS_URL` keeps the in-process stream fallback.
 - ✅ Live progress via SSE (parse → segment → extract → validate → draft ready). With Redis, stream tails the job events stream; without, the route still runs the job. Checked 2026-10-27 on Reset Local Admin Password (in-process); queue path added on `feat/ingest-bullmq`.
 - 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
-- 🟡 Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber). A picture page is noted. A text PDF was checked in the browser. A scan was not. Unstructured fallback is later.
+- ✅ Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber) + `/ingest` for stored PDFs. Picture/scanned pages noted in Overview; scan-only PDFs refused. Unstructured fallback later. Checked on `feat/pdf-ingest`.
 - 🟡 Heading map is inside the docx parser. The fuller segmenter that only suggests kinds to an LLM is later
 - 🟡 The model structures the extracted text into the article. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
 - ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.

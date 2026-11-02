@@ -11,6 +11,7 @@ import type {
   Section,
   SectionKind,
 } from "@/lib/types/article";
+import { STEP_IMG_MARK } from "@/lib/editor/step-images";
 
 export const EDITABLE_KINDS = [
   "overview",
@@ -270,7 +271,11 @@ function stepsFromBlocks(blocks: Block[]): EditorStep[] {
       last.code = block.code;
       last.language = block.language ?? "powershell";
     } else if (block.kind === "image" && block.imageUrl) {
+      // Preserve document order when round-tripping through the editor.
       last.images = [...(last.images ?? []), block.imageUrl];
+      last.body = last.body.trim()
+        ? `${last.body.replace(/\s+$/, "")}\n\n${STEP_IMG_MARK}`
+        : STEP_IMG_MARK;
     } else if (block.kind === "prose") {
       last.body = combineProse([last.body, block.content]);
     }

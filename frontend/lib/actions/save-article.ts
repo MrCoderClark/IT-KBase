@@ -22,6 +22,7 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
+import { stepImagePieces } from "@/lib/editor/step-images";
 import { notifyIntegrationsArticlePublished } from "@/lib/integrations/notify";
 import { notifyReviewRequested } from "@/lib/notifications/create";
 
@@ -587,26 +588,13 @@ function blocksFor(section: EditorSection): BlockWrite[] {
     case "steps": {
       const steps = section.steps.filter(hasStep);
       steps.forEach((step, index) => {
-        push({
-          kind: "step",
-          stepNumber: index + 1,
-          content: { title: step.title.trim(), body: asProse(step.body) },
-        });
+        emitOrderedStepBlocks(step, index + 1, push);
         if (step.code.trim()) {
           push({
             kind: "code",
             code: step.code.replace(/\r\n/g, "\n"),
             language: step.language.trim() || "text",
           });
-        }
-        for (const image of step.images ?? []) {
-          if (image.trim()) {
-            push({
-              kind: "image",
-              imageUrl: image,
-              imageAlt: "Screenshot from the Word document",
-            });
-          }
         }
       });
       break;
@@ -773,6 +761,50 @@ async function rewriteVersion(
 function jsonInput(value: Prisma.JsonValue): Prisma.InputJsonValue | undefined {
   if (value === null) return undefined;
   return value as Prisma.InputJsonValue;
+}
+
+function emitOrderedStepBlocks(
+  step: EditorStep,
+  stepNumber: number,
+  push: (block: Omit<BlockWrite, "order">) => void,
+): void {
+  const pieces = stepImagePieces(step.body, step.images);
+  let opened = false;
+  for (const piece of pieces) {
+    if (piece.type === "text") {
+      if (!opened) {
+        push({
+          kind: "step",
+          stepNumber,
+          content: { title: step.title.trim(), body: asProse(piece.text) },
+        });
+        opened = true;
+      } else {
+        push({ kind: "prose", content: asProse(piece.text) });
+      }
+      continue;
+    }
+    if (!opened) {
+      push({
+        kind: "step",
+        stepNumber,
+        content: { title: step.title.trim(), body: "" },
+      });
+      opened = true;
+    }
+    push({
+      kind: "image",
+      imageUrl: piece.url,
+      imageAlt: "Screenshot from the imported document",
+    });
+  }
+  if (!opened) {
+    push({
+      kind: "step",
+      stepNumber,
+      content: { title: step.title.trim(), body: "" },
+    });
+  }
 }
 
 function asProse(value: string): string {

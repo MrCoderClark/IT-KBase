@@ -10,7 +10,7 @@ Do not start an item further down because it looks smaller. The ingestion path i
 
 Word import already lands a draft, keeps pictures on numbered steps, and fills a blank Overview, Verification, and Troubleshooting. Spec: `Docs/specs/05-ai-ingestion.md`.
 
-1. **PDF into the same draft.** Accept one `.pdf` on Import the way `.docx` works now. `pdfplumber` first. No object storage and no progress stepper in this step. A scanned page with no text stays a noted gap. OCR is post-pilot.
+1. ✅ **PDF into the same draft.** Same Import / queue path as Word. `pdfplumber` maps headings and numbered lines; scanned picture pages are noted in Overview and skipped. OCR is post-pilot. Unstructured fallback later.
 2. **Structure call with one repair.** Replace the "fill the blank sections" call with the `KBExtractor` step in the spec. Invalid model output gets one repair, then a draft a person can fix. A section already in the file is still kept.
 3. ✅ **Store the file, then start a job.** Checked 2026-10-27. `Scan_To_Network_Share.docx` was stored, `POST /ingest` returned the job, and `/kb/scan-to-network-share` opened as a draft with an overview and eight steps. The stepper is item 4.
 4. ✅ **Live progress.** Checked 2026-10-27. `Reset Local Computer Account Passwordv2.docx` moved through the stepper and opened `/kb/reset-local-admin-password` as a draft. Redis streams wait for the queue.

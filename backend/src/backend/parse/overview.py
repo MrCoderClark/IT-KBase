@@ -139,6 +139,8 @@ def _merge(draft: ParsedDraft, written: _WrittenDraft) -> ParsedDraft:
 
 
 def _steps(draft: ParsedDraft, written: list[_WrittenStep]) -> list[ParsedStep]:
+    from backend.parse.docx import STEP_IMG_MARK, _join_para
+
     steps = [
         ParsedStep(
             title=_clip(item.title, 200) or "Step",
@@ -151,8 +153,17 @@ def _steps(draft: ParsedDraft, written: list[_WrittenStep]) -> list[ParsedStep]:
     if not steps:
         return draft.steps
     for index, step in enumerate(steps):
-        if index < len(draft.steps) and draft.steps[index].images:
-            step.images = list(draft.steps[index].images)
+        if index >= len(draft.steps):
+            continue
+        prev = draft.steps[index]
+        if prev.images:
+            step.images = list(prev.images)
+        # Keep parser body when it already places screenshots in reading order.
+        if STEP_IMG_MARK in (prev.body or ""):
+            step.body = prev.body
+        elif step.images and STEP_IMG_MARK not in step.body:
+            for _url in step.images:
+                step.body = _join_para(step.body, STEP_IMG_MARK)
     return steps
 
 
