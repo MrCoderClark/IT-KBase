@@ -9,10 +9,12 @@ business-logic-heavy. Routers live under `backend.api.*`.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
+from opentelemetry.context import attach, detach
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from auth_py import parse_assertion_keys, require_principal
 from backend.api.health import router as health_router
@@ -21,15 +23,36 @@ from backend.api.parse import build_parse_router
 from backend.api.principal import build_principal_router
 from backend.config import get_settings
 from backend.storage import StorageError, ensure_local_upload_cors
-from backend.telemetry import configure_logging, get_logger
+from backend.telemetry import (
+    configure_logging,
+    configure_tracing,
+    extract_context,
+    get_logger,
+)
 
 log = get_logger(__name__)
+
+
+class TraceContextMiddleware(BaseHTTPMiddleware):
+    """Attach W3C ``traceparent`` from the caller so ingest spans nest correctly."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        token = attach(extract_context(dict(request.headers)))
+        try:
+            return await call_next(request)
+        finally:
+            detach(token)
 
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
+    exporting = configure_tracing(
+        service_name=settings.service_name,
+        service_version=settings.service_version,
+    )
+    log.info("service.tracing", exporter="otlp" if exporting else "local")
     log.info(
         "service.startup",
         service=settings.service_name,
@@ -63,6 +86,7 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if settings.docs_enabled else None,
         lifespan=_lifespan,
     )
+    app.add_middleware(TraceContextMiddleware)
 
     app.include_router(health_router)
     keys = parse_assertion_keys(settings.assertion_keys)

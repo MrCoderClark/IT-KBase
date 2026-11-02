@@ -4,6 +4,7 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   prisma: true
+  protobufjs: true
   sharp: false
   unrs-resolver: false
   workerd: true

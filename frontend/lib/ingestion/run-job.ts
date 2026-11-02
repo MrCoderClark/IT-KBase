@@ -1,3 +1,4 @@
+import { context, SpanStatusCode, trace as otelTrace } from "@opentelemetry/api";
 import { Prisma } from "@prisma/client";
 import { saveArticleForSession } from "@/lib/actions/save-article";
 import { mintIngestionAssertion } from "@/lib/auth/assertion";
@@ -7,6 +8,7 @@ import { jobStatusForStage } from "@/lib/ingestion/stages";
 import { emptyTrace, recordStage, type IngestTrace } from "@/lib/ingestion/trace";
 import { parsedToDraft, type ParsedDraft } from "@/lib/ingestion/to-draft";
 import { createNotification } from "@/lib/notifications/create";
+import { ensureIngestOtel, ingestTracer, injectTraceHeaders } from "@/lib/otel/ingest";
 
 export type JobProgress = {
   jobId: string;
@@ -36,6 +38,29 @@ export type JobStreamEvent =
 export async function* runIngestionJob(
   session: AppSession,
   jobId: string,
+): AsyncGenerator<JobStreamEvent> {
+  ensureIngestOtel();
+  const span = ingestTracer().startSpan("ingest.run", {
+    attributes: { "tb.job_id": jobId },
+  });
+  const spanCtx = otelTrace.setSpan(context.active(), span);
+  try {
+    yield* runIngestionJobBody(session, jobId, spanCtx);
+  } catch (err) {
+    span.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  } finally {
+    span.end();
+  }
+}
+
+async function* runIngestionJobBody(
+  session: AppSession,
+  jobId: string,
+  spanCtx: ReturnType<typeof context.active>,
 ): AsyncGenerator<JobStreamEvent> {
   const job = await prisma.ingestionJob.findUnique({ where: { id: jobId } });
   if (!job || job.createdById !== session.userId) {
@@ -107,22 +132,28 @@ export async function* runIngestionJob(
   const base = (process.env.INGESTION_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
   let response: Response;
   try {
-    response = await fetch(`${base}/ingest`, {
-      method: "POST",
-      headers: {
+    const headers = injectTraceHeaders(
+      {
         Authorization: `Bearer ${assertion}`,
         Accept: "text/event-stream",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        jobId: job.id,
-        s3Key: job.sourceFileKey,
-        fileName: job.sourceFileName,
-        sourceKind: job.sourceKind,
-        sizeBytes: job.sizeBytes,
+      spanCtx,
+    );
+    response = await context.with(spanCtx, () =>
+      fetch(`${base}/ingest`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          jobId: job.id,
+          s3Key: job.sourceFileKey,
+          fileName: job.sourceFileName,
+          sourceKind: job.sourceKind,
+          sizeBytes: job.sizeBytes,
+        }),
+        signal: AbortSignal.timeout(180_000),
       }),
-      signal: AbortSignal.timeout(180_000),
-    });
+    );
   } catch (err) {
     const timedOut = err instanceof Error && err.name === "TimeoutError";
     const message = timedOut

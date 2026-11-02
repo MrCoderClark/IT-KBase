@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { enqueueIngestJob } from "@/lib/ingestion/queue";
 import { keyOwnedBy, safeFileName, sourceKindOf, withinUploadLimit } from "@/lib/ingestion/object-key";
+import { withIngestSpan } from "@/lib/otel/ingest";
 import { forbidBadOrigin } from "@/lib/security/request-origin";
 
 export async function POST(request: Request): Promise<Response> {
@@ -47,7 +48,13 @@ export async function POST(request: Request): Promise<Response> {
 
   // When REDIS_URL is set, the ingest worker runs the job. Otherwise the
   // stream route still runs in-process (dev fallback).
-  await enqueueIngestJob(job.id, session.userId);
+  await withIngestSpan(
+    "ingest.enqueue",
+    { "tb.job_id": job.id, "tb.source_kind": sourceKind },
+    async () => {
+      await enqueueIngestJob(job.id, session.userId);
+    },
+  );
 
   return Response.json({ jobId: job.id });
 }

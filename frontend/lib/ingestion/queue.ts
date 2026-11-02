@@ -1,4 +1,5 @@
 import { Queue } from "bullmq";
+import { injectTraceCarrier } from "@/lib/otel/ingest";
 import { getRedis, redisConfigured } from "@/lib/redis";
 
 export const INGEST_QUEUE_NAME = "ingest";
@@ -6,6 +7,9 @@ export const INGEST_QUEUE_NAME = "ingest";
 export type IngestJobData = {
   jobId: string;
   userId: string;
+  /** W3C trace context so the worker continues the enqueue span. */
+  traceparent?: string;
+  tracestate?: string;
 };
 
 let queue: Queue<IngestJobData> | null | undefined;
@@ -41,9 +45,15 @@ export function ingestQueueEnabled(): boolean {
 export async function enqueueIngestJob(jobId: string, userId: string): Promise<boolean> {
   const q = ingestQueue();
   if (!q) return false;
+  const carrier = injectTraceCarrier();
   await q.add(
     "ingest",
-    { jobId, userId },
+    {
+      jobId,
+      userId,
+      traceparent: carrier.traceparent,
+      tracestate: carrier.tracestate,
+    },
     {
       jobId, // dedupe: one BullMQ job per IngestionJob id
     },
