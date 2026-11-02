@@ -1,6 +1,7 @@
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import { enqueueIngestJob } from "@/lib/ingestion/queue";
 import { keyOwnedBy, safeFileName, sourceKindOf, withinUploadLimit } from "@/lib/ingestion/object-key";
 import { forbidBadOrigin } from "@/lib/security/request-origin";
 
@@ -43,6 +44,10 @@ export async function POST(request: Request): Promise<Response> {
       createdById: session.userId,
     },
   });
+
+  // When REDIS_URL is set, the ingest worker runs the job. Otherwise the
+  // stream route still runs in-process (dev fallback).
+  await enqueueIngestJob(job.id, session.userId);
 
   return Response.json({ jobId: job.id });
 }

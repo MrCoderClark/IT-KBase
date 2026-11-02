@@ -20,6 +20,7 @@ from backend.api.ingest import build_ingest_router
 from backend.api.parse import build_parse_router
 from backend.api.principal import build_principal_router
 from backend.config import get_settings
+from backend.storage import StorageError, ensure_local_upload_cors
 from backend.telemetry import configure_logging, get_logger
 
 log = get_logger(__name__)
@@ -35,6 +36,14 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
         version=settings.service_version,
         env=settings.env,
     )
+    if settings.is_local:
+        try:
+            ensure_local_upload_cors()
+            log.info("storage.cors.ready", origins="localhost:3000/3001")
+        except StorageError as exc:
+            log.warning("storage.cors.skipped", reason=str(exc))
+        except Exception as exc:  # SeaweedFS down or old build without PutBucketCors
+            log.warning("storage.cors.failed", error=str(exc))
     yield
     log.info("service.shutdown", service=settings.service_name)
 

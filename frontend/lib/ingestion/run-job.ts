@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { saveArticle } from "@/lib/actions/save-article";
+import { saveArticleForSession } from "@/lib/actions/save-article";
 import { mintIngestionAssertion } from "@/lib/auth/assertion";
 import type { AppSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
@@ -205,7 +205,12 @@ export async function* runIngestionJob(
       progress: 0.98,
     },
   };
-  const saved = await saveArticle(parsedToDraft(draft), "patch", `Imported from ${job.sourceFileName}`);
+  const saved = await saveArticleForSession(
+    session,
+    parsedToDraft(draft),
+    "patch",
+    `Imported from ${job.sourceFileName}`,
+  );
   if (!saved.ok) {
     await failJob(jobId, saved.error, trace);
     yield { type: "failed", data: { jobId, code: "save", message: saved.error } };

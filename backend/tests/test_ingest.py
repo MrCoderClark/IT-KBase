@@ -181,3 +181,26 @@ def test_presign_returns_a_put_url(authed: TestClient, monkeypatch: pytest.Monke
     assert body["key"].endswith("runbook.docx")
     assert body["url"].startswith("http://store/uploads/user1/")
     assert body["headers"]["Content-Type"].startswith("application/vnd.openxmlformats")
+
+
+def test_put_object_writes_through_storage(authed: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_put(key: str, data: bytes, content_type: str) -> None:
+        captured["key"] = key
+        captured["data"] = data
+        captured["content_type"] = content_type
+
+    monkeypatch.setattr("backend.api.ingest.put_object", fake_put)
+    response = authed.put(
+        "/v1/uploads/object",
+        headers={
+            **_headers(monkeypatch),
+            "x-tb-object-key": "uploads/user1/abc/runbook.docx",
+            "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        },
+        content=b"PK fake-docx",
+    )
+    assert response.status_code == 204
+    assert captured["key"] == "uploads/user1/abc/runbook.docx"
+    assert captured["data"] == b"PK fake-docx"

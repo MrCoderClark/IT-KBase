@@ -152,19 +152,26 @@ export function ImportForm() {
       });
       const signed = (await presign.json()) as {
         key?: string;
-        url?: string;
-        headers?: Record<string, string>;
         error?: string;
       };
-      if (!presign.ok || !signed.url || !signed.key || !signed.headers) {
-        setError(signed.error ?? "Object storage did not return an upload URL.");
+      if (!presign.ok || !signed.key) {
+        setError(signed.error ?? "Object storage did not return an upload key.");
         resetBusy();
         return;
       }
 
-      const stored = await fetch(signed.url, { method: "PUT", headers: signed.headers, body: file });
+      // Same-origin proxy → FastAPI → SeaweedFS (no browser CORS to :8333).
+      const stored = await fetch("/api/upload/object", {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "x-tb-object-key": signed.key,
+        },
+        body: file,
+      });
       if (!stored.ok) {
-        setError("The file could not be stored. Check that the bucket allows this site to upload.");
+        const fail = (await stored.json().catch(() => null)) as { error?: string } | null;
+        setError(fail?.error ?? `The file could not be stored (${stored.status}).`);
         resetBusy();
         return;
       }
@@ -186,8 +193,9 @@ export function ImportForm() {
         return;
       }
       watchJob(result.jobId);
-    } catch {
-      setError("The file could not be stored. Check that the bucket allows this site to upload.");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "request failed";
+      setError(`The file could not be stored (${detail}).`);
       resetBusy();
     }
   }

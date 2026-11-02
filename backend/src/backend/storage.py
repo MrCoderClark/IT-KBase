@@ -45,6 +45,18 @@ def presign_put(key: str, content_type: str) -> tuple[str, dict[str, str]]:
     return url, {"Content-Type": content_type}
 
 
+def put_object(key: str, data: bytes, content_type: str) -> None:
+    """Server-side write used by the Next upload proxy (avoids browser→S3 CORS)."""
+    if not key_allowed(key):
+        raise StorageError("That file is not in storage.")
+    client = _client()
+    bucket = get_storage_settings().bucket
+    try:
+        client.put_object(Bucket=bucket, Key=key, Body=data, ContentType=content_type)
+    except Exception as exc:
+        raise StorageError("The file could not be stored.") from exc
+
+
 def download_object(key: str) -> bytes:
     if not key_allowed(key):
         raise StorageError("That file is not in storage.")
@@ -76,4 +88,35 @@ def _client():
         aws_access_key_id=settings.access_key,
         aws_secret_access_key=settings.secret_key,
         config=Config(s3={"addressing_style": "path"}),
+    )
+
+
+# Origins the Next import page uses in local/dev. Applied when TB_ENV=local.
+_LOCAL_UPLOAD_ORIGINS = (
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+)
+
+
+def ensure_local_upload_cors() -> None:
+    """Make the uploads bucket accept browser PUTs from the Next origin (local only)."""
+    settings = get_storage_settings()
+    if not settings.bucket or not settings.access_key or not settings.secret_key:
+        return
+    client = _client()
+    client.put_bucket_cors(
+        Bucket=settings.bucket,
+        CORSConfiguration={
+            "CORSRules": [
+                {
+                    "AllowedOrigins": list(_LOCAL_UPLOAD_ORIGINS),
+                    "AllowedMethods": ["GET", "PUT", "HEAD"],
+                    "AllowedHeaders": ["*"],
+                    "ExposeHeaders": ["ETag"],
+                    "MaxAgeSeconds": 3600,
+                }
+            ]
+        },
     )

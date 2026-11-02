@@ -14,14 +14,14 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 | # | Milestone                           | Target        | Status |
 |---|-------------------------------------|---------------|--------|
-| M0 | Foundations: specs + repo scaffold | Week 1        | 🟡     |
-| M1 | Article detail view matches mock   | Week 3        | ✅ (detail, shortcuts, avatar/Gravatar, notifications) |
-| M2 | Create / edit article (manual)     | Week 4        | ✅ (nodes, autosave, reader preview) |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (stored file + job + stepper + stage timings; Redis queue remains) |
-| M4 | Search, categories, tags           | Week 7        | ⬜     |
-| M5 | Auth, roles, admin console         | Week 8        | 🟡 (ADR 0001 accepted; Phase A code not started) |
-| M6 | Analytics, feedback, versioning    | Week 10       | ⬜     |
-| M7 | Hardening, a11y audit, perf        | Week 11       | ⬜     |
+| M0 | Foundations: specs + repo scaffold | Week 1        | ✅ (external Postgres/Redis/S3; no in-repo compose) |
+| M1 | Article detail view matches mock   | Week 3        | ✅ |
+| M2 | Create / edit article (manual)     | Week 4        | ✅ |
+| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (artifacts, OTel, unstructured later) |
+| M4 | Search, categories, tags           | Week 7        | ✅ |
+| M5 | Auth, roles, admin console         | Week 8        | ✅ (OIDC/SAML/orgs post-pilot) |
+| M6 | Analytics, feedback, versioning    | Week 10       | ✅ |
+| M7 | Hardening, a11y audit, perf        | Week 11       | 🟡 (keyboard walkthrough, 1k rps, OTel open) |
 | M8 | Pilot release to internal IT       | Week 12       | 🟡 scaffold done; live Evidence deferred |
 
 ---
@@ -115,15 +115,16 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 
 - 🟡 `/import` accepts one `.docx` or `.pdf` up to 25MB. A scanned PDF page is noted and not read. OCR is later.
 - ✅ S3 presigned-upload flow. The browser PUTs the file. `TB_S3_*` lives on the Python service. Checked 2026-10-27: `Scan_To_Network_Share.docx` landed in the `uploads` bucket.
-- ✅ `POST /ingest` reads that object, returns `jobId` and the draft. Next saves the article and links the job. No queue yet. Checked on `/kb/scan-to-network-share` (draft, overview, eight steps).
-- ✅ Live progress via SSE (parse → segment → extract → validate → draft ready). Stream route runs the job and proxies Python. Checked 2026-10-27 on Reset Local Admin Password. Redis stream persistence is later.
+- ✅ `POST /ingest` reads that object, returns `jobId` and the draft. Next saves the article and links the job. Checked on `/kb/scan-to-network-share` (draft, overview, eight steps).
+- ✅ BullMQ `ingest` queue + Node worker (`pnpm worker:ingest`). `REDIS_URL` enqueues on complete; worker publishes to Redis stream `jobs:{id}:events`. Unset `REDIS_URL` keeps the in-process stream fallback.
+- ✅ Live progress via SSE (parse → segment → extract → validate → draft ready). With Redis, stream tails the job events stream; without, the route still runs the job. Checked 2026-10-27 on Reset Local Admin Password (in-process); queue path added on `feat/ingest-bullmq`.
 - 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
 - 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
 - 🟡 Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber). A picture page is noted. A text PDF was checked in the browser. A scan was not. Unstructured fallback is later.
 - 🟡 Heading map is inside the docx parser. The fuller segmenter that only suggests kinds to an LLM is later
 - 🟡 The model structures the extracted text into the article. A section the text does not support stays empty. Invalid JSON gets one repair, then the parser draft is kept.
 - ✅ Python: one repair pass on invalid structure JSON. The rest of the validator in the spec is later.
-- ⬜ Python: emit progress events to Redis stream
+- ✅ Node worker emits progress events to Redis stream `jobs:{id}:events` (Python still streams SSE to the worker over HTTP).
 - ✅ Observability: per-stage timings on the job (`IngestionJob.trace`) and on the import stepper. Checked 2026-10-27. Full S3 artifact bundle and OpenTelemetry are later.
 
 ---

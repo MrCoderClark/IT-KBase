@@ -1,6 +1,10 @@
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
-import { runIngestionJob } from "@/lib/ingestion/run-job";
+import { prisma } from "@/lib/db";
+import { readJobEvents } from "@/lib/ingestion/job-events";
+import { ingestQueueEnabled } from "@/lib/ingestion/queue";
+import { runIngestionJob, type JobStreamEvent } from "@/lib/ingestion/run-job";
+import { emptyTrace, type IngestTrace } from "@/lib/ingestion/trace";
 
 export const maxDuration = 180;
 
@@ -17,6 +21,12 @@ export async function GET(
   const { jobId } = await context.params;
   if (!jobId) return new Response("Missing job.", { status: 400 });
 
+  const job = await prisma.ingestionJob.findUnique({ where: { id: jobId } });
+  if (!job || job.createdById !== session.userId) {
+    return new Response("That import job was not found.", { status: 404 });
+  }
+
+  const useQueue = ingestQueueEnabled();
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -24,8 +34,14 @@ export async function GET(
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       };
       try {
-        for await (const item of runIngestionJob(session, jobId)) {
-          send(item.type, item.data);
+        if (useQueue) {
+          for await (const item of queuedOrTerminalEvents(jobId, job)) {
+            send(item.type, item.data);
+          }
+        } else {
+          for await (const item of runIngestionJob(session, jobId)) {
+            send(item.type, item.data);
+          }
         }
       } catch (err) {
         send("failed", {
@@ -46,4 +62,48 @@ export async function GET(
       Connection: "keep-alive",
     },
   });
+}
+
+async function* queuedOrTerminalEvents(
+  jobId: string,
+  job: {
+    status: string;
+    articleId: string | null;
+    errorMessage: string | null;
+    trace: unknown;
+  },
+): AsyncGenerator<JobStreamEvent> {
+  if (job.status === "succeeded" && job.articleId) {
+    const article = await prisma.article.findUnique({
+      where: { id: job.articleId },
+      select: { slug: true },
+    });
+    if (article) {
+      yield {
+        type: "done",
+        data: {
+          jobId,
+          articleId: job.articleId,
+          slug: article.slug,
+          trace:
+            job.trace && typeof job.trace === "object"
+              ? (job.trace as IngestTrace)
+              : emptyTrace(),
+        },
+      };
+      return;
+    }
+  }
+  if (job.status === "failed") {
+    yield {
+      type: "failed",
+      data: {
+        jobId,
+        code: "job",
+        message: job.errorMessage ?? "Import failed.",
+      },
+    };
+    return;
+  }
+  yield* readJobEvents(jobId);
 }
