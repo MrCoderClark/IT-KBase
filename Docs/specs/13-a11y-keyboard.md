@@ -72,3 +72,5 @@ Optional env: `PLAYWRIGHT_BASE_URL` (skip starting Next), `PLAYWRIGHT_PORT` (def
 ## Record the pass
 
 When the keyboard walkthrough succeeds, check item 28 in `progress.md` / `Docs/suggested-order.md` with the date and browser used. Axe suite: claim clean only when `pnpm test:a11y` is green.
+
+**Recorded pass:** 2026-11-02 — Cursor browser (Chromium), Joe Clark (`TechBase-dev-1`). Skip link present; Add integration focuses Display name; Escape restores opener.

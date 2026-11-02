@@ -217,6 +217,7 @@ export function IntegrationsPanel({
                 </label>
                 <input
                   id="add-name"
+                  autoFocus
                   name="name"
                   type="text"
                   defaultValue={selectedTemplate?.name ?? ""}

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PaletteArticleSync, PaletteProvider } from "@/components/layout/command-palette";
 import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
 import { Sidebar } from "@/components/layout/sidebar";
+import { SkipLink } from "@/components/layout/skip-link";
 import { Topbar } from "@/components/layout/topbar";
 import { can, type Role } from "@/lib/auth/policy";
 import type { AppSession } from "@/lib/auth/session";
@@ -37,6 +38,7 @@ export function AppFrame({
           ["--accent-ring" as string]: accent.ring,
         }}
       >
+        <SkipLink />
         <Suspense fallback={<Sidebar role={session.role} logoUrl={settings.logoUrl} />}>
           <SidebarWithCounts userId={session.userId} role={session.role} logoUrl={settings.logoUrl} />
         </Suspense>
@@ -58,7 +60,9 @@ export function AppFrame({
           <Suspense fallback={null}>
             <PaletteArticleSource role={session.role} userId={session.userId} />
           </Suspense>
-          <main className="min-w-0 flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+            {children}
+          </main>
           <Suspense fallback={null}>
             <KeyboardShortcuts canImport={can(session.role, "article.create")} />
           </Suspense>
