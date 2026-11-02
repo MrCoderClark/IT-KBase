@@ -149,13 +149,13 @@ Browser subscribes to `/api/jobs/{id}/stream` (Server-Sent Events) and renders t
 
 ## 5. Determinism & reproducibility
 
-- Each run writes an artifact bundle to S3: `uploads/{yyyy}/{mm}/{jobId}/artifact.json` with:
-  - `raw_doc`, `norm_doc`, `segments`
-  - LLM prompt + raw response
-  - `draft_proto` (before validation)
+- Each successful ingest writes an artifact bundle to S3 (and a sibling `source.docx` / `source.pdf` copy). JSON key: `uploads/{yyyy}/{mm}/{jobId}/artifact.json`. Objects set `Expires` for **7 days**. Payload fields:
+  - `rawDoc` (sha256, bytes, objectKey to the source copy), `normDoc`, `segments` (heading-map stand-in until the fuller segmenter)
+  - `llm` (prompt + response + repaired flag) when the model ran; otherwise null
+  - `draftProto` (after extract, before validation fold)
   - final `draft`
-  - timings per stage
-- Replay command: `uv run ingest replay {jobId}` runs the pipeline against the stored `raw_doc` with the current extractor. Used in CI tests and for debugging regressions.
+  - `timings` per stage
+- Replay: from `backend/`, `uv run ingest replay {jobId}` (optional `--fake`, `--json`) re-runs parse+extract against the stored source with the current extractor. Used in CI tests and for debugging regressions.
 
 ## 6. Rate limits, quotas, cost control
 

@@ -12,7 +12,10 @@ class FakeExtractor:
     other section as the parser produced it (including step images).
     """
 
+    last_llm: dict[str, str | bool] | None = None
+
     def structure(self, draft: ParsedDraft) -> ParsedDraft:
+        self.last_llm = None
         summary = draft.summary.strip()
         if not summary and draft.overview.strip():
             first = draft.overview.strip().split("\n", 1)[0].strip()

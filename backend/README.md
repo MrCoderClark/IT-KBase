@@ -43,13 +43,26 @@ curl http://127.0.0.1:8080/readyz
 
 Interactive OpenAPI UI: <http://127.0.0.1:8080/docs>
 
+## Artifact replay
+
+Each successful ingest writes `uploads/{yyyy}/{mm}/{jobId}/artifact.json` plus a
+`source.docx` / `source.pdf` copy (7-day `Expires`). Replay without re-uploading:
+
+```powershell
+uv sync
+uv run ingest replay <jobId> --fake
+uv run ingest replay <jobId> --json
+```
+
+`--fake` uses `FakeExtractor` (no LLM). Spec: `Docs/specs/05-ai-ingestion.md` §5.
+
 ## Tests
 
 ```powershell
 uv run pytest
 ```
 
-Expected: 4 passing tests (healthz, readyz, openapi, docs).
+Expected: health, parse, ingest, extractors, and artifact tests green.
 
 ### Load (100 concurrent ingest)
 

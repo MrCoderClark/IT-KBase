@@ -7,7 +7,9 @@ from collections.abc import Callable, Iterator
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 from auth_py import Principal
+from backend.artifacts import build_bundle, write_artifact_bundle
 from backend.extractors import get_extractor
+from backend.extractors.protocol import KBExtractor
 from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
 from backend.parse.pdf import PdfError, parse_pdf
@@ -66,10 +68,25 @@ async def _upload(
     return name, data
 
 
-def draft_from_bytes(data: bytes, name: str, *, job_id: str = "job") -> ParsedDraft:
+def draft_from_bytes(
+    data: bytes,
+    name: str,
+    *,
+    job_id: str = "job",
+    source_key: str | None = None,
+    extractor: KBExtractor | None = None,
+    persist_artifact: bool = True,
+) -> ParsedDraft:
     """Read a stored .docx or .pdf the same way the direct parse routes do."""
     draft: ParsedDraft | None = None
-    for item in iter_draft_from_bytes(data, name, job_id=job_id):
+    for item in iter_draft_from_bytes(
+        data,
+        name,
+        job_id=job_id,
+        source_key=source_key,
+        extractor=extractor,
+        persist_artifact=persist_artifact,
+    ):
         if isinstance(item, ParsedDraft):
             draft = item
     if draft is None:
@@ -82,16 +99,37 @@ def iter_draft_from_bytes(
     name: str,
     *,
     job_id: str,
+    source_key: str | None = None,
+    extractor: KBExtractor | None = None,
+    persist_artifact: bool = True,
 ) -> Iterator[ProgressEvent | ParsedDraft]:
     """Yield stage events, then the draft. Used by the SSE ingest path."""
     if name.lower().endswith(".pdf"):
         if not data.startswith(b"%PDF"):
             raise HTTPException(status_code=422, detail="That file is not a valid PDF.")
-        yield from _iter_finish(parse_pdf, data, name, "parse.pdf", job_id=job_id)
+        yield from _iter_finish(
+            parse_pdf,
+            data,
+            name,
+            "parse.pdf",
+            job_id=job_id,
+            source_key=source_key,
+            extractor=extractor,
+            persist_artifact=persist_artifact,
+        )
         return
     if not data.startswith(b"PK"):
         raise HTTPException(status_code=422, detail="That file is not a valid Word document.")
-    yield from _iter_finish(parse_docx, data, name, "parse.docx", job_id=job_id)
+    yield from _iter_finish(
+        parse_docx,
+        data,
+        name,
+        "parse.docx",
+        job_id=job_id,
+        source_key=source_key,
+        extractor=extractor,
+        persist_artifact=persist_artifact,
+    )
 
 
 def _finish(
@@ -110,6 +148,9 @@ def _iter_finish(
     event: str,
     *,
     job_id: str,
+    source_key: str | None = None,
+    extractor: KBExtractor | None = None,
+    persist_artifact: bool = True,
 ) -> Iterator[ProgressEvent | ParsedDraft]:
     clock = StageClock(job_id)
     timings: list[dict[str, object]] = []
@@ -123,7 +164,7 @@ def _iter_finish(
 
     yield clock.start("parsing", detail="Reading the document", progress=0.08)
     try:
-        draft = parse(data, name)
+        parser_draft = parse(data, name)
     except (DocxError, PdfError) as exc:
         yield record(clock.finish("parsing", "failed", detail=str(exc), progress=0.08))
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -133,12 +174,17 @@ def _iter_finish(
     yield record(clock.finish("segmenting", "succeeded", detail="Sections ready", progress=0.4))
 
     yield clock.start("extracting", detail="Structuring the article", progress=0.45)
-    draft = get_extractor().structure(draft)
+    active = extractor if extractor is not None else get_extractor()
+    draft_proto = active.structure(parser_draft)
+    llm = getattr(active, "last_llm", None)
     yield record(
-        clock.finish("extracting", "succeeded", detail=draft.title or name, progress=0.82)
+        clock.finish(
+            "extracting", "succeeded", detail=draft_proto.title or name, progress=0.82
+        )
     )
 
     yield clock.start("validating", detail="Checking the draft", progress=0.88)
+    draft = draft_proto
     if draft.readingNotes:
         overview = f"{draft.overview}\n\n{draft.readingNotes}".strip()
         draft = draft.model_copy(update={"overview": overview, "readingNotes": ""})
@@ -165,4 +211,19 @@ def _iter_finish(
         stages=timings,
     )
     log.info(event, filename=name, bytes=len(data), title=draft.title)
+
+    if persist_artifact:
+        bundle = build_bundle(
+            job_id=job_id,
+            file_name=name,
+            data=data,
+            parser_draft=parser_draft,
+            draft_proto=draft_proto,
+            final_draft=draft,
+            timings=timings,
+            llm=llm if isinstance(llm, dict) else None,
+            source_key=source_key,
+        )
+        write_artifact_bundle(bundle, data)
+
     yield draft
