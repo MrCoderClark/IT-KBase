@@ -47,14 +47,14 @@ Deliverable-oriented. Dates were relative to kickoff (Week 1). Each milestone ha
 
 ---
 
-## M3 — Ingestion (Week 5–6) — ✅ (OCR / unstructured post-pilot)
+## M3 — Ingestion (Week 5–6) — ✅ (OCR post-pilot)
 
 **Outcome**: a user can upload a DOCX or PDF, see live progress, and land in a structured draft within ~60s for a 10-page doc.
 
 - ✅ Upload UI (dropzone, presign, S3 PUT).
 - ✅ BullMQ queue + Node worker (`pnpm worker:ingest`) calling FastAPI; Redis stream `jobs:{id}:events` for SSE. Without `REDIS_URL`, stream route still runs in-process.
 - ✅ DOCX parser (python-docx).
-- ✅ PDF parser (pdfplumber); scanned pages noted and skipped; unstructured fallback later; OCR post-pilot.
+- ✅ PDF parser (pdfplumber); scanned pages noted and skipped; ✅ unstructured fallback on primary parse failure (`lowFidelitySource`); OCR post-pilot.
 - ✅ Segment → candidate section heuristic (`backend/parse/segments.py`; kinds are suggestions for the LLM).
 - ✅ Structure via `KBExtractor` (`OpenAICompatibleExtractor` default, `FakeExtractor` for tests) + one repair.
 - ✅ Pydantic / JSON validation with one-shot repair + post-extract checks (`backend/parse/validate.py`).

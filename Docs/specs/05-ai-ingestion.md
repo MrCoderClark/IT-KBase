@@ -56,7 +56,7 @@ Without `REDIS_URL`, step “enqueues BullMQ” is skipped and the SSE route run
 
 - **DOCX**: `python-docx` → iterate blocks. Preserve paragraph `style_id` (which gives us Heading 1/2/3), list levels, bold/italic runs, hyperlinks, inline images, and tables. Dump into a flat `RawDoc.blocks: list[RawBlock]`.
 - **PDF**: `pdfplumber` for text + layout. If a page's text density is below a threshold, mark it as "likely scanned" and record it. v1 skips OCR; v1.1 adds a Tesseract fallback behind a config flag.
-- **Fallback**: if either parser raises, run `unstructured` on the raw bytes to get a block list; mark the job with `low_fidelity_source=true`.
+- **Fallback**: if either parser raises, run `unstructured` on the raw bytes (`backend/parse/unstructured_fallback.py`), assemble the same draft shape, set `lowFidelitySource` + a validation warning, and continue the pipeline (job may finish `succeeded_with_warnings`). If unstructured also fails, the original parser error is returned.
 
 Output: `RawDoc { blocks: [RawBlock], meta: {page_count, author, title, created, ...} }`
 

@@ -38,6 +38,8 @@ class ParsedDraft(BaseModel):
     troubleshooting: list[ParsedCallout] = Field(default_factory=list)
     # True when validate fell back to a human-fixable parser draft.
     lowConfidence: bool = False
+    # True when python-docx / pdfplumber failed and unstructured produced the draft.
+    lowFidelitySource: bool = False
     validationWarnings: list[str] = Field(default_factory=list)
     # Folded into overview after the model fills blank sections. Not sent to the browser.
     readingNotes: str = Field(default="", exclude=True)

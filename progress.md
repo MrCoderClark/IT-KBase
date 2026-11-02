@@ -2,7 +2,7 @@
 
 > Living document. Update on every meaningful change. Keep entries terse — one line each. Link to specs/PRs rather than restating them.
 
-Last updated: 2026-11-02 (feat/ingest-otel)
+Last updated: 2026-11-02 (feat/ingest-unstructured)
 
 Build order for what is left: [Docs/suggested-order.md](Docs/suggested-order.md). Check an item there when it ships, and move the matching line in this file.
 
@@ -17,7 +17,7 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 | M0 | Foundations: specs + repo scaffold | Week 1        | ✅ (external Postgres/Redis/S3; no in-repo compose) |
 | M1 | Article detail view matches mock   | Week 3        | ✅ |
 | M2 | Create / edit article (manual)     | Week 4        | ✅ |
-| M3 | Word/PDF ingestion → draft article | Week 6        | 🟡 (unstructured/OCR later; OTel dashboards → M7) |
+| M3 | Word/PDF ingestion → draft article | Week 6        | ✅ (OCR post-pilot; OTel dashboards → M7) |
 | M4 | Search, categories, tags           | Week 7        | ✅ |
 | M5 | Auth, roles, admin console         | Week 8        | ✅ (OIDC/SAML/orgs post-pilot) |
 | M6 | Analytics, feedback, versioning    | Week 10       | ✅ |
@@ -118,9 +118,10 @@ Legend: `✅ done` · `🟡 in-progress` · `⬜ todo` · `⛔ blocked` · `🧪
 - ✅ `POST /ingest` reads that object, returns `jobId` and the draft. Next saves the article and links the job. Checked on `/kb/scan-to-network-share` (draft, overview, eight steps).
 - ✅ BullMQ `ingest` queue + Node worker (`pnpm worker:ingest`). `REDIS_URL` enqueues on complete; worker publishes to Redis stream `jobs:{id}:events`. Unset `REDIS_URL` keeps the in-process stream fallback.
 - ✅ Live progress via SSE (parse → segment → extract → validate → draft ready). With Redis, stream tails the job events stream; without, the route still runs the job. Checked 2026-10-27 on Reset Local Admin Password (in-process); queue path added on `feat/ingest-bullmq`.
-- 🟡 Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step. Re-import to see it; the first upload of the OneDrive file was one overview block
-- 🟡 Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Pytest passed. Service starts on port 8080 (`auth-py` is a path dependency)
-- ✅ Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber) + `/ingest` for stored PDFs. Picture/scanned pages noted in Overview; scan-only PDFs refused. Unstructured fallback later. Checked on `feat/pdf-ingest`.
+- ✅ Word parse returns a draft and the editor opens. A numbered procedure becomes steps and keeps pictures with the step.
+- ✅ Python: DOCX parser (`POST /v1/parse/docx`, headings → sections). Service starts on port 8080 (`auth-py` is a path dependency).
+- ✅ Python: PDF parser (`POST /v1/parse/pdf`, pdfplumber) + `/ingest` for stored PDFs. Picture/scanned pages noted in Overview; scan-only PDFs refused. Checked on `feat/pdf-ingest`.
+- ✅ Unstructured fallback when python-docx / pdfplumber raise: partition → assemble draft, `lowFidelitySource` + warning, continue pipeline. Checked on `feat/ingest-unstructured`. OCR stays post-pilot.
 - ✅ Segmenter: H1/H2 opens a segment with `candidateKind` suggestion; attached as `ingestSegments` on the parser draft; extract prompt + artifacts consume it. Checked on `feat/ingest-segmenter`.
 - ✅ `KBExtractor` Protocol + `OpenAICompatibleExtractor` + `FakeExtractor` (`backend/extractors/`). Parse/ingest calls `get_extractor().structure`. A section the text does not support stays empty; invalid JSON gets one repair, then the parser draft is kept. Checked on `feat/kb-extractor`.
 - ✅ Python: one repair pass on invalid structure JSON + post-extract validate (title/sections/images/callouts); low-confidence parser fallback + `succeeded_with_warnings`. Checked on `feat/ingest-validate`.

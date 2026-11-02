@@ -107,7 +107,8 @@ def soft_fix(draft: ParsedDraft) -> tuple[ParsedDraft, list[str]]:
                 "verification": verification,
                 "troubleshooting": callouts,
                 "lowConfidence": False,
-                "validationWarnings": [],
+                # Keep parser/fallback warnings (e.g. lowFidelitySource); soft
+                # warnings are returned separately and merged by the caller.
             }
         ),
         warnings,
