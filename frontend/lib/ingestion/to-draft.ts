@@ -60,7 +60,11 @@ export function parsedToDraft(parsed: ParsedDraft): EditorDraft {
               ...section,
               title: parsed.troubleshootingTitle,
               callouts: troubleshooting.map((callout) => ({
-                variant: "warning" as const,
+                variant: (callout.variant ?? "warning") as
+                  | "info"
+                  | "important"
+                  | "warning"
+                  | "success",
                 title: callout.title,
                 body: callout.body,
               })),

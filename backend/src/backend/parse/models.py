@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+CalloutVariant = Literal["info", "important", "warning", "success"]
 
 
 class ParsedStep(BaseModel):
@@ -17,6 +19,7 @@ class ParsedStep(BaseModel):
 class ParsedCallout(BaseModel):
     title: str = ""
     body: str = ""
+    variant: CalloutVariant | None = None
 
 
 class ParsedDraft(BaseModel):
@@ -33,6 +36,9 @@ class ParsedDraft(BaseModel):
     verificationCode: str = ""
     troubleshootingTitle: str = "Troubleshooting"
     troubleshooting: list[ParsedCallout] = Field(default_factory=list)
+    # True when validate fell back to a human-fixable parser draft.
+    lowConfidence: bool = False
+    validationWarnings: list[str] = Field(default_factory=list)
     # Folded into overview after the model fills blank sections. Not sent to the browser.
     readingNotes: str = Field(default="", exclude=True)
     # Segmenter output for extract + artifacts. Not sent to the browser.

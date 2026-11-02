@@ -21,7 +21,14 @@ export type JobStreamEvent =
   | { type: "progress"; data: JobProgress }
   | {
       type: "done";
-      data: { jobId: string; articleId: string; slug: string; trace: IngestTrace };
+      data: {
+        jobId: string;
+        articleId: string;
+        slug: string;
+        trace: IngestTrace;
+        outcome?: "succeeded" | "succeeded_with_warnings";
+        warnings?: string[];
+      };
     }
   | { type: "failed"; data: { jobId: string; code: string; message: string } };
 
@@ -36,7 +43,7 @@ export async function* runIngestionJob(
     return;
   }
 
-  if (job.status === "succeeded" && job.articleId) {
+  if ((job.status === "succeeded" || job.status === "succeeded_with_warnings") && job.articleId) {
     const article = await prisma.article.findUnique({
       where: { id: job.articleId },
       select: { slug: true },
@@ -163,12 +170,26 @@ export async function* runIngestionJob(
         });
         yield { type: "progress", data };
       } else if (parsed.event === "done") {
-        const payload = parsed.data as { draft?: ParsedDraft; trace?: IngestTrace };
+        const payload = parsed.data as {
+          draft?: ParsedDraft;
+          trace?: IngestTrace;
+          outcome?: string;
+          warnings?: string[];
+        };
         if (payload.draft) draft = payload.draft;
         if (payload.trace?.stages?.length) {
           trace = {
             stages: payload.trace.stages,
             totalMs: payload.trace.totalMs ?? payload.trace.stages.reduce((sum, row) => sum + row.durationMs, 0),
+          };
+        }
+        if (payload.outcome === "succeeded_with_warnings" || payload.warnings?.length) {
+          trace = {
+            ...trace,
+            outcome: "succeeded_with_warnings",
+            warnings: payload.warnings?.length
+              ? payload.warnings
+              : draft?.validationWarnings ?? [],
           };
         }
       } else if (parsed.event === "failed") {
@@ -223,10 +244,25 @@ export async function* runIngestionJob(
     where: { slug: saved.slug },
     select: { id: true },
   });
+  const withWarnings =
+    trace.outcome === "succeeded_with_warnings" ||
+    Boolean(draft.lowConfidence) ||
+    Boolean(draft.validationWarnings?.length);
+  const warnings = trace.warnings?.length
+    ? trace.warnings
+    : draft.validationWarnings ?? [];
+  if (withWarnings) {
+    trace = {
+      ...trace,
+      outcome: "succeeded_with_warnings",
+      warnings,
+    };
+  }
+
   await prisma.ingestionJob.update({
     where: { id: jobId },
     data: {
-      status: "succeeded",
+      status: withWarnings ? "succeeded_with_warnings" : "succeeded",
       articleId: article?.id,
       finishedAt: new Date(),
       trace,
@@ -236,8 +272,10 @@ export async function* runIngestionJob(
   await createNotification({
     userId: session.userId,
     kind: "ingestion_complete",
-    title: "Import finished",
-    body: `“${job.sourceFileName}” is ready as a draft.`,
+    title: withWarnings ? "Import finished with warnings" : "Import finished",
+    body: withWarnings
+      ? `“${job.sourceFileName}” is ready as a draft — review the structure before publishing.`
+      : `“${job.sourceFileName}” is ready as a draft.`,
     href: `/kb/${saved.slug}/edit`,
     articleId: article?.id,
   });
@@ -249,6 +287,8 @@ export async function* runIngestionJob(
       slug: saved.slug,
       totalMs: trace.totalMs,
       stages: trace.stages,
+      outcome: trace.outcome ?? "succeeded",
+      warnings: trace.warnings ?? [],
     }),
   );
 
@@ -258,14 +298,21 @@ export async function* runIngestionJob(
       jobId,
       stage: "done",
       status: "succeeded",
-      detail: "Draft ready",
+      detail: withWarnings ? "Draft ready with warnings" : "Draft ready",
       progress: 1,
       durationMs: persistMs,
     },
   };
   yield {
     type: "done",
-    data: { jobId, articleId: article?.id ?? "", slug: saved.slug, trace },
+    data: {
+      jobId,
+      articleId: article?.id ?? "",
+      slug: saved.slug,
+      trace,
+      outcome: withWarnings ? "succeeded_with_warnings" : "succeeded",
+      warnings: withWarnings ? warnings : [],
+    },
   };
 }
 

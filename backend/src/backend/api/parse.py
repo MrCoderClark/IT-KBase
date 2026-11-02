@@ -13,6 +13,7 @@ from backend.extractors.protocol import KBExtractor
 from backend.parse.docx import DocxError, parse_docx
 from backend.parse.models import ParsedDraft
 from backend.parse.pdf import PdfError, parse_pdf
+from backend.parse.validate import validate_draft
 from backend.policy import require_capability
 from backend.progress import ProgressEvent, StageClock
 from backend.telemetry import get_logger
@@ -192,11 +193,21 @@ def _iter_finish(
     )
 
     yield clock.start("validating", detail="Checking the draft", progress=0.88)
-    draft = draft_proto
-    if draft.readingNotes:
-        overview = f"{draft.overview}\n\n{draft.readingNotes}".strip()
-        draft = draft.model_copy(update={"overview": overview, "readingNotes": ""})
-    if not draft.title.strip():
+    draft = _fold_reading_notes(draft_proto)
+    parser_for_fallback = _fold_reading_notes(parser_draft)
+
+    result = validate_draft(draft, parser_draft=parser_for_fallback)
+    draft = result.draft
+    if result.warnings or draft.validationWarnings:
+        draft = draft.model_copy(
+            update={
+                "validationWarnings": list(
+                    dict.fromkeys([*draft.validationWarnings, *result.warnings])
+                )
+            }
+        )
+
+    if not draft.title.strip() or not _draft_has_content(draft):
         yield record(
             clock.finish(
                 "validating",
@@ -206,7 +217,13 @@ def _iter_finish(
             )
         )
         raise HTTPException(status_code=422, detail="That document has no text to import.")
-    yield record(clock.finish("validating", "succeeded", detail="Draft ready", progress=0.96))
+
+    detail = (
+        "Draft ready with warnings"
+        if result.low_confidence or draft.validationWarnings
+        else "Draft ready"
+    )
+    yield record(clock.finish("validating", "succeeded", detail=detail, progress=0.96))
 
     total_ms = sum(int(item["durationMs"]) for item in timings)
     log.info(
@@ -217,6 +234,8 @@ def _iter_finish(
         title=draft.title,
         total_ms=total_ms,
         stages=timings,
+        low_confidence=draft.lowConfidence,
+        warnings=draft.validationWarnings,
     )
     log.info(event, filename=name, bytes=len(data), title=draft.title)
 
@@ -235,3 +254,21 @@ def _iter_finish(
         write_artifact_bundle(bundle, data)
 
     yield draft
+
+
+def _fold_reading_notes(draft: ParsedDraft) -> ParsedDraft:
+    if not draft.readingNotes:
+        return draft
+    overview = f"{draft.overview}\n\n{draft.readingNotes}".strip()
+    return draft.model_copy(update={"overview": overview, "readingNotes": ""})
+
+
+def _draft_has_content(draft: ParsedDraft) -> bool:
+    if draft.overview.strip() or draft.prerequisites or draft.verification:
+        return True
+    if draft.verificationCode.strip() or draft.troubleshooting:
+        return True
+    return any(
+        step.title.strip() or step.body.strip() or step.code.strip() or step.images
+        for step in draft.steps
+    )

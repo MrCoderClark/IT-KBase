@@ -158,11 +158,18 @@ def _ingest_stream(body: IngestBody) -> Iterator[str]:
                 yield _sse("progress", payload)
                 continue
             log.info("ingest.read", job_id=body.jobId, key=body.s3Key, title=item.title)
+            outcome = (
+                "succeeded_with_warnings"
+                if item.lowConfidence or item.validationWarnings
+                else "succeeded"
+            )
             yield _sse(
                 "done",
                 {
                     "jobId": body.jobId,
                     "draft": item.model_dump(),
+                    "outcome": outcome,
+                    "warnings": list(item.validationWarnings),
                     "trace": {
                         "stages": stages,
                         "totalMs": sum(int(row["durationMs"]) for row in stages),

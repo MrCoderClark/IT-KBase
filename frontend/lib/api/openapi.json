@@ -134,6 +134,23 @@
             "default": "",
             "title": "Title",
             "type": "string"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "enum": [
+                  "info",
+                  "important",
+                  "warning",
+                  "success"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
           }
         },
         "title": "ParsedCallout",
@@ -141,6 +158,11 @@
       },
       "ParsedDraft": {
         "properties": {
+          "lowConfidence": {
+            "default": false,
+            "title": "Lowconfidence",
+            "type": "boolean"
+          },
           "overview": {
             "default": "",
             "title": "Overview",
@@ -195,6 +217,13 @@
             "default": "Troubleshooting",
             "title": "Troubleshootingtitle",
             "type": "string"
+          },
+          "validationWarnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Validationwarnings",
+            "type": "array"
           },
           "verification": {
             "items": {

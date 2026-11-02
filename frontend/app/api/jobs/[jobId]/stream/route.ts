@@ -73,7 +73,7 @@ async function* queuedOrTerminalEvents(
     trace: unknown;
   },
 ): AsyncGenerator<JobStreamEvent> {
-  if (job.status === "succeeded" && job.articleId) {
+  if ((job.status === "succeeded" || job.status === "succeeded_with_warnings") && job.articleId) {
     const article = await prisma.article.findUnique({
       where: { id: job.articleId },
       select: { slug: true },
