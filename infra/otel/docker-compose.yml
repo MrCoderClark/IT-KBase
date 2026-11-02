@@ -1,0 +1,41 @@
+# TechBase local observability — Tempo (OTLP) + Grafana.
+# From repo root:
+#   docker compose -f infra/otel/docker-compose.yml up -d
+#
+# Then set on Next worker + FastAPI:
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+#
+# Grafana: http://127.0.0.1:3300  (admin / admin)
+
+services:
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200" # Tempo HTTP API / query
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP (apps use this)
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    depends_on:
+      - tempo
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3300:3000"
+    restart: unless-stopped
+
+volumes:
+  tempo-data:

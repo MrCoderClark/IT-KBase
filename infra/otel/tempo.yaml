@@ -1,0 +1,33 @@
+# Local Tempo for TechBase ingest traces (M7).
+# OTLP HTTP :4318 — set OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  trace_idle_period: 10s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 48h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+querier: {}
+query_frontend: {}

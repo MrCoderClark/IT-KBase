@@ -157,8 +157,8 @@ Current slice: steps 1–9 with a Node BullMQ worker + Redis streams when `REDIS
 ## 7. Observability
 
 - **Logs**: structured JSON. Fields: `ts`, `level`, `service`, `requestId`, `userId`, `articleId`, `jobId`, `msg`.
-- **Traces**: OpenTelemetry across Next.js → Python for ingest. Propagate W3C `traceparent` through the BullMQ job payload and on `POST /ingest`. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export (OTLP HTTP `/v1/traces`); without it, spans stay local. Grafana/Tempo dashboards are M7.
-- **Metrics**: Prometheus-compatible. Golden signals per service + ingestion-specific (parse time, extraction time, repair count).
+- **Traces**: OpenTelemetry across Next.js → Python for ingest. Propagate W3C `traceparent` through the BullMQ job payload and on `POST /ingest`. Set `OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. `http://127.0.0.1:4318`) to export OTLP HTTP; without it, spans stay local. Local Tempo + Grafana: `infra/otel/` (`19-observability.md`).
+- **Metrics**: Prometheus-compatible (later). Golden signals per service + ingestion-specific (parse time, extraction time, repair count).
 - **Error tracking**: Sentry (web + python).
 
 ## 8. Deployment

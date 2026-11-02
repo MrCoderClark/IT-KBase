@@ -126,7 +126,7 @@ Also shipped in this era (specs 09–12): page tree, field notes (replies/@menti
 - ✅ Visual regression on article view (`15-visual-regression.md`).
 - 🟡 Load test: **100 concurrent ingestions** ✅; **1k rps** on article detail ⬜ (local SSR health gate ~43 rps; CDN/cache follow-up) — `16-load.md`.
 - ✅ OWASP ASVS L1 checklist (`17-security-asvs-l1.md`).
-- ⬜ Observability: traces across web and python, dashboards for golden signals + ingestion-specific.
+- ✅ Observability: ingest traces Next → Python + local Tempo/Grafana (`infra/otel/`, `19-observability.md`). Prometheus golden signals later.
 
 ---
 

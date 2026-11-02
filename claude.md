@@ -165,7 +165,7 @@ it-kbase/
 ├─ Docs/
 │  ├─ mocks/                   # PNGs, Figma exports
 │  └─ specs/                   # Numbered specs (source of truth)
-├─ infra/                      # docker-compose, Dockerfiles           [to be added]
+├─ infra/otel/                 # local Tempo + Grafana for ingest OTLP traces
 ├─ claude.md                   # ← you are here
 ├─ progress.md
 └─ README.md
