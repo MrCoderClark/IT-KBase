@@ -30,7 +30,8 @@ Supporting:
 
 - `../mocks/` — PNG mocks and Figma exports. North-star visual target.
 - `../pilot/` — Go/No-Go report for M8 (`go-no-go.md`).
-- `adr/` — Architecture Decision Records. [0001](adr/0001-server-managed-sessions.md) replaces Auth.js and Redis sessions.
+- `adr/` — Architecture Decision Records. [0001](adr/0001-server-managed-sessions.md) replaces Auth.js and Redis sessions. [0004](adr/0004-pgvector-hybrid-retrieval.md) adds pgvector for AI Assistant retrieval.
+- `../../infra/pgvector/README.md` — pgvector install and verification runbook.
 
 ## How to change a spec
 

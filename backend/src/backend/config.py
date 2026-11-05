@@ -79,6 +79,35 @@ class AiSettings(BaseSettings):
     model: str = ""
 
 
+class AssistantSettings(BaseSettings):
+    """AI Assistant (spec 20, ADR 0004). Env names are `ASSISTANT_*`.
+
+    Fully separate from the ingestion `AI_*` settings: its own host, key, and
+    models, so assistant traffic and cost never touch the ingestion config.
+    Empty `ASSISTANT_API_KEY` means the assistant is off.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="ASSISTANT_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    base_url: str = "https://openrouter.ai/api/v1"
+    api_key: str = ""
+    chat_model: str = ""
+    # Dimensions must match ArticleChunk.embedding (vector(1536)); changing
+    # either needs a migration and a full re-embed.
+    embedding_model: str = "openai/text-embedding-3-small"
+    embedding_dimensions: int = Field(default=1536, ge=1)
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.api_key.strip())
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Return a process-wide cached Settings instance."""
@@ -88,6 +117,11 @@ def get_settings() -> Settings:
 @lru_cache(maxsize=1)
 def get_ai_settings() -> AiSettings:
     return AiSettings()
+
+
+@lru_cache(maxsize=1)
+def get_assistant_settings() -> AssistantSettings:
+    return AssistantSettings()
 
 
 class StorageSettings(BaseSettings):

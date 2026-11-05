@@ -2,7 +2,7 @@
 
 > Status: **proposal**. The `/assistant` sidebar link exists (badge `New`) but the route, API, and backend are not built. This spec defines what the assistant does, what it refuses to do, and the order we build it in.
 >
-> Related: `00-overview.md` (principle 4), `05-ai-ingestion.md` (LLM stack, budgets), `07-security.md` §8, `12-per-page-permissions.md`, `19-observability.md`, roadmap post-GA item 8.
+> Related: `00-overview.md` (principle 4), `05-ai-ingestion.md` (LLM stack, budgets), `07-security.md` §8, `12-per-page-permissions.md`, `19-observability.md`, roadmap post-GA item 8. Database setup for vector search: `infra/pgvector/README.md`.
 
 ---
 
@@ -171,14 +171,28 @@ Browser ──POST /api/assistant/messages (SSE)──▶ Next.js BFF
 
 FastAPI never touches Postgres (`01-architecture.md` §2.3), and the permission logic (`can()`, `canReadArticle`, per-page access) already lives in TypeScript. The BFF sends FastAPI only text the user is allowed to see. **The LLM service cannot leak what it never receives.**
 
-### 5.2 Retrieval (v1, no embeddings)
+### 5.2 Retrieval (hybrid: keyword + vector, ADR 0004)
+
+Decided 2026-11-02: hybrid retrieval ships in AI-1, not AI-5. pgvector setup: `infra/pgvector/README.md`.
+
+**Indexing (write path)**
+
+1. When an article's `currentVersionId` changes (publish, restore, edit that updates current), the BullMQ worker rebuilds that article's `ArticleChunk` rows: one per section's prose, one per code block (kept whole, `kind=code`).
+2. Rows whose `contentHash` is unchanged keep their embedding. New or changed rows are sent to FastAPI `POST /assistant/embed`, and the vectors are written with raw SQL.
+3. A backfill command embeds every existing article once.
+
+**Query (read path, one SQL statement in the BFF)**
 
 1. Normalize the question and pull out exact tokens: error codes, KB IDs, cmdlet names.
-2. `searchArticles(query, k=8, role, userId)` (existing FTS, `websearch_to_tsquery`), plus an exact-token boost.
-3. For A2, start with the current article, then add `related.ts` hits.
-4. Expand each hit into **section chunks** (`Section` + `Block` text). Code blocks stay whole and are tagged `kind=code`.
-5. Rank chunks, then cap the bundle at ~6k tokens. Each chunk gets a stable ID: `{articleId}:{versionId}:{sectionId}[:{blockId}]`.
-6. If the top score is below a threshold → `grounded=false`. Skip the LLM call (saves cost) and return the "Not in the KB" path with the nearest three articles.
+2. Embed the question via FastAPI `POST /assistant/embed`.
+3. Rank chunks two ways, each limited to articles the user can read (`searchVisibility` + per-page effective access, joined on `Article`):
+   - keyword: `ArticleChunk.searchVector @@ websearch_to_tsquery(...)`, ordered by `ts_rank`;
+   - vector: `embedding <=> :query_vector` (cosine, HNSW index).
+4. Merge with **Reciprocal Rank Fusion** (`score = Σ 1 / (60 + rank)`), then add an exact-token boost for chunks containing an extracted error code or KB ID.
+5. For A2, restrict to the current article plus its `related.ts` set.
+6. Cap the bundle at ~6k tokens. Chunk ID in prompts and citations: `ArticleChunk.id`, carrying `articleId`, `versionId`, `sectionId`, `blockId`.
+7. If the best fused score is below a threshold → `grounded=false`. Skip the LLM call (saves cost) and return the "Not in the KB" path with the nearest three articles.
+8. If FastAPI embedding fails, fall back to keyword-only ranking for that request and record `tb.retrieval=keyword_fallback` on the span.
 
 ### 5.3 Answer contract (FastAPI)
 
@@ -208,6 +222,31 @@ The FastAPI endpoint should be an **async generator**, or use `telemetry.iter_wi
 ---
 
 ## 6. Data model (Prisma, `frontend/prisma/schema.prisma`)
+
+### 6.1 Retrieval chunks (built in AI-1, migration `20261102200000_article_chunks`)
+
+```prisma
+model ArticleChunk {
+  id             String         @id @default(cuid())
+  articleId      String         // → Article, cascade
+  versionId      String         // → ArticleVersion, cascade (built from currentVersionId)
+  sectionId      String
+  blockId        String?        // set for kind = code
+  kind           ChunkKind      // prose | code
+  sectionKind    SectionKind
+  sectionTitle   String
+  ord            Int
+  text           String
+  tokenCount     Int
+  contentHash    String         // sha256(text + embedding model)
+  searchVector   Unsupported("tsvector")?      // trigger ArticleChunk_search_before
+  embedding      Unsupported("vector(1536)")?  // HNSW, vector_cosine_ops
+  embeddingModel String?
+  embeddedAt     DateTime?
+}
+```
+
+### 6.2 Conversations and gaps
 
 ```prisma
 model AssistantConversation {
@@ -328,11 +367,11 @@ Spans (extend `19-observability.md` and the Grafana dashboard):
 
 | # | Question | Default if undecided |
 |---|----------|----------------------|
-| Q1 | The sidebar currently shows **AI Assistant only to roles that can create** (`sidebar.tsx` → `canCreate`). Readers — Sam, helpdesk L1 — are the biggest beneficiaries of A1–A7. Open the assistant to readers? | **Yes**: A1–A7 for readers; authoring and health features stay role-gated. Requires a one-line sidebar change. |
+| Q1 | The sidebar currently shows **AI Assistant only to roles that can create** (`sidebar.tsx` → `canCreate`). Readers — Sam, helpdesk L1 — are the biggest beneficiaries of A1–A7. Open the assistant to readers? | **Decided 2026-11-02: yes.** A1–A7 for every signed-in role; authoring (B) and health (C) features stay author+/reviewer+. One-line sidebar change in AI-1. |
 | Q2 | Conversation retention: 30 days, 7 days, or no storage (stateless)? | 30 days, admin-configurable. |
-| Q3 | Assistant model: same as ingestion (`AI_MODEL`) or a separate, cheaper/faster one? | Separate `AI_ASSISTANT_MODEL`, falling back to `AI_MODEL`. |
+| Q3 | Assistant model: same as ingestion (`AI_MODEL`) or a separate one? | **Decided 2026-11-02: fully separate.** `ASSISTANT_*` settings (base URL, key, chat model, embedding model). No fallback to ingestion `AI_*`. |
 | Q4 | Include authors' own drafts in answers by default? | Off; per-message toggle. |
-| Q5 | Pull embeddings (D1) forward into A-phase if FTS recall is poor on the eval set? | Decide after the A1 eval (§11). |
+| Q5 | Pull embeddings (D1) forward into A-phase if FTS recall is poor on the eval set? | **Decided 2026-11-02: hybrid in AI-1** (ADR 0004). The eval set still measures keyword-only vs hybrid recall. |
 
 ---
 
@@ -356,13 +395,13 @@ Each phase ships behind the existing sidebar link and is demo-able on its own.
 
 | Phase | Scope | Outcome / acceptance |
 |-------|-------|----------------------|
-| **AI-1 — Ask the KB** | A1, A3, A4, A7 (gap logging only). `/assistant` page, SSE, citations, `KnowledgeGap`, rate limits, spans. | A reader asks "0x80180014" and gets a cited answer in < 5s p50. Out-of-KB questions return "Not in the KB" with no LLM call. Golden-set targets met. |
+| **AI-1 — Ask the KB** | A1, A3, A4, A7 (gap logging only). `ArticleChunk` + embeddings + hybrid retrieval (ADR 0004), backfill command. `/assistant` page, SSE, citations, `KnowledgeGap`, rate limits, spans. Assistant visible to readers. | A reader asks "0x80180014" and gets a cited answer in < 5s p50. A paraphrased question ("laptop won't let me sign in after password change") finds the right article. Out-of-KB questions return "Not in the KB" with no LLM call. Golden-set targets met. |
 | **AI-2 — In-article** | A2, A5, A6 panel + guided troubleshooting; `a` shortcut; `sheet` install. | From an article, "what if step 3 fails?" jumps to the right troubleshooting callout. |
 | **AI-3 — Authoring copilot** | B1–B6; editor Copilot tab; `/api/assistant/draft` creates drafts only. | Paste ticket notes → draft in the canonical shape in < 30s. Tidy suggestions apply only on accept. |
 | **AI-4 — Review & health** | C1–C6; coverage report in Analytics; gap → draft flow. | Reviewer sees the top 10 gap clusters and can turn one into a draft in two clicks. |
-| **AI-5 — Smarter retrieval** | D1 hybrid search; D2 memory (if Q2 allows). | Golden-set recall improves ≥ 15 points over FTS-only. |
+| **AI-5 — Smarter retrieval** | Reranking of the fused top-k; D2 memory (if Q2 allows). Hybrid search itself moved to AI-1. | Golden-set citation precision improves ≥ 5 points over AI-1. |
 
-Suggested branches: `feat/assistant-ask-kb`, `feat/assistant-article-panel`, `feat/assistant-copilot`, `feat/assistant-kb-health`, `feat/assistant-hybrid-search`.
+Suggested branches: `feat/assistant-ask-kb`, `feat/assistant-article-panel`, `feat/assistant-copilot`, `feat/assistant-kb-health`, `feat/assistant-rerank`.
 
 ---
 
