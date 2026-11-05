@@ -225,6 +225,7 @@ ASVS L1: `Docs/specs/17-security-asvs-l1.md` (checklist + `pnpm audit` / `pip-au
 Pilot: `Docs/specs/18-pilot.md` + `Docs/pilot/go-no-go.md`.
 
 Also:
+- **If you changed a FastAPI route or a request/response Pydantic model**, regenerate the API types and commit both `frontend/lib/api/openapi.json` and `frontend/lib/api/generated/ingestion.ts` — the `OpenAPI types` CI job regenerates them and fails on any drift. Run `uv run python scripts/export_openapi.py` (backend), then `pnpm gen:types` (frontend), in that order. Details + gotchas: `frontend/lib/api/README.md`. Not needed for logic-only changes.
 - Update `progress.md` (move items, add new ones, note blockers).
 - Update specs if behavior changed.
 - Confirm the branch name matches rule 0.2.
