@@ -206,7 +206,7 @@ Sidebar link `/assistant` exists; route and backend not built. Spec drafted 2026
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| AI-1 | Ask the KB: hybrid retrieval (FTS + pgvector), cited answers, command finder, error-code boost, gap logging; readers included | 🟡 pgvector 0.8.7 installed on dev DB (`infra/pgvector/README.md`); ADR 0004; `ArticleChunk` migration written. Next: FastAPI `/assistant/embed`, chunker + backfill |
+| AI-1 | Ask the KB: hybrid retrieval (FTS + pgvector), cited answers, command finder, error-code boost, gap logging; readers included | 🟡 pgvector 0.8.7 (`infra/pgvector/README.md`); ADR 0004; `ArticleChunk` migration applied. FastAPI `POST /assistant/embed` (ASSISTANT_* only). Write path: pure `chunker`, `embed-client` (service token), `reindexArticle`, `assistant-index` queue + worker, `scheduleReindex` hooked into save/restore, `pnpm assistant:backfill`. Next: query path (hybrid RRF SQL in BFF), `/assistant` page + SSE, `KnowledgeGap`, rate limits |
 | AI-2 | In-article panel, ELI-L1, guided troubleshooting | ⬜ |
 | AI-3 | Authoring copilot: draft from prompt/ticket, tidy, missing-section, duplicate, risky-command | ⬜ |
 | AI-4 | Review & KB health: diff summary, staleness, feedback digest, coverage report | ⬜ |
