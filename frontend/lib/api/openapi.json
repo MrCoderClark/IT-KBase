@@ -1,6 +1,49 @@
 {
   "components": {
     "schemas": {
+      "AnswerBody": {
+        "properties": {
+          "bundle": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BundleChunk"
+            },
+            "maxItems": 24,
+            "title": "Bundle",
+            "type": "array"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Turn"
+            },
+            "maxItems": 10,
+            "title": "History",
+            "type": "array"
+          },
+          "mode": {
+            "default": "answer",
+            "enum": [
+              "answer",
+              "eli5",
+              "command"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AnswerBody",
+        "type": "object"
+      },
       "Body_parse_docx_route_v1_parse_docx_post": {
         "properties": {
           "file": {
@@ -27,6 +70,43 @@
           "file"
         ],
         "title": "Body_parse_pdf_route_v1_parse_pdf_post",
+        "type": "object"
+      },
+      "BundleChunk": {
+        "properties": {
+          "chunkId": {
+            "title": "Chunkid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "prose",
+              "code"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "sectionTitle": {
+            "title": "Sectiontitle",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "n",
+          "chunkId",
+          "kind",
+          "sectionTitle",
+          "text"
+        ],
+        "title": "BundleChunk",
         "type": "object"
       },
       "EmbedBody": {
@@ -432,6 +512,28 @@
         "title": "PrincipalResponse",
         "type": "object"
       },
+      "Turn": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "Turn",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -481,6 +583,45 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/assistant/answer": {
+      "post": {
+        "operationId": "answer_assistant_answer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
     "/assistant/embed": {
       "post": {
         "operationId": "embed_assistant_embed_post",
