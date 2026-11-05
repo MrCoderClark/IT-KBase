@@ -206,13 +206,13 @@ Sidebar link `/assistant` exists; route and backend not built. Spec drafted 2026
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| AI-1 | Ask the KB: cited answers, command finder, error-code boost, gap logging | ⬜ |
+| AI-1 | Ask the KB: hybrid retrieval (FTS + pgvector), cited answers, command finder, error-code boost, gap logging; readers included | 🟡 pgvector 0.8.7 installed on dev DB (`infra/pgvector/README.md`); ADR 0004; `ArticleChunk` migration written. Next: FastAPI `/assistant/embed`, chunker + backfill |
 | AI-2 | In-article panel, ELI-L1, guided troubleshooting | ⬜ |
 | AI-3 | Authoring copilot: draft from prompt/ticket, tidy, missing-section, duplicate, risky-command | ⬜ |
 | AI-4 | Review & KB health: diff summary, staleness, feedback digest, coverage report | ⬜ |
 | AI-5 | Hybrid FTS + pgvector retrieval, conversation memory | ⬜ |
 
-Open: Q1 open the assistant to readers (sidebar currently `canCreate` only), Q2 retention, Q3 separate assistant model.
+Decided 2026-11-02: Q1 readers get A1–A7; Q3 assistant uses its own `ASSISTANT_*` settings, ingestion `AI_*` untouched; Q5 hybrid retrieval in AI-1 (ADR 0004). Open: Q2 retention.
 
 ---
 
@@ -254,6 +254,7 @@ Open: Q1 open the assistant to readers (sidebar currently `canCreate` only), Q2 
 | 2026-10-30 | Prod LLM = current OpenAI-compatible stack | Same `AI_*` / OpenRouter path as local; interface stays pluggable. |
 | 2026-10-30 | Pilot auth = password + optional MFA/passkeys | Entra/OIDC not required for M8; stays post-pilot. |
 | 2026-10-30 | Pilot uses current local env as-is | No separate preview host to start; GA may still want TLS/dedicated host. |
+| 2026-11-02 | pgvector + section chunks for AI Assistant retrieval, hybrid with FTS from AI-1 | Covers paraphrased questions as well as exact error codes; one datastore keeps permission filtering in one SQL statement. [ADR 0004](Docs/specs/adr/0004-pgvector-hybrid-retrieval.md) |
 
 ---
 

@@ -71,6 +71,13 @@ enum BlockKind {
   @@schema("public")
 }
 
+enum ChunkKind {
+  prose
+  code
+
+  @@schema("public")
+}
+
 enum CalloutVariant {
   info
   important
@@ -193,6 +200,7 @@ model Article {
   notes        ArticleNote[]
   articleViews ArticleView[]
   ingestionJob IngestionJob?
+  chunks       ArticleChunk[]
 
   views      Int @default(0)
   helpful    Int @default(0)
@@ -227,9 +235,43 @@ model ArticleVersion {
 
   currentFor Article? @relation("CurrentVersion")
   draftFor   Article? @relation("DraftVersion")
+  chunks     ArticleChunk[]
 
   @@unique([articleId, version])
   @@index([articleId, createdAt])
+  @@schema("public")
+}
+
+/// AI Assistant retrieval unit (spec 20, ADR 0004). One row per section's prose
+/// and one per code block, built from Article.currentVersionId. Access is
+/// enforced at query time by joining Article, never by what is stored here.
+model ArticleChunk {
+  id           String         @id @default(cuid())
+  articleId    String
+  article      Article        @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  versionId    String
+  version      ArticleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  sectionId    String
+  blockId      String? // set for kind = code
+  kind         ChunkKind
+  sectionKind  SectionKind
+  sectionTitle String
+  ord          Int
+  text         String
+  tokenCount   Int
+  contentHash  String // sha256(text + embedding model); reuse embedding when unchanged
+
+  searchVector   Unsupported("tsvector")? // maintained by trigger ArticleChunk_search_before
+  embedding      Unsupported("vector(1536)")? // written by raw SQL after FastAPI /assistant/embed
+  embeddingModel String?
+  embeddedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([articleId, ord])
+  @@index([versionId])
+  @@index([contentHash])
   @@schema("public")
 }
 
