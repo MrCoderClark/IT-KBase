@@ -7,16 +7,29 @@ worker embeds article chunks (service token). Input text is never logged.
 from __future__ import annotations
 
 import asyncio
+import json
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from opentelemetry.trace import Status, StatusCode
+from fastapi.responses import StreamingResponse
+from opentelemetry.trace import Span, Status, StatusCode, set_span_in_context
 from pydantic import BaseModel, Field
 
 from auth_py import Principal
+from backend.assistant.answerer import (
+    AnswerError,
+    AnswerMode,
+    BundleChunk,
+    DoneEvent,
+    KBAnswerer,
+    TokenEvent,
+    Turn,
+    get_answerer,
+)
 from backend.assistant.embeddings import EmbeddingError, get_embedder
 from backend.policy import can
-from backend.telemetry import get_logger, get_tracer
+from backend.telemetry import get_logger, get_tracer, iter_with_context
 
 log = get_logger(__name__)
 
@@ -35,6 +48,13 @@ class EmbedResult(BaseModel):
     dimensions: int
     embeddings: list[list[float]]
     promptTokens: int
+
+
+class AnswerBody(BaseModel):
+    question: Annotated[str, Field(min_length=1, max_length=4_000)]
+    bundle: Annotated[list[BundleChunk], Field(max_length=24)] = []
+    history: Annotated[list[Turn], Field(max_length=10)] = []
+    mode: AnswerMode = "answer"
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -74,7 +94,64 @@ def build_assistant_router(dependency) -> APIRouter:
             promptTokens=result.prompt_tokens,
         )
 
+    @router.post("/assistant/answer")
+    async def answer(body: AnswerBody, principal: Principal = get_principal) -> StreamingResponse:
+        _require_reader_or_service(principal)
+        answerer = get_answerer()
+        if answerer is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+        return StreamingResponse(_answer_stream(answerer, body), media_type="text/event-stream")
+
     return router
+
+
+def _answer_stream(answerer: KBAnswerer, body: AnswerBody) -> Iterator[str]:
+    span = get_tracer().start_span(
+        "assistant.answer",
+        attributes={"tb.chunks": len(body.bundle), "tb.mode": body.mode},
+    )
+    try:
+        # One span per stream, attached once around all yields, detached once after —
+        # the ingest `Failed to detach context` lesson (spec 19, §5.5).
+        yield from iter_with_context(_answer_events(answerer, body, span), set_span_in_context(span))
+    finally:
+        span.end()
+
+
+def _answer_events(answerer: KBAnswerer, body: AnswerBody, span: Span) -> Iterator[str]:
+    try:
+        for event in answerer.answer(body.question, body.bundle, body.history, body.mode):
+            if isinstance(event, TokenEvent):
+                yield _sse("token", {"text": event.text})
+            elif isinstance(event, DoneEvent):
+                span.set_attribute("tb.citations", len(event.citations))
+                span.set_attribute("tb.grounded", event.grounded)
+                if event.usage:
+                    span.set_attribute("tb.tokens_in", event.usage.get("prompt_tokens", 0))
+                    span.set_attribute("tb.tokens_out", event.usage.get("completion_tokens", 0))
+                log.info(
+                    "assistant.answer",
+                    chunks=len(body.bundle),
+                    citations=len(event.citations),
+                    grounded=event.grounded,
+                )
+                yield _sse(
+                    "done",
+                    {
+                        "answer": event.answer,
+                        "citations": event.citations,
+                        "grounded": event.grounded,
+                        "usage": event.usage,
+                    },
+                )
+    except AnswerError as exc:
+        span.set_status(Status(StatusCode.ERROR, str(exc)))
+        log.warning("assistant.answer.failed", error=str(exc))
+        yield _sse("failed", {"code": "model", "message": str(exc)})
+
+
+def _sse(event_name: str, data: object) -> str:
+    return f"event: {event_name}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
 def _require_reader_or_service(principal: Principal) -> None:
