@@ -200,6 +200,22 @@ Next (build): CDN/cache path toward article 1k rps (`16-load.md`), Prometheus go
 
 ---
 
+## 7c. AI Assistant (`20-ai-assistant.md`)
+
+Sidebar link `/assistant` exists; route and backend not built. Spec drafted 2026-11-02.
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| AI-1 | Ask the KB: cited answers, command finder, error-code boost, gap logging | ⬜ |
+| AI-2 | In-article panel, ELI-L1, guided troubleshooting | ⬜ |
+| AI-3 | Authoring copilot: draft from prompt/ticket, tidy, missing-section, duplicate, risky-command | ⬜ |
+| AI-4 | Review & KB health: diff summary, staleness, feedback digest, coverage report | ⬜ |
+| AI-5 | Hybrid FTS + pgvector retrieval, conversation memory | ⬜ |
+
+Open: Q1 open the assistant to readers (sidebar currently `canCreate` only), Q2 retention, Q3 separate assistant model.
+
+---
+
 ## 8. Quality (M7)
 
 - ✅ A11y axe: Playwright + `@axe-core/playwright` clean on login, home, `/kb`, article, editor, integrations (2026-10-29). Auth once via `e2e/auth.setup.ts`. Commands: `pnpm test:a11y` / `pnpm test:a11y:install` / `pnpm test:a11y:report` (see `frontend/README.md`, `Docs/specs/13-a11y-keyboard.md`). On `chore/a11y-axe`.

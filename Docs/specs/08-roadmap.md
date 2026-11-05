@@ -152,7 +152,7 @@ Pre-pilot decisions (2026-10-30): single tenant; prod LLM = current `AI_*` / Ope
 5. **Browser extension**: "Draft article from this page" (ingest a URL).
 6. **Ticket-system import**: pull resolved tickets from Jira/ServiceNow as draft candidates.
 7. **Scheduled review reminders**: nudge owners of articles not updated in N months.
-8. **AI Assistant panel**: in-article Q&A grounded in the current article + its related set (`/assistant` nav stub only).
+8. **AI Assistant**: grounded, cited Q&A over the KB, in-article panel, authoring copilot, KB-health tools. Full capability list and phases AI-1 → AI-5 in `20-ai-assistant.md` (`/assistant` nav stub only today).
 9. **Mobile companion** (responsive is fine for v1; native later if demand).
 10. **Public portal mode**: expose a curated subset externally with watermarks.
 
