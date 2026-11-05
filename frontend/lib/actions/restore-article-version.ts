@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
+import { scheduleReindex } from "@/lib/assistant/index-queue";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
@@ -97,6 +98,9 @@ export async function restoreArticleVersion(formData: FormData): Promise<void> {
   } catch {
     redirect(`${back}?e=missing`);
   }
+
+  // Rebuild assistant chunks for the restored current version (spec 20 §5.2).
+  await scheduleReindex(article.id, session.userId);
 
   revalidatePath("/kb");
   revalidatePath(`/kb/${slug}`);

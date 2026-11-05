@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/assistant/embed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Embed */
+        post: operations["embed_assistant_embed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -166,6 +183,22 @@ export interface components {
         Body_parse_pdf_route_v1_parse_pdf_post: {
             /** File */
             file: string;
+        };
+        /** EmbedBody */
+        EmbedBody: {
+            /** Inputs */
+            inputs: string[];
+        };
+        /** EmbedResult */
+        EmbedResult: {
+            /** Dimensions */
+            dimensions: number;
+            /** Embeddings */
+            embeddings: number[][];
+            /** Model */
+            model: string;
+            /** Prompttokens */
+            promptTokens: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -356,6 +389,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    embed_assistant_embed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmbedBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbedResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     healthz_healthz_get: {
         parameters: {
             query?: never;

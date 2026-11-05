@@ -177,9 +177,9 @@ Decided 2026-11-02: hybrid retrieval ships in AI-1, not AI-5. pgvector setup: `i
 
 **Indexing (write path)**
 
-1. When an article's `currentVersionId` changes (publish, restore, edit that updates current), the BullMQ worker rebuilds that article's `ArticleChunk` rows: one per section's prose, one per code block (kept whole, `kind=code`).
-2. Rows whose `contentHash` is unchanged keep their embedding. New or changed rows are sent to FastAPI `POST /assistant/embed`, and the vectors are written with raw SQL.
-3. A backfill command embeds every existing article once.
+1. When an article's `currentVersionId` changes (publish, restore, edit that updates current), `scheduleReindex(articleId)` enqueues the `assistant-index` BullMQ queue (inline fallback in dev when Redis is off). The worker (`pnpm worker:assistant-index`) rebuilds that article's `ArticleChunk` rows via `reindexArticle`: one per section's prose, one per code block (kept whole, `kind=code`). The `chunkVersion` chunker is pure (`frontend/lib/assistant/chunker.ts`) and mirrors the FTS `block_plain_text` flattening.
+2. A chunk whose text is unchanged keeps its embedding (reuse keyed on exact text). New or changed text is sent to FastAPI `POST /assistant/embed` authenticated with a short-lived **user assertion** minted from `AUTH_ASSERTION_KEYS` — the acting user for a save/restore, an admin for the backfill — so no extra secret is needed (the endpoint also accepts a `sv_` service token). Vectors are written with raw SQL. If the embedder is down or the keys are unset, the chunk is still written for keyword retrieval and a later run fills the vector — a rebuild never wipes a good vector. The `searchVector` keyword column is maintained by the `ArticleChunk_search_before` trigger on insert.
+3. `pnpm assistant:backfill` embeds every existing article with a current version once (safe to re-run; unchanged chunks re-embed nothing).
 
 **Query (read path, one SQL statement in the BFF)**
 
@@ -328,6 +328,10 @@ event: failed      data: { code, message }
 ### 7.2 FastAPI (internal, assertion-authenticated)
 
 ```
+POST /assistant/embed      # { inputs: string[1..64], each 1..8000 chars } → { model, dimensions, embeddings: number[][], promptTokens }
+                           # callers: BFF (user assertion) for questions; chunk indexer/backfill (user assertion — acting
+                           #          user or admin — reusing AUTH_ASSERTION_KEYS). A sv_ service token is also accepted.
+                           # 503 when ASSISTANT_API_KEY is missing; 502 on provider failure or wrong vector size
 POST /assistant/answer     # SSE; { question, history[], bundle: Chunk[], mode: answer|eli5|command }
 POST /assistant/draft      # { prompt | sourceText, taxonomy: {categories[], tags[]} } → ParsedDraft
 POST /assistant/review     # { draft, checks[] } → { suggestions: [...] }

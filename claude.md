@@ -122,6 +122,7 @@ These are the rules that distinguish this app from a vibe-coded prototype. Enfor
 | Cache & queue           | **Redis** (Upstash-compatible) — sessions, article cache, BullMQ queue |
 | Primary datastore       | Postgres (via Prisma)                                                  |
 | Full-text search        | Postgres `tsvector` initially; Meilisearch upgrade path                |
+| Vector search           | **pgvector** in the same Postgres; section chunks, HNSW, hybrid with FTS for the AI Assistant. [ADR 0004](Docs/specs/adr/0004-pgvector-hybrid-retrieval.md), setup `infra/pgvector/README.md` |
 | Backend processing      | **Python 3.12** FastAPI service                                        |
 | Document parsing        | `python-docx`, `pypdf` / `pdfplumber`, `unstructured` for fallback     |
 | LLM orchestration       | Pluggable: OpenAI / Anthropic / local via a `KBExtractor` interface    |

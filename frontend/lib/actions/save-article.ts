@@ -22,6 +22,7 @@ import {
   slugifyTitle,
   type VersionBump,
 } from "@/lib/editor/draft";
+import { scheduleReindex } from "@/lib/assistant/index-queue";
 import { stepImagePieces } from "@/lib/editor/step-images";
 import { notifyIntegrationsArticlePublished } from "@/lib/integrations/notify";
 import { notifyReviewRequested } from "@/lib/notifications/create";
@@ -303,6 +304,11 @@ export async function saveArticleForSession(
   } catch {
     // Outside a Next request (e.g. ingest worker) cache tags are not available.
   }
+
+  // Rebuild the assistant's retrieval chunks for the new current version
+  // (spec 20 §5.2). Best-effort: never blocks or fails the save.
+  await scheduleReindex(articleId, session.userId);
+
   return { ok: true, slug };
 }
 

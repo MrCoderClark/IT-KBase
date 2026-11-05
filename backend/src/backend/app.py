@@ -17,6 +17,7 @@ from opentelemetry.context import attach, detach
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from auth_py import parse_assertion_keys, require_principal
+from backend.api.assistant import build_assistant_router
 from backend.api.health import router as health_router
 from backend.api.ingest import build_ingest_router
 from backend.api.parse import build_parse_router
@@ -115,6 +116,7 @@ def create_app() -> FastAPI:
     app.include_router(build_principal_router(principal))
     app.include_router(build_parse_router(principal))
     app.include_router(build_ingest_router(principal))
+    app.include_router(build_assistant_router(principal))
 
     return app
 
