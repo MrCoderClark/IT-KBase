@@ -29,6 +29,60 @@
         "title": "Body_parse_pdf_route_v1_parse_pdf_post",
         "type": "object"
       },
+      "EmbedBody": {
+        "properties": {
+          "inputs": {
+            "items": {
+              "maxLength": 8000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Inputs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "title": "EmbedBody",
+        "type": "object"
+      },
+      "EmbedResult": {
+        "properties": {
+          "dimensions": {
+            "title": "Dimensions",
+            "type": "integer"
+          },
+          "embeddings": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Embeddings",
+            "type": "array"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "promptTokens": {
+            "title": "Prompttokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model",
+          "dimensions",
+          "embeddings",
+          "promptTokens"
+        ],
+        "title": "EmbedResult",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -427,6 +481,47 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/assistant/embed": {
+      "post": {
+        "operationId": "embed_assistant_embed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbedBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbedResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Embed",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
     "/healthz": {
       "get": {
         "description": "Return `ok` as long as the process can handle a request.",
