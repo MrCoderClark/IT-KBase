@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Calendar, Clock, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import type { Article } from "@/lib/types/article";
+import type { GuideStep, TroubleItem } from "@/lib/assistant/troubleshooting";
 import { AskArticlePanel } from "@/components/assistant/ask-article-panel";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { DeleteArticleButton } from "@/components/kb/delete-article-button";
@@ -35,6 +36,25 @@ export function ArticleHeader({
     "en-US",
     { month: "short", day: "numeric", year: "numeric" },
   );
+
+  // Guided-troubleshooting source (A6): the steps section and troubleshooting callouts.
+  const steps: GuideStep[] = [];
+  for (const block of article.sections.find((s) => s.kind === "steps")?.blocks ?? []) {
+    if (block.kind === "step") {
+      steps.push({ stepNumber: block.stepNumber, title: block.title, content: block.content });
+    }
+  }
+  const troubleshooting: TroubleItem[] = [];
+  for (const block of article.sections.find((s) => s.kind === "troubleshooting")?.blocks ?? []) {
+    if (block.kind === "callout") {
+      troubleshooting.push({
+        id: block.id,
+        variant: block.variant,
+        title: block.title,
+        content: block.content,
+      });
+    }
+  }
 
   return (
     <div className="flex items-start justify-between gap-6">
@@ -126,6 +146,8 @@ export function ArticleHeader({
               articleId={article.id}
               articleTitle={article.title}
               canDraft={canDraft}
+              steps={steps}
+              troubleshooting={troubleshooting}
             />
             <ShareLinkButton />
             {canDelete ? (

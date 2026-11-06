@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * "Ask about this article" (spec 20 §3 A2, §4.2): a right-side sheet that runs
- * the shared assistant thread scoped to the open article and its related set.
- * Opened by the button in the article actions row or the `a` shortcut.
+ * "Ask about this article" (spec 20 §3 A2/A6, §4.2): a right-side sheet with two
+ * modes — a chat scoped to the open article and its related set, and a guided
+ * troubleshooting checklist built from the article's steps. Opened by the button
+ * in the article actions row or the `a` shortcut.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -17,6 +18,9 @@ import {
 } from "@/components/ui/sheet";
 import { ASK_ARTICLE_EVENT } from "@/components/layout/keyboard-shortcuts";
 import { Composer, EmptyState, TurnCard, useAssistantThread } from "@/components/assistant/thread";
+import { GuidedTroubleshooter } from "@/components/assistant/guided-troubleshooter";
+import type { GuideStep, TroubleItem } from "@/lib/assistant/troubleshooting";
+import { cn } from "@/lib/utils";
 
 const ARTICLE_SUGGESTIONS = [
   "Does this work on Windows 10?",
@@ -24,19 +28,27 @@ const ARTICLE_SUGGESTIONS = [
   "Summarize the key steps",
 ];
 
+type View = "ask" | "troubleshoot";
+
 export function AskArticlePanel({
   articleId,
   articleTitle,
   canDraft,
+  steps,
+  troubleshooting,
 }: {
   articleId: string;
   articleTitle: string;
   canDraft: boolean;
+  steps: GuideStep[];
+  troubleshooting: TroubleItem[];
 }) {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<View>("ask");
   const [input, setInput] = useState("");
   const { turns, busy, ask } = useAssistantThread({ scope: "article", articleId });
   const endRef = useRef<HTMLDivElement>(null);
+  const canTroubleshoot = steps.length > 0;
 
   // The `a` shortcut (on an article page) opens the panel.
   useEffect(() => {
@@ -48,12 +60,17 @@ export function AskArticlePanel({
   }, []);
 
   useEffect(() => {
-    if (open) endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns, open]);
+    if (open && view === "ask") endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [turns, open, view]);
 
   const send = (question: string, mode: "answer" | "eli5" = "answer") => {
     setInput("");
     void ask(question, mode);
+  };
+
+  const askAboutStep = (step: GuideStep) => {
+    setView("ask");
+    send(`Step ${step.stepNumber} ("${step.title}") isn't working. What should I check?`);
   };
 
   return (
@@ -76,8 +93,25 @@ export function AskArticlePanel({
             <SheetDescription className="truncate">{articleTitle}</SheetDescription>
           </SheetHeader>
 
+          {canTroubleshoot ? (
+            <div className="flex gap-1 border-b border-border px-4 py-2">
+              <ModeTab active={view === "ask"} onClick={() => setView("ask")}>
+                Ask
+              </ModeTab>
+              <ModeTab active={view === "troubleshoot"} onClick={() => setView("troubleshoot")}>
+                Troubleshoot
+              </ModeTab>
+            </div>
+          ) : null}
+
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            {turns.length === 0 ? (
+            {view === "troubleshoot" ? (
+              <GuidedTroubleshooter
+                steps={steps}
+                troubleshooting={troubleshooting}
+                onAskAboutStep={askAboutStep}
+              />
+            ) : turns.length === 0 ? (
               <EmptyState heading="Try asking" suggestions={ARTICLE_SUGGESTIONS} onPick={(q) => send(q)} />
             ) : (
               <div className="flex flex-col gap-5">
@@ -94,19 +128,45 @@ export function AskArticlePanel({
             <div ref={endRef} />
           </div>
 
-          <div className="border-t border-border px-4">
-            <Composer
-              value={input}
-              busy={busy}
-              onChange={setInput}
-              onSend={() => send(input)}
-              hasTurns={turns.length > 0}
-              placeholder="Ask about this article…"
-              footer="⌘↵ to send · scoped to this article + related"
-            />
-          </div>
+          {view === "ask" ? (
+            <div className="border-t border-border px-4">
+              <Composer
+                value={input}
+                busy={busy}
+                onChange={setInput}
+                onSend={() => send(input)}
+                hasTurns={turns.length > 0}
+                placeholder="Ask about this article…"
+                footer="⌘↵ to send · scoped to this article + related"
+              />
+            </div>
+          ) : null}
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+function ModeTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-lg px-3 py-1 text-[13px] font-medium transition",
+        active ? "bg-accent-soft text-accent" : "text-fg-muted hover:bg-surface-muted",
+      )}
+    >
+      {children}
+    </button>
   );
 }
