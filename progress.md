@@ -202,11 +202,11 @@ Next (build): CDN/cache path toward article 1k rps (`16-load.md`), Prometheus go
 
 ## 7c. AI Assistant (`20-ai-assistant.md`)
 
-Sidebar link `/assistant` exists; route and backend not built. Spec drafted 2026-11-02.
+Sidebar link `/assistant` open to every signed-in role (Q1). Spec drafted 2026-11-02.
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| AI-1 | Ask the KB: hybrid retrieval (FTS + pgvector), cited answers, command finder, error-code boost, gap logging; readers included | 🟡 pgvector 0.8.7 (`infra/pgvector/README.md`); ADR 0004; `ArticleChunk` migration applied. FastAPI `POST /assistant/embed` (ASSISTANT_* only). Write path: pure `chunker`, `embed-client` (service token), `reindexArticle`, `assistant-index` queue + worker, `scheduleReindex` hooked into save/restore, `pnpm assistant:backfill`. Next: query path (hybrid RRF SQL in BFF), `/assistant` page + SSE, `KnowledgeGap`, rate limits |
+| AI-1 | Ask the KB: hybrid retrieval (FTS + pgvector), cited answers, command finder, error-code boost, gap logging; readers included | 🟡 **Write path done** (merged): pgvector, `ArticleChunk`, `POST /assistant/embed`, chunker/indexer/`assistant-index` worker/`assistant:backfill`. **Read path built** (`feat/assistant-messages`): hybrid RRF retrieval (`retrieval.ts`, recall verified on seed), `POST /assistant/answer` (streaming `KBAnswerer` + citation/command post-validation), `AssistantConversation`/`AssistantMessage`/`KnowledgeGap` models, `POST /api/assistant/messages` SSE route (retrieve→bundle→stream→persist→gap log), per-user rate limit, thumbs feedback, `/assistant` page (streaming answer card, citation chips, Sources rail, Not-in-KB → draft/request), sidebar opened to readers. **Needs**: run migration + manual demo. Remaining: conversations list/delete API, Ctrl+K "Ask AI" scope |
 | AI-2 | In-article panel, ELI-L1, guided troubleshooting | ⬜ |
 | AI-3 | Authoring copilot: draft from prompt/ticket, tidy, missing-section, duplicate, risky-command | ⬜ |
 | AI-4 | Review & KB health: diff summary, staleness, feedback digest, coverage report | ⬜ |
