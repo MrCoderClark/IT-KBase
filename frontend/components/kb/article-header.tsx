@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Calendar, Clock, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import type { Article } from "@/lib/types/article";
+import { AskArticlePanel } from "@/components/assistant/ask-article-panel";
 import { CategoryChip } from "@/components/kb/category-chip";
 import { DeleteArticleButton } from "@/components/kb/delete-article-button";
 import { ShareLinkButton } from "@/components/kb/share-link-button";
@@ -18,12 +19,15 @@ export function ArticleHeader({
   canEdit = false,
   canCreateChild = false,
   canDelete = false,
+  canDraft = false,
   showActions = true,
 }: {
   article: Article;
   canEdit?: boolean;
   canCreateChild?: boolean;
   canDelete?: boolean;
+  /** Can create an article — enables the panel's "Draft this article" gap CTA. */
+  canDraft?: boolean;
   /** Hide Edit / Share / overflow — used by the editor reader preview. */
   showActions?: boolean;
 }) {
@@ -118,6 +122,11 @@ export function ArticleHeader({
                 Add child
               </Link>
             ) : null}
+            <AskArticlePanel
+              articleId={article.id}
+              articleTitle={article.title}
+              canDraft={canDraft}
+            />
             <ShareLinkButton />
             {canDelete ? (
               <DeleteArticleButton articleId={article.id} title={article.title} />

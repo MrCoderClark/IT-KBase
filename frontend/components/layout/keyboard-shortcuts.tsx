@@ -14,10 +14,13 @@ import { SHARE_EVENT } from "@/components/kb/share-link-button";
 const CHORD_MS = 1000;
 
 export const SHORTCUTS_EVENT = "tb-shortcuts";
+/** Fired when `a` is pressed on an article page; the in-article panel listens. */
+export const ASK_ARTICLE_EVENT = "tb-ask-article";
 
 const SHORTCUTS = [
   { keys: ["Ctrl", "K"], sequence: false, label: "Search" },
   { keys: ["?"], sequence: false, label: "Show this list" },
+  { keys: ["A"], sequence: false, label: "Ask about this article" },
   { keys: ["E"], sequence: false, label: "Edit this article" },
   { keys: ["S"], sequence: false, label: "Share this article" },
   { keys: ["P"], sequence: false, label: "Print this article" },
@@ -26,6 +29,7 @@ const SHORTCUTS = [
   { keys: ["G", "A"], sequence: true, label: "All articles" },
   { keys: ["G", "H"], sequence: true, label: "Home" },
   { keys: ["G", "I"], sequence: true, label: "Import from file" },
+  { keys: ["G", "S"], sequence: true, label: "Assistant" },
 ] as const;
 
 /**
@@ -65,7 +69,8 @@ export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }
       const key = event.key.toLowerCase();
       const dialogOpen = document.querySelector("[data-slot=dialog-content]");
       const menuOpen = document.querySelector("[data-slot=dropdown-menu-content]");
-      if (dialogOpen || menuOpen) {
+      const sheetOpen = document.querySelector("[data-slot=sheet-content]");
+      if (dialogOpen || menuOpen || sheetOpen) {
         if (key === "?" && helpOpen) {
           event.preventDefault();
           setHelpOpen(false);
@@ -84,6 +89,9 @@ export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }
         } else if (key === "i" && canImport) {
           event.preventDefault();
           router.push("/import");
+        } else if (key === "s") {
+          event.preventDefault();
+          router.push("/assistant");
         }
         return;
       }
@@ -102,6 +110,13 @@ export function KeyboardShortcuts({ canImport = false }: { canImport?: boolean }
       }
 
       const onArticle = Boolean(articleSlug(pathname));
+
+      if (key === "a") {
+        if (!onArticle) return;
+        event.preventDefault();
+        window.dispatchEvent(new Event(ASK_ARTICLE_EVENT));
+        return;
+      }
 
       if (key === "e") {
         const slug = articleSlug(pathname);
