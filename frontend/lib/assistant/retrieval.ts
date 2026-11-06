@@ -64,8 +64,8 @@ export type RetrieveOptions = {
   question: string;
   session: AppSession;
   limit?: number;
-  /** Restrict to one article (A2). Library-wide when omitted. */
-  articleId?: string;
+  /** Restrict to these articles (A2: the open article + its related set). Library-wide when omitted/empty. */
+  articleIds?: string[];
 };
 
 export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalResult> {
@@ -77,7 +77,10 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
   const { literal: vectorLiteral, mode } = await embedQuestion(question, session);
 
   const visibility = searchVisibility(role, session.userId);
-  const scope = opts.articleId ? Prisma.sql`AND ch."articleId" = ${opts.articleId}` : Prisma.empty;
+  const scope =
+    opts.articleIds && opts.articleIds.length > 0
+      ? Prisma.sql`AND ch."articleId" = ANY(ARRAY[${Prisma.join(opts.articleIds)}]::text[])`
+      : Prisma.empty;
 
   const ctes: Prisma.Sql[] = [
     Prisma.sql`q AS (SELECT websearch_to_tsquery('english', ${question}) AS tsq)`,
