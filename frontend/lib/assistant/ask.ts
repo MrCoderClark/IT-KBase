@@ -18,6 +18,7 @@ import {
   streamAnswer,
 } from "./answer-client";
 import { capBundle, retrieveChunks, type RetrievedChunk } from "./retrieval";
+import { resolveArticleScope } from "./article-scope";
 import { logKnowledgeGap } from "./gaps";
 
 const NOT_IN_KB = "I couldn't find an answer to this in the knowledge base.";
@@ -68,11 +69,11 @@ export async function* askAssistant(input: AskInput): AsyncGenerator<AskEvent> {
   const { session, question } = input;
   const scope = input.scope ?? "library";
 
-  const retrieval = await retrieveChunks({
-    question,
-    session,
-    articleId: scope === "article" ? input.articleId : undefined,
-  });
+  const articleIds =
+    scope === "article" && input.articleId
+      ? await resolveArticleScope(input.articleId)
+      : undefined;
+  const retrieval = await retrieveChunks({ question, session, articleIds });
   const bundle = capBundle(retrieval.chunks);
   const citations = bundle.map((chunk, i) => toCitation(chunk, i + 1));
 

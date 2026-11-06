@@ -6,10 +6,13 @@
  *   cd frontend
  *   pnpm assistant:query "Autopilot fails with 0x80180014"
  *   pnpm assistant:query "reset a local admin password" sarah.kim@techbase.local
+ *   # scope to one article + its related set (A2), by slug:
+ *   pnpm assistant:query "does this work on Windows 10?" "" windows-11-resetting-local-administrator-password
  */
 
 import { Prisma } from "@prisma/client";
 import { appSessionForUserId } from "../lib/ingestion/worker-session";
+import { resolveArticleScope } from "../lib/assistant/article-scope";
 import { retrieveChunks } from "../lib/assistant/retrieval";
 import { prisma } from "../lib/db";
 import { ensureIngestOtel } from "../lib/otel/ingest";
@@ -19,9 +22,14 @@ loadEnvFiles();
 ensureIngestOtel();
 
 async function main() {
-  const [question, email] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const question = args[0];
+  // Order-independent: the arg with "@" is the user email, any other is the
+  // article slug (pnpm drops empty-string placeholders, so don't rely on them).
+  const email = args.slice(1).find((a) => a.includes("@"));
+  const articleSlug = args.slice(1).find((a) => a && !a.includes("@"));
   if (!question) {
-    console.error('Usage: pnpm assistant:query "<question>" [userEmail]');
+    console.error('Usage: pnpm assistant:query "<question>" [userEmail] [articleSlug]');
     process.exit(1);
   }
 
@@ -44,7 +52,21 @@ async function main() {
   `);
   console.info(`chunks in DB: ${counts.total} total, ${counts.embedded} with embeddings`);
 
-  const result = await retrieveChunks({ question, session });
+  let articleIds: string[] | undefined;
+  if (articleSlug) {
+    const article = await prisma.article.findUnique({
+      where: { slug: articleSlug },
+      select: { id: true },
+    });
+    if (!article) {
+      console.error(`No article with slug ${articleSlug}.`);
+      process.exit(1);
+    }
+    articleIds = await resolveArticleScope(article.id);
+    console.info(`scope: article "${articleSlug}" + related → ${articleIds.length} article(s)`);
+  }
+
+  const result = await retrieveChunks({ question, session, articleIds });
   console.info(
     `\nQ: ${question}\nas: ${session.email} (${session.role})\n` +
       `mode: ${result.mode}  grounded: ${result.grounded}  ` +
