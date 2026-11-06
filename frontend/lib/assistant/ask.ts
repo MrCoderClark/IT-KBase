@@ -197,11 +197,11 @@ async function loadHistory(
   userId: string,
 ): Promise<AnswerTurn[]> {
   if (!conversationId) return [];
-  const conversation = await prisma.assistantConversation.findUnique({
-    where: { id: conversationId },
-    select: { userId: true },
+  const conversation = await prisma.assistantConversation.findFirst({
+    where: { id: conversationId, userId, deletedAt: null },
+    select: { id: true },
   });
-  if (!conversation || conversation.userId !== userId) return [];
+  if (!conversation) return [];
   const messages = await prisma.assistantMessage.findMany({
     where: { conversationId },
     orderBy: { createdAt: "asc" },
@@ -250,11 +250,11 @@ async function persistTurn(args: {
 
 async function ensureConversation(input: AskInput): Promise<string> {
   if (input.conversationId) {
-    const existing = await prisma.assistantConversation.findUnique({
-      where: { id: input.conversationId },
-      select: { id: true, userId: true },
+    const existing = await prisma.assistantConversation.findFirst({
+      where: { id: input.conversationId, userId: input.session.userId, deletedAt: null },
+      select: { id: true },
     });
-    if (existing && existing.userId === input.session.userId) return existing.id;
+    if (existing) return existing.id;
   }
   const conversation = await prisma.assistantConversation.create({
     data: {
