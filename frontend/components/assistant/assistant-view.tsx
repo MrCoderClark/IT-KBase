@@ -3,8 +3,25 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUp, ExternalLink, FileText, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  ArrowUp,
+  Clock,
+  ExternalLink,
+  FileText,
+  Plus,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+} from "lucide-react";
 import { CodeBlock } from "@/components/kb/code-block";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 type Source = { n: number; slug: string; title: string; sectionAnchor: string; versionId: string };
@@ -26,6 +43,26 @@ type Turn = {
   chunks: number;
 };
 
+type ConversationSummary = {
+  id: string;
+  title: string | null;
+  updatedAt: string;
+  messageCount: number;
+};
+
+type StoredCitation = Source & { articleId?: string };
+
+type ConvMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  citations: unknown;
+  grounded: boolean;
+  helpful: boolean | null;
+};
+
+type ConversationDetail = { id: string; messages: ConvMessage[] };
+
 const SUGGESTIONS = [
   "Reset a Windows 11 local admin password",
   "Retrieve a BitLocker recovery key",
@@ -33,14 +70,91 @@ const SUGGESTIONS = [
   "Join a Windows 11 device to Entra ID",
 ];
 
+/** Rebuild the on-screen thread from a stored conversation's turns. */
+function turnsFromMessages(messages: ConvMessage[]): Turn[] {
+  const turns: Turn[] = [];
+  let pending: Turn | null = null;
+  for (const m of messages) {
+    if (m.role === "user") {
+      if (pending) turns.push(pending);
+      pending = {
+        id: m.id,
+        question: m.content,
+        answer: "",
+        sources: [],
+        nearest: [],
+        grounded: null,
+        status: "done",
+        articles: 0,
+        chunks: 0,
+      };
+    } else {
+      const stored = Array.isArray(m.citations) ? (m.citations as StoredCitation[]) : [];
+      const sources: Source[] = stored.map((c) => ({
+        n: c.n,
+        slug: c.slug,
+        title: c.title,
+        sectionAnchor: c.sectionAnchor,
+        versionId: c.versionId,
+      }));
+      const base: Turn = pending ?? {
+        id: m.id,
+        question: "",
+        answer: "",
+        sources: [],
+        nearest: [],
+        grounded: null,
+        status: "done",
+        articles: 0,
+        chunks: 0,
+      };
+      turns.push({
+        ...base,
+        answer: m.content,
+        sources,
+        grounded: m.grounded,
+        status: "done",
+        messageId: m.id,
+        helpful: m.helpful,
+        articles: new Set(stored.map((c) => c.articleId).filter(Boolean)).size,
+        chunks: sources.length,
+      });
+      pending = null;
+    }
+  }
+  if (pending) turns.push(pending);
+  return turns;
+}
+
 export function AssistantView({ canDraft }: { canDraft: boolean }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const conversationId = useRef<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const prefilled = useRef(false);
+
+  const startNew = useCallback(() => {
+    if (busy) return;
+    conversationId.current = null;
+    setTurns([]);
+    setInput("");
+  }, [busy]);
+
+  const loadConversation = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/assistant/conversations/${id}`);
+      if (!res.ok) return;
+      const detail = (await res.json()) as ConversationDetail;
+      conversationId.current = detail.id;
+      setTurns(turnsFromMessages(detail.messages));
+      setHistoryOpen(false);
+    } catch {
+      /* best-effort: leave the current thread in place */
+    }
+  }, []);
 
   const ask = useCallback(
     async (question: string, mode: "answer" | "eli5" = "answer") => {
@@ -109,11 +223,21 @@ export function AssistantView({ canDraft }: { canDraft: boolean }) {
   return (
     <div className="mx-auto flex w-full max-w-[1120px] gap-6 px-4 py-6 lg:px-8">
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="mb-5">
-          <h1 className="flex items-center gap-2 text-[22px] font-semibold text-fg">
-            <Sparkles className="size-5 text-accent" aria-hidden /> Ask the knowledge base
-          </h1>
-          <p className="mt-1 text-[13px] text-fg-muted">Answers come only from articles you can open.</p>
+        <header className="mb-5 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-2 text-[22px] font-semibold text-fg">
+              <Sparkles className="size-5 text-accent" aria-hidden /> Ask the knowledge base
+            </h1>
+            <p className="mt-1 text-[13px] text-fg-muted">Answers come only from articles you can open.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <HeaderButton onClick={startNew} disabled={busy || turns.length === 0}>
+              <Plus className="size-3.5" aria-hidden /> New
+            </HeaderButton>
+            <HeaderButton onClick={() => setHistoryOpen(true)}>
+              <Clock className="size-3.5" aria-hidden /> History
+            </HeaderButton>
+          </div>
         </header>
 
         {turns.length === 0 ? (
@@ -131,8 +255,192 @@ export function AssistantView({ canDraft }: { canDraft: boolean }) {
       </div>
 
       <SourcesRail turn={latest} />
+
+      <HistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        activeId={conversationId.current}
+        onPick={(id) => void loadConversation(id)}
+        onDeleteActive={startNew}
+      />
     </div>
   );
+}
+
+function HeaderButton({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-fg-muted transition enabled:hover:bg-surface-muted enabled:hover:text-fg disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
+function HistoryDialog({
+  open,
+  onOpenChange,
+  activeId,
+  onPick,
+  onDeleteActive,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  activeId: string | null;
+  onPick: (id: string) => void;
+  onDeleteActive: () => void;
+}) {
+  const [items, setItems] = useState<ConversationSummary[] | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const load = useCallback(async (nextCursor: string | null) => {
+    setLoading(true);
+    try {
+      const url = nextCursor
+        ? `/api/assistant/conversations?cursor=${encodeURIComponent(nextCursor)}`
+        : "/api/assistant/conversations";
+      const res = await fetch(url);
+      if (!res.ok) {
+        setItems((prev) => prev ?? []);
+        return;
+      }
+      const page = (await res.json()) as {
+        conversations: ConversationSummary[];
+        nextCursor: string | null;
+      };
+      setItems((prev) => (nextCursor && prev ? [...prev, ...page.conversations] : page.conversations));
+      setCursor(page.nextCursor);
+    } catch {
+      setItems((prev) => prev ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setConfirmId(null);
+      void load(null);
+    } else {
+      setItems(null);
+      setCursor(null);
+    }
+  }, [open, load]);
+
+  const remove = async (id: string) => {
+    try {
+      const res = await fetch(`/api/assistant/conversations/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) return;
+    } catch {
+      return;
+    }
+    setItems((prev) => (prev ? prev.filter((c) => c.id !== id) : prev));
+    setConfirmId(null);
+    if (id === activeId) onDeleteActive();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Your conversations</DialogTitle>
+          <DialogDescription>Pick up a past question or clear one out.</DialogDescription>
+        </DialogHeader>
+        <div className="-mx-1 max-h-[55vh] overflow-y-auto px-1">
+          {items === null ? (
+            <p className="py-6 text-center text-[13px] text-fg-subtle">Loading…</p>
+          ) : items.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-fg-subtle">No conversations yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {items.map((c) => (
+                <li
+                  key={c.id}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-3 py-2",
+                    c.id === activeId ? "border-accent bg-accent-soft" : "border-border",
+                  )}
+                >
+                  <button type="button" onClick={() => onPick(c.id)} className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-[13px] font-medium text-fg">
+                      {c.title ?? "Untitled"}
+                    </span>
+                    <span className="block text-[11px] text-fg-subtle">
+                      {relativeTime(c.updatedAt)} · {c.messageCount} message{c.messageCount === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                  {confirmId === c.id ? (
+                    <span className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void remove(c.id)}
+                        className="rounded-md bg-red-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] text-fg-muted hover:bg-surface-muted"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(c.id)}
+                      aria-label="Delete conversation"
+                      className="shrink-0 rounded-md p-1.5 text-fg-subtle transition hover:bg-surface-muted hover:text-red-600"
+                    >
+                      <Trash2 className="size-3.5" aria-hidden />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {cursor ? (
+            <div className="pt-2">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void load(cursor)}
+                className="w-full rounded-lg border border-border py-2 text-[12px] text-fg-muted hover:bg-surface-muted disabled:opacity-50"
+              >
+                {loading ? "Loading…" : "Load more"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function relativeTime(iso: string): string {
+  const delta = Math.max(0, Date.now() - new Date(iso).getTime());
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function applyEvent(
