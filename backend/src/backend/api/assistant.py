@@ -146,7 +146,9 @@ def _answer_events(answerer: KBAnswerer, body: AnswerBody, span: Span) -> Iterat
                 )
     except AnswerError as exc:
         span.set_status(Status(StatusCode.ERROR, str(exc)))
-        log.warning("assistant.answer.failed", error=str(exc))
+        # Log the underlying provider error (HTTP status + detail); the user-facing
+        # message stays generic.
+        log.warning("assistant.answer.failed", error=str(exc), cause=repr(exc.__cause__))
         yield _sse("failed", {"code": "model", "message": str(exc)})
 
 

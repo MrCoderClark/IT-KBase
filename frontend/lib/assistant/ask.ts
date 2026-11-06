@@ -38,6 +38,7 @@ export type AskEvent =
         usage: Record<string, number>;
         traceId: string | null;
         nearest: { slug: string; title: string }[];
+        citedN: number[]; // citation numbers the answer actually used
       };
     }
   | { type: "failed"; data: { code: string; message: string } };
@@ -111,7 +112,15 @@ export async function* askAssistant(input: AskInput): AsyncGenerator<AskEvent> {
     });
     yield {
       type: "done",
-      data: { messageId, conversationId, grounded: false, usage: {}, traceId, nearest: retrieval.nearest },
+      data: {
+        messageId,
+        conversationId,
+        grounded: false,
+        usage: {},
+        traceId,
+        nearest: retrieval.nearest,
+        citedN: [],
+      },
     };
     return;
   }
@@ -168,7 +177,15 @@ export async function* askAssistant(input: AskInput): AsyncGenerator<AskEvent> {
 
   yield {
     type: "done",
-    data: { messageId, conversationId, grounded: true, usage, traceId, nearest: [] },
+    data: {
+      messageId,
+      conversationId,
+      grounded: true,
+      usage,
+      traceId,
+      nearest: [],
+      citedN: used.map((c) => c.n),
+    },
   };
 }
 
