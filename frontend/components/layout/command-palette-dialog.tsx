@@ -12,6 +12,7 @@ import {
   Moon,
   Plus,
   BookOpen,
+  Sparkles,
   Sun,
   Tag,
   Upload,
@@ -127,6 +128,7 @@ export function CommandPaletteDialog({
   const themeLabel = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
   const ThemeIcon = theme === "dark" ? Sun : Moon;
   const actions = [
+    { id: "assistant", label: "Ask AI assistant", icon: Sparkles, run: () => go("/assistant") },
     can(role, "article.create")
       ? { id: "create", label: "Create article", icon: Plus, run: () => go("/create") }
       : null,
@@ -161,6 +163,22 @@ export function CommandPaletteDialog({
         />
         <CommandList>
           <CommandEmpty>No matches.</CommandEmpty>
+          {searching ? (
+            <CommandGroup heading="Assistant">
+              <CommandItem
+                value="__ask_ai"
+                onSelect={() => go(`/assistant?q=${encodeURIComponent(query.trim())}`)}
+              >
+                <Sparkles className="text-accent" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-fg">Ask the AI assistant</span>
+                  <span className="block truncate text-[12px] leading-4 text-fg-subtle">
+                    &ldquo;{query.trim()}&rdquo;
+                  </span>
+                </span>
+              </CommandItem>
+            </CommandGroup>
+          ) : null}
           {searching ? (
             <CommandGroup heading="Articles">
               {hits === null ? (
