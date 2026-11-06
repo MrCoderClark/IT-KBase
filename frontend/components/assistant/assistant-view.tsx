@@ -476,16 +476,21 @@ function applyEvent(
         status: "streaming",
       }));
       break;
-    case "done":
+    case "done": {
       conversationId.current = (data.conversationId as string) ?? conversationId.current;
+      const citedN = Array.isArray(data.citedN) ? (data.citedN as number[]) : null;
       apply((t) => ({
         ...t,
+        // Collapse the rail from all retrieved candidates to the ones the
+        // answer actually cited, so live matches the reloaded-from-history view.
+        sources: citedN ? t.sources.filter((s) => citedN.includes(s.n)) : t.sources,
         grounded: Boolean(data.grounded),
         nearest: (data.nearest as Nearest[]) ?? [],
         messageId: data.messageId as string,
         status: "done",
       }));
       break;
+    }
     case "failed":
       apply((t) => ({ ...t, status: "failed", error: String((data as { message?: string }).message ?? "Failed.") }));
       break;
