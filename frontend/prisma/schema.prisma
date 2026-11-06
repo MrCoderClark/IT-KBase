@@ -78,6 +78,28 @@ enum ChunkKind {
   @@schema("public")
 }
 
+enum AssistantScope {
+  library
+  article
+
+  @@schema("public")
+}
+
+enum AssistantRole {
+  user
+  assistant
+
+  @@schema("public")
+}
+
+enum GapStatus {
+  open
+  drafted
+  dismissed
+
+  @@schema("public")
+}
+
 enum CalloutVariant {
   info
   important
@@ -272,6 +294,58 @@ model ArticleChunk {
   @@index([articleId, ord])
   @@index([versionId])
   @@index([contentHash])
+  @@schema("public")
+}
+
+/// AI Assistant conversation (spec 20 §6.2). One per user thread.
+model AssistantConversation {
+  id        String             @id @default(cuid())
+  userId    String
+  title     String? // first question, truncated
+  scope     AssistantScope     @default(library)
+  articleId String? // set when scope = article
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  messages  AssistantMessage[]
+
+  @@index([userId, updatedAt])
+  @@schema("public")
+}
+
+/// One turn in a conversation. Assistant turns carry citations and metrics.
+model AssistantMessage {
+  id             String        @id @default(cuid())
+  conversationId String
+  role           AssistantRole
+  content        String
+  citations      Json? // [{ n, chunkId, articleId, slug, sectionAnchor, versionId }]
+  grounded       Boolean       @default(true)
+  model          String?
+  tokensIn       Int?
+  tokensOut      Int?
+  latencyMs      Int?
+  traceId        String? // OTel trace id for the Grafana jump
+  helpful        Boolean? // thumbs; null = unrated
+  createdAt      DateTime      @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@schema("public")
+}
+
+/// A question the KB could not answer (spec 20 §3.1 A7, §6.2). Clustered by a
+/// normalized key so repeated asks raise askCount instead of duplicating.
+model KnowledgeGap {
+  id             String    @id @default(cuid())
+  normalized     String    @unique // lowercased, stop-worded question key
+  sampleQuestion String
+  askCount       Int       @default(1)
+  lastAskedAt    DateTime  @default(now())
+  status         GapStatus @default(open)
+  draftArticleId String?
+
+  @@index([status, askCount])
   @@schema("public")
 }
 

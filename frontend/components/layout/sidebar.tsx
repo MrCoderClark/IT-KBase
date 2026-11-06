@@ -104,7 +104,8 @@ export function Sidebar({
   const canCreate = Boolean(role && can(role, "article.create"));
   const showAnalytics = Boolean(role && canReadArticleAnalytics(role));
   const items = PRIMARY.filter((item) => {
-    if (item.href === "/create" || item.href === "/assistant" || item.href === "/import") return canCreate;
+    // AI Assistant is open to every signed-in role (spec 20 Q1); create/import stay author+.
+    if (item.href === "/create" || item.href === "/import") return canCreate;
     if (item.href === "/analytics") return showAnalytics;
     return true;
   }).map((item) => (item.label === "Knowledge Base" ? { ...item, children: kbChildren(counts) } : item));
