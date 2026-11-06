@@ -306,6 +306,7 @@ model AssistantConversation {
   articleId String? // set when scope = article
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+  deletedAt DateTime? // soft delete; purge cron hard-deletes after the retention window
   messages  AssistantMessage[]
 
   @@index([userId, updatedAt])
