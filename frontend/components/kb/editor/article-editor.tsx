@@ -29,6 +29,7 @@ import {
   writeLocalDraft,
 } from "@/lib/editor/local-draft";
 import { CopilotPanel } from "@/components/kb/editor/copilot-panel";
+import { DuplicateCheck } from "@/components/kb/editor/duplicate-check";
 import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
@@ -575,6 +576,15 @@ export function ArticleEditor({
           ) : null}
 
           <CopilotPanel draft={draft} />
+
+          <DuplicateCheck
+            title={draft.title}
+            summary={draft.summary}
+            tagNames={draft.tagSlugs.map(
+              (slug) => tags.find((tag) => tag.slug === slug)?.name ?? slug,
+            )}
+            excludeSlug={draft.slug}
+          />
 
           {error && (
             <p className="text-[12px] font-medium text-warning" role="alert">
