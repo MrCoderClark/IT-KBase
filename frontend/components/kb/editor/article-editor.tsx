@@ -242,7 +242,7 @@ export function ArticleEditor({
     });
   }
 
-  /** Copilot "Draft from notes": replace content, keep slug/version/status/taxonomy. */
+  /** Copilot draft (prompt or notes): replace content, keep slug/version/status/taxonomy. */
   function applyGeneratedDraft(parsed: ParsedDraft) {
     const generated = parsedToDraft(parsed);
     setDraft((current) => ({
@@ -384,7 +384,7 @@ export function ArticleEditor({
               onClick={() => setCopilotOpen(true)}
             >
               <Sparkles size={14} className="text-accent" aria-hidden />
-              Draft from notes
+              Draft with Copilot
             </Button>
           ) : null}
           <Button
@@ -410,6 +410,12 @@ export function ArticleEditor({
       <CopilotDraftDialog
         open={copilotOpen}
         hasContent={editorHasContent}
+        categoryName={
+          categories.find((category) => category.slug === draft.categorySlug)?.name ?? null
+        }
+        tagNames={draft.tagSlugs.map(
+          (slug) => tags.find((tag) => tag.slug === slug)?.name ?? slug,
+        )}
         onOpenChange={setCopilotOpen}
         onApply={applyGeneratedDraft}
       />

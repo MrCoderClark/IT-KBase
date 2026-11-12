@@ -111,22 +111,46 @@
       },
       "DraftBody": {
         "properties": {
+          "categories": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 60,
+            "title": "Categories",
+            "type": "array"
+          },
           "mode": {
-            "const": "notes",
             "default": "notes",
+            "enum": [
+              "notes",
+              "prompt"
+            ],
             "title": "Mode",
             "type": "string"
           },
           "notes": {
+            "default": "",
             "maxLength": 16000,
-            "minLength": 1,
             "title": "Notes",
             "type": "string"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 120,
+            "title": "Tags",
+            "type": "array"
           }
         },
-        "required": [
-          "notes"
-        ],
         "title": "DraftBody",
         "type": "object"
       },

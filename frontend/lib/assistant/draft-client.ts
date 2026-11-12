@@ -10,11 +10,15 @@ import type { ParsedDraft } from "@/lib/ingestion/to-draft";
 
 export class DraftError extends Error {}
 
-export async function requestDraft(args: {
-  notes: string;
-  mode: "notes";
-  assertion: string;
-}): Promise<ParsedDraft> {
+export type DraftRequest = {
+  mode: "notes" | "prompt";
+  notes?: string;
+  prompt?: string;
+  categories?: string[];
+  tags?: string[];
+};
+
+export async function requestDraft(args: DraftRequest & { assertion: string }): Promise<ParsedDraft> {
   const base = (process.env.INGESTION_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
   const headers = injectTraceHeaders(
     {
@@ -30,7 +34,13 @@ export async function requestDraft(args: {
     response = await fetch(`${base}/assistant/draft`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ notes: args.notes, mode: args.mode }),
+      body: JSON.stringify({
+        mode: args.mode,
+        notes: args.notes ?? "",
+        prompt: args.prompt ?? "",
+        categories: args.categories ?? [],
+        tags: args.tags ?? [],
+      }),
       signal: AbortSignal.timeout(180_000),
     });
   } catch (err) {

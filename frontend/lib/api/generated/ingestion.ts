@@ -258,13 +258,31 @@ export interface components {
         /** DraftBody */
         DraftBody: {
             /**
+             * Categories
+             * @default []
+             */
+            categories: string[];
+            /**
              * Mode
              * @default notes
-             * @constant
+             * @enum {string}
              */
-            mode: "notes";
-            /** Notes */
+            mode: "notes" | "prompt";
+            /**
+             * Notes
+             * @default
+             */
             notes: string;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: string[];
         };
         /** DraftResult */
         DraftResult: {
