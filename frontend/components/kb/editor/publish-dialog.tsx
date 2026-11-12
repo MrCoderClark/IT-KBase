@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Circle, CircleCheck } from "lucide-react";
+import { AlertTriangle, Circle, CircleCheck, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,10 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   nextArticleVersion,
-  publishChecks,
   type EditorDraft,
   type VersionBump,
 } from "@/lib/editor/draft";
+import { publishPreCheck } from "@/lib/assistant/publish-precheck";
 
 export function PublishDialog({
   draft,
@@ -34,8 +34,10 @@ export function PublishDialog({
   onPublish: (bump: Exclude<VersionBump, "patch">) => void;
 }) {
   const [bump, setBump] = useState<Exclude<VersionBump, "patch">>("minor");
-  const checks = publishChecks(draft);
-  const ready = checks.every((check) => check.ok);
+  const precheck = publishPreCheck(draft);
+  const checks = precheck.required;
+  const ready = precheck.ok;
+  const warnings = precheck.warnings;
   const next = nextArticleVersion(draft.version, bump);
   const hasHistory = Boolean(draft.version);
 
@@ -78,6 +80,33 @@ export function PublishDialog({
             </li>
           ))}
         </ul>
+
+        {warnings.length > 0 && (
+          <div className="space-y-1.5 rounded-sm border border-border bg-canvas px-3 py-2.5">
+            <p className="text-[11px] font-semibold tracking-wide text-fg-muted uppercase">
+              Pre-check — suggestions, won&apos;t block publish
+            </p>
+            <ul className="space-y-1.5">
+              {warnings.map((warning) => {
+                const important = warning.severity === "important";
+                const Icon = important ? AlertTriangle : Info;
+                return (
+                  <li key={warning.id} className="flex items-start gap-2 text-[12px] leading-4">
+                    <Icon
+                      size={14}
+                      className={`mt-0.5 shrink-0 ${important ? "text-warning" : "text-fg-subtle"}`}
+                      aria-hidden
+                    />
+                    <span className="text-fg">
+                      <span className="font-medium">{warning.label}</span>
+                      <span className="text-fg-muted"> — {warning.reason}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         <fieldset className="space-y-2">
           <legend className="text-[12px] font-medium text-fg-muted">Version</legend>
