@@ -15,6 +15,8 @@ from backend.assistant.drafter import (
     DraftRequest,
     FakeDrafter,
     OpenAICompatibleDrafter,
+    TaxonomyOption,
+    TidyRequest,
 )
 from backend.config import get_settings
 
@@ -146,6 +148,69 @@ def test_fake_drafter_uses_first_line_as_title() -> None:
     draft = FakeDrafter().draft(_notes("Reset password\nmore detail here"))
     assert draft.title == "Reset password"
     assert "more detail here" in draft.overview
+
+
+# --- tidy ------------------------------------------------------------------
+
+
+def test_tidy_maps_chosen_names_to_slugs_and_drops_invented() -> None:
+    written = {
+        "title": "Reset the admin password",
+        "summary": "Recover access.",
+        "overview": "...",
+        "steps": [],
+        "category": "Windows",  # matches by name, case-insensitive below
+        "tags": ["Windows 11", "Totally Made Up", "Recovery"],
+    }
+    drafter = OpenAICompatibleDrafter(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = drafter.tidy(
+        TidyRequest(
+            content="messy draft text",
+            categories=[TaxonomyOption(slug="windows", name="windows")],
+            tags=[
+                TaxonomyOption(slug="windows-11", name="Windows 11"),
+                TaxonomyOption(slug="recovery", name="Recovery"),
+            ],
+        )
+    )
+    assert result.draft.title == "Reset the admin password"
+    assert result.category_slug == "windows"
+    # "Totally Made Up" is not in the offered tags, so it is dropped.
+    assert result.tag_slugs == ["windows-11", "recovery"]
+
+
+def test_tidy_empty_content_raises() -> None:
+    drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=lambda _m: "{}")
+    with pytest.raises(DraftError):
+        drafter.tidy(TidyRequest(content="   "))
+
+
+def test_author_tidies_a_draft(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/tidy",
+        json={
+            "content": "Reset the admin password\nsome messy notes",
+            "categories": [{"slug": "windows", "name": "Windows"}],
+            "tags": [{"slug": "recovery", "name": "Recovery"}],
+        },
+        headers=_user(monkeypatch, "author"),
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["draft"]["title"] == "Reset the admin password"
+    assert data["categorySlug"] == "windows"
+    assert data["tagSlugs"] == ["recovery"]
+
+
+def test_tidy_requires_author(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/tidy", json={"content": "x"}, headers=_user(monkeypatch, "reader")
+    )
+    assert response.status_code == 403
 
 
 # --- endpoint --------------------------------------------------------------

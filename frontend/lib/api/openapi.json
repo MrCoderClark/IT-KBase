@@ -569,6 +569,88 @@
         "title": "PrincipalResponse",
         "type": "object"
       },
+      "TaxonomyOpt": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "TaxonomyOpt",
+        "type": "object"
+      },
+      "TidyBody": {
+        "properties": {
+          "categories": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyOpt"
+            },
+            "maxItems": 200,
+            "title": "Categories",
+            "type": "array"
+          },
+          "content": {
+            "maxLength": 24000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyOpt"
+            },
+            "maxItems": 500,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "TidyBody",
+        "type": "object"
+      },
+      "TidyResponse": {
+        "properties": {
+          "categorySlug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categoryslug"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ParsedDraft"
+          },
+          "tagSlugs": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Tagslugs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "TidyResponse",
+        "type": "object"
+      },
       "Turn": {
         "properties": {
           "content": {
@@ -756,6 +838,47 @@
           }
         },
         "summary": "Embed",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/tidy": {
+      "post": {
+        "operationId": "tidy_assistant_tidy_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TidyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TidyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tidy",
         "tags": [
           "assistant"
         ]

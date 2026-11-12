@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/tidy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tidy */
+        post: operations["tidy_assistant_tidy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -471,6 +488,39 @@ export interface components {
             /** User Id */
             user_id?: string | null;
         };
+        /** TaxonomyOpt */
+        TaxonomyOpt: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** TidyBody */
+        TidyBody: {
+            /**
+             * Categories
+             * @default []
+             */
+            categories: components["schemas"]["TaxonomyOpt"][];
+            /** Content */
+            content: string;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: components["schemas"]["TaxonomyOpt"][];
+        };
+        /** TidyResponse */
+        TidyResponse: {
+            /** Categoryslug */
+            categorySlug?: string | null;
+            draft: components["schemas"]["ParsedDraft"];
+            /**
+             * Tagslugs
+             * @default []
+             */
+            tagSlugs: string[];
+        };
         /** Turn */
         Turn: {
             /** Content */
@@ -589,6 +639,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmbedResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tidy_assistant_tidy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TidyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TidyResponse"];
                 };
             };
             /** @description Validation Error */
