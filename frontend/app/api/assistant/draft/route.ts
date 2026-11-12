@@ -13,7 +13,13 @@ import { getSession } from "@/lib/auth/session";
 
 export const maxDuration = 180;
 
-type Body = { notes?: string; mode?: "notes" };
+type Body = {
+  mode?: "notes" | "prompt";
+  notes?: string;
+  prompt?: string;
+  categories?: string[];
+  tags?: string[];
+};
 
 export async function POST(request: Request): Promise<Response> {
   const session = await getSession();
@@ -29,10 +35,20 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request body." }, { status: 400 });
   }
 
+  const mode = body.mode === "prompt" ? "prompt" : "notes";
   const notes = (body.notes ?? "").trim();
-  if (!notes) return Response.json({ error: "Add some notes to draft from." }, { status: 400 });
+  const prompt = (body.prompt ?? "").trim();
+  if (mode === "notes" && !notes) {
+    return Response.json({ error: "Add some notes to draft from." }, { status: 400 });
+  }
+  if (mode === "prompt" && !prompt) {
+    return Response.json({ error: "Describe the article to draft." }, { status: 400 });
+  }
   if (notes.length > 16_000) {
     return Response.json({ error: "Those notes are too long." }, { status: 400 });
+  }
+  if (prompt.length > 2_000) {
+    return Response.json({ error: "That prompt is too long." }, { status: 400 });
   }
 
   const rate = await checkAssistantRate(session.userId);
@@ -48,8 +64,11 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "The AI Assistant is not configured." }, { status: 503 });
   }
 
+  const categories = (body.categories ?? []).filter((c) => typeof c === "string").slice(0, 60);
+  const tags = (body.tags ?? []).filter((t) => typeof t === "string").slice(0, 120);
+
   try {
-    const draft = await requestDraft({ notes, mode: "notes", assertion });
+    const draft = await requestDraft({ mode, notes, prompt, categories, tags, assertion });
     return Response.json({ draft });
   } catch (err) {
     const message =

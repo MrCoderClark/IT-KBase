@@ -12,6 +12,7 @@ from auth_py.assertion import AssertionClaims, mint_assertion
 from backend.app import create_app
 from backend.assistant.drafter import (
     DraftError,
+    DraftRequest,
     FakeDrafter,
     OpenAICompatibleDrafter,
 )
@@ -74,16 +75,42 @@ def _use_drafter(monkeypatch: pytest.MonkeyPatch, drafter: object | None) -> Non
 # --- drafter ---------------------------------------------------------------
 
 
+def _notes(notes: str) -> DraftRequest:
+    return DraftRequest(mode="notes", notes=notes)
+
+
 def test_structures_notes_into_canonical_sections() -> None:
     drafter = OpenAICompatibleDrafter(
         api_key="k", model="m", base_url="u", complete=lambda _messages: json.dumps(STRUCTURED)
     )
-    draft = drafter.draft(notes="reset admin password runbook")
+    draft = drafter.draft(_notes("reset admin password runbook"))
     assert draft.title == "Reset the local administrator password"
     assert draft.steps[0].code == "net user Administrator /active:yes"
     assert draft.prerequisites == ["Bootable Windows 11 media"]
     # Drafted callouts default to the warning variant.
     assert draft.troubleshooting[0].variant == "warning"
+
+
+def test_prompt_mode_grounds_taxonomy_hints() -> None:
+    seen: dict[str, str] = {}
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        seen["user"] = messages[-1]["content"]
+        return json.dumps({"title": "Rotate the app secret", "steps": []})
+
+    drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=complete)
+    draft = drafter.draft(
+        DraftRequest(
+            mode="prompt",
+            prompt="Write a runbook for rotating the Entra ID app secret",
+            categories=["Identity"],
+            tags=["Entra ID"],
+        )
+    )
+    assert draft.title == "Rotate the app secret"
+    assert "Entra ID app secret" in seen["user"]
+    assert "Identity" in seen["user"]  # category hint reaches the model
+    assert "Entra ID" in seen["user"]  # tag hint reaches the model
 
 
 def test_one_repair_then_success() -> None:
@@ -94,7 +121,7 @@ def test_one_repair_then_success() -> None:
         return "not json" if len(calls) == 1 else json.dumps({"title": "Fixed", "steps": []})
 
     drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=complete)
-    draft = drafter.draft(notes="x")
+    draft = drafter.draft(_notes("x"))
     assert draft.title == "Fixed"
     assert len(calls) == 2  # original + one repair
 
@@ -104,17 +131,19 @@ def test_invalid_twice_raises_draft_error() -> None:
         api_key="k", model="m", base_url="u", complete=lambda _messages: "still not json"
     )
     with pytest.raises(DraftError):
-        drafter.draft(notes="x")
+        drafter.draft(_notes("x"))
 
 
-def test_blank_notes_raise_draft_error() -> None:
+def test_blank_input_raises_draft_error() -> None:
     drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=lambda _m: "{}")
     with pytest.raises(DraftError):
-        drafter.draft(notes="   ")
+        drafter.draft(_notes("   "))
+    with pytest.raises(DraftError):
+        drafter.draft(DraftRequest(mode="prompt", prompt="  "))
 
 
 def test_fake_drafter_uses_first_line_as_title() -> None:
-    draft = FakeDrafter().draft(notes="Reset password\nmore detail here")
+    draft = FakeDrafter().draft(_notes("Reset password\nmore detail here"))
     assert draft.title == "Reset password"
     assert "more detail here" in draft.overview
 
@@ -131,6 +160,29 @@ def test_author_drafts_from_notes(api: TestClient, monkeypatch: pytest.MonkeyPat
     )
     assert response.status_code == 200
     assert response.json()["draft"]["title"] == "Reset the admin password"
+
+
+def test_author_drafts_from_prompt(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/draft",
+        json={"mode": "prompt", "prompt": "Rotate the Entra ID app secret", "tags": ["Entra ID"]},
+        headers=_user(monkeypatch, "author"),
+    )
+    assert response.status_code == 200
+    assert response.json()["draft"]["title"] == "Rotate the Entra ID app secret"
+
+
+def test_prompt_mode_without_a_prompt_is_422(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/draft",
+        json={"mode": "prompt", "prompt": "  "},
+        headers=_user(monkeypatch, "author"),
+    )
+    assert response.status_code == 422
 
 
 def test_reader_is_forbidden(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from opentelemetry.trace import Span, Status, StatusCode, set_span_in_context
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from auth_py import Principal
 from backend.assistant.answerer import (
@@ -27,7 +27,7 @@ from backend.assistant.answerer import (
     Turn,
     get_answerer,
 )
-from backend.assistant.drafter import DraftError, DraftMode, get_drafter
+from backend.assistant.drafter import DraftError, DraftMode, DraftRequest, get_drafter
 from backend.assistant.embeddings import EmbeddingError, get_embedder
 from backend.parse.models import ParsedDraft
 from backend.policy import can, require_capability
@@ -60,8 +60,19 @@ class AnswerBody(BaseModel):
 
 
 class DraftBody(BaseModel):
-    notes: Annotated[str, Field(min_length=1, max_length=16_000)]
     mode: DraftMode = "notes"
+    notes: Annotated[str, Field(max_length=16_000)] = ""
+    prompt: Annotated[str, Field(max_length=2_000)] = ""
+    categories: Annotated[list[str], Field(max_length=60)] = []
+    tags: Annotated[list[str], Field(max_length=120)] = []
+
+    @model_validator(mode="after")
+    def _require_input(self) -> DraftBody:
+        if self.mode == "notes" and not self.notes.strip():
+            raise ValueError("notes is required for mode 'notes'")
+        if self.mode == "prompt" and not self.prompt.strip():
+            raise ValueError("prompt is required for mode 'prompt'")
+        return self
 
 
 class DraftResult(BaseModel):
@@ -125,8 +136,15 @@ def build_assistant_router(dependency) -> APIRouter:
         with get_tracer().start_as_current_span(
             "assistant.draft", attributes={"tb.mode": body.mode}
         ) as span:
+            draft_request = DraftRequest(
+                mode=body.mode,
+                notes=body.notes,
+                prompt=body.prompt,
+                categories=list(body.categories),
+                tags=list(body.tags),
+            )
             try:
-                result = await asyncio.to_thread(drafter.draft, notes=body.notes, mode=body.mode)
+                result = await asyncio.to_thread(drafter.draft, draft_request)
             except DraftError as exc:
                 span.set_status(Status(StatusCode.ERROR, str(exc)))
                 log.warning("assistant.draft.failed", mode=body.mode, error=str(exc))
