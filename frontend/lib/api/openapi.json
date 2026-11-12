@@ -109,6 +109,96 @@
         "title": "BundleChunk",
         "type": "object"
       },
+      "DiffChange": {
+        "properties": {
+          "after": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Before",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "changed",
+              "added",
+              "removed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DiffChange",
+        "type": "object"
+      },
+      "DiffSummaryBody": {
+        "properties": {
+          "changes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiffChange"
+            },
+            "maxItems": 60,
+            "title": "Changes",
+            "type": "array"
+          },
+          "fromVersion": {
+            "default": "",
+            "maxLength": 20,
+            "title": "Fromversion",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          },
+          "toVersion": {
+            "default": "",
+            "maxLength": 20,
+            "title": "Toversion",
+            "type": "string"
+          }
+        },
+        "title": "DiffSummaryBody",
+        "type": "object"
+      },
+      "DiffSummaryResponse": {
+        "properties": {
+          "changes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "title": "DiffSummaryResponse",
+        "type": "object"
+      },
       "DraftBody": {
         "properties": {
           "categories": {
@@ -756,6 +846,47 @@
           }
         },
         "summary": "Answer",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/diff-summary": {
+      "post": {
+        "operationId": "diff_summary_assistant_diff_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiffSummaryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiffSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Diff Summary",
         "tags": [
           "assistant"
         ]
