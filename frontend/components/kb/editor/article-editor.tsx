@@ -28,6 +28,7 @@ import {
   readLocalDraft,
   writeLocalDraft,
 } from "@/lib/editor/local-draft";
+import { CopilotPanel } from "@/components/kb/editor/copilot-panel";
 import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
@@ -572,6 +573,8 @@ export function ArticleEditor({
               </span>
             </label>
           ) : null}
+
+          <CopilotPanel draft={draft} />
 
           {error && (
             <p className="text-[12px] font-medium text-warning" role="alert">
