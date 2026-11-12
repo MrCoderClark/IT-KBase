@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/diff-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Diff Summary */
+        post: operations["diff_summary_assistant_diff_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assistant/draft": {
         parameters: {
             query?: never;
@@ -271,6 +288,62 @@ export interface components {
             sectionTitle: string;
             /** Text */
             text: string;
+        };
+        /** DiffChange */
+        DiffChange: {
+            /**
+             * After
+             * @default
+             */
+            after: string;
+            /**
+             * Before
+             * @default
+             */
+            before: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "changed" | "added" | "removed";
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** DiffSummaryBody */
+        DiffSummaryBody: {
+            /**
+             * Changes
+             * @default []
+             */
+            changes: components["schemas"]["DiffChange"][];
+            /**
+             * Fromversion
+             * @default
+             */
+            fromVersion: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Toversion
+             * @default
+             */
+            toVersion: string;
+        };
+        /** DiffSummaryResponse */
+        DiffSummaryResponse: {
+            /**
+             * Changes
+             * @default []
+             */
+            changes: string[];
+            /** Summary */
+            summary: string;
         };
         /** DraftBody */
         DraftBody: {
@@ -573,6 +646,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diff_summary_assistant_diff_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiffSummaryBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiffSummaryResponse"];
                 };
             };
             /** @description Validation Error */

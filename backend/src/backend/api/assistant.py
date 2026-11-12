@@ -36,6 +36,13 @@ from backend.assistant.drafter import (
     get_drafter,
 )
 from backend.assistant.embeddings import EmbeddingError, get_embedder
+from backend.assistant.review import (
+    DiffStatus,
+    DiffSummaryRequest,
+    ReviewError,
+    SectionChange,
+    get_reviewer,
+)
 from backend.parse.models import ParsedDraft
 from backend.policy import can, require_capability
 from backend.telemetry import get_logger, get_tracer, iter_with_context
@@ -101,6 +108,25 @@ class TidyResponse(BaseModel):
     draft: ParsedDraft
     categorySlug: str | None = None
     tagSlugs: list[str] = []
+
+
+class DiffChange(BaseModel):
+    title: Annotated[str, Field(max_length=300)] = ""
+    status: DiffStatus
+    before: Annotated[str, Field(max_length=4_000)] = ""
+    after: Annotated[str, Field(max_length=4_000)] = ""
+
+
+class DiffSummaryBody(BaseModel):
+    title: Annotated[str, Field(max_length=300)] = ""
+    fromVersion: Annotated[str, Field(max_length=20)] = ""
+    toVersion: Annotated[str, Field(max_length=20)] = ""
+    changes: Annotated[list[DiffChange], Field(max_length=60)] = []
+
+
+class DiffSummaryResponse(BaseModel):
+    summary: str
+    changes: list[str] = []
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -206,6 +232,51 @@ def build_assistant_router(dependency) -> APIRouter:
             categorySlug=result.category_slug,
             tagSlugs=result.tag_slugs,
         )
+
+    @router.post("/assistant/diff-summary", response_model=DiffSummaryResponse)
+    async def diff_summary(
+        body: DiffSummaryBody, principal: Principal = get_principal
+    ) -> DiffSummaryResponse:
+        # Version history is reviewer+ (spec 20 §3.3 / canReadArticleHistory); the
+        # service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "article.publish")
+        reviewer = get_reviewer()
+        if reviewer is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        diff_request = DiffSummaryRequest(
+            title=body.title,
+            from_version=body.fromVersion,
+            to_version=body.toVersion,
+            changes=[
+                SectionChange(
+                    title=change.title,
+                    status=change.status,
+                    before=change.before,
+                    after=change.after,
+                )
+                for change in body.changes
+            ],
+        )
+        with get_tracer().start_as_current_span(
+            "assistant.diff_summary", attributes={"tb.changes": len(body.changes)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(reviewer.summarize_diff, diff_request)
+            except ReviewError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.diff_summary.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.highlights", len(result.changes))
+
+        log.info(
+            "assistant.diff_summary",
+            changes=len(body.changes),
+            highlights=len(result.changes),
+            caller=principal.kind,
+        )
+        return DiffSummaryResponse(summary=result.summary, changes=result.changes)
 
     return router
 

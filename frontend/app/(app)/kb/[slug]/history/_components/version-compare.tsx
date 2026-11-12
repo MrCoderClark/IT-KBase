@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RestoreVersionForm } from "@/app/(app)/kb/[slug]/history/_components/restore-version-form";
+import { DiffSummaryCard } from "@/app/(app)/kb/[slug]/history/_components/diff-summary-card";
 import type { ComparedSection } from "@/lib/kb/section-compare";
 
 function statusLabel(status: ComparedSection["status"], selectedVersion: string): string {
@@ -42,6 +43,9 @@ export function VersionCompare({
           All versions
         </Link>
       </p>
+      {changed > 0 ? (
+        <DiffSummaryCard slug={slug} fromVersion={selectedVersion} toVersion={currentVersion} />
+      ) : null}
       {canRestore ? <div className="mb-4"><RestoreVersionForm slug={slug} version={selectedVersion} /></div> : null}
       <div className="mb-3 grid grid-cols-2 gap-4 text-[12px] font-semibold tracking-wide text-fg-muted uppercase">
         <p>Current {currentVersion}</p>
