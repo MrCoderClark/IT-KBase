@@ -27,8 +27,10 @@ from backend.assistant.answerer import (
     Turn,
     get_answerer,
 )
+from backend.assistant.drafter import DraftError, DraftMode, get_drafter
 from backend.assistant.embeddings import EmbeddingError, get_embedder
-from backend.policy import can
+from backend.parse.models import ParsedDraft
+from backend.policy import can, require_capability
 from backend.telemetry import get_logger, get_tracer, iter_with_context
 
 log = get_logger(__name__)
@@ -55,6 +57,15 @@ class AnswerBody(BaseModel):
     bundle: Annotated[list[BundleChunk], Field(max_length=24)] = []
     history: Annotated[list[Turn], Field(max_length=10)] = []
     mode: AnswerMode = "answer"
+
+
+class DraftBody(BaseModel):
+    notes: Annotated[str, Field(min_length=1, max_length=16_000)]
+    mode: DraftMode = "notes"
+
+
+class DraftResult(BaseModel):
+    draft: ParsedDraft
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -101,6 +112,29 @@ def build_assistant_router(dependency) -> APIRouter:
         if answerer is None:
             raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
         return StreamingResponse(_answer_stream(answerer, body), media_type="text/event-stream")
+
+    @router.post("/assistant/draft", response_model=DraftResult)
+    async def draft(body: DraftBody, principal: Principal = get_principal) -> DraftResult:
+        # Authoring copilot is author+ (spec 20 §3.2); the service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "article.create")
+        drafter = get_drafter()
+        if drafter is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        with get_tracer().start_as_current_span(
+            "assistant.draft", attributes={"tb.mode": body.mode}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(drafter.draft, notes=body.notes, mode=body.mode)
+            except DraftError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.draft.failed", mode=body.mode, error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.steps", len(result.steps))
+
+        log.info("assistant.draft", mode=body.mode, steps=len(result.steps), caller=principal.kind)
+        return DraftResult(draft=result)
 
     return router
 

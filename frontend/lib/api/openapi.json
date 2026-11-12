@@ -109,6 +109,39 @@
         "title": "BundleChunk",
         "type": "object"
       },
+      "DraftBody": {
+        "properties": {
+          "mode": {
+            "const": "notes",
+            "default": "notes",
+            "title": "Mode",
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "DraftBody",
+        "type": "object"
+      },
+      "DraftResult": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/ParsedDraft"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "DraftResult",
+        "type": "object"
+      },
       "EmbedBody": {
         "properties": {
           "inputs": {
@@ -617,6 +650,47 @@
           }
         },
         "summary": "Answer",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/draft": {
+      "post": {
+        "operationId": "draft_assistant_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Draft",
         "tags": [
           "assistant"
         ]

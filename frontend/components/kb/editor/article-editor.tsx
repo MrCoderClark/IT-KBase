@@ -9,9 +9,11 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, CloudOff, Eye, Loader2, Plus } from "lucide-react";
+import { Check, CloudOff, Eye, Loader2, Plus, Sparkles } from "lucide-react";
 import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
+import { missingSections } from "@/lib/assistant/copilot-checks";
+import { parsedToDraft, type ParsedDraft } from "@/lib/ingestion/to-draft";
 import {
   EDITABLE_KINDS,
   type DraftIssue,
@@ -28,6 +30,7 @@ import {
   readLocalDraft,
   writeLocalDraft,
 } from "@/lib/editor/local-draft";
+import { CopilotDraftDialog } from "@/components/kb/editor/copilot-draft-dialog";
 import { CopilotPanel } from "@/components/kb/editor/copilot-panel";
 import { DuplicateCheck } from "@/components/kb/editor/duplicate-check";
 import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
@@ -94,6 +97,7 @@ export function ArticleEditor({
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -238,6 +242,20 @@ export function ArticleEditor({
     });
   }
 
+  /** Copilot "Draft from notes": replace content, keep slug/version/status/taxonomy. */
+  function applyGeneratedDraft(parsed: ParsedDraft) {
+    const generated = parsedToDraft(parsed);
+    setDraft((current) => ({
+      ...current,
+      title: generated.title,
+      summary: generated.summary,
+      sections: generated.sections,
+    }));
+  }
+
+  // Empty editor => a fresh/blank draft, so applying the copilot replaces nothing.
+  const editorHasContent = draft.title.trim() !== "" || missingSections(draft).length < 5;
+
   function validateCallouts(): boolean {
     const nextIssues = calloutIssues(draft);
     setIssues(nextIssues);
@@ -358,6 +376,17 @@ export function ArticleEditor({
           >
             Cancel
           </Link>
+          {can(role, "article.create") ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setCopilotOpen(true)}
+            >
+              <Sparkles size={14} className="text-accent" aria-hidden />
+              Draft from notes
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -377,6 +406,13 @@ export function ArticleEditor({
           ) : null}
         </div>
       </div>
+
+      <CopilotDraftDialog
+        open={copilotOpen}
+        hasContent={editorHasContent}
+        onOpenChange={setCopilotOpen}
+        onApply={applyGeneratedDraft}
+      />
 
       <PreviewDialog
         draft={draft}
