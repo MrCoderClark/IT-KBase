@@ -9,7 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, CloudOff, Eye, Loader2, Plus, Sparkles } from "lucide-react";
+import { Check, CloudOff, Eye, Loader2, Plus, Sparkles, Wand2 } from "lucide-react";
 import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 import { missingSections } from "@/lib/assistant/copilot-checks";
@@ -34,6 +34,9 @@ import { CopilotDraftDialog } from "@/components/kb/editor/copilot-draft-dialog"
 import { CopilotPanel } from "@/components/kb/editor/copilot-panel";
 import { DuplicateCheck } from "@/components/kb/editor/duplicate-check";
 import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
+import { TidyReviewDialog } from "@/components/kb/editor/tidy-review-dialog";
+import { editorDraftToText } from "@/lib/assistant/draft-text";
+import type { TidyResult } from "@/lib/assistant/tidy-client";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
 import { SectionCard } from "@/components/kb/editor/section-fields";
 import { Button } from "@/components/ui/button";
@@ -98,6 +101,7 @@ export function ArticleEditor({
   const [publishOpen, setPublishOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [tidyOpen, setTidyOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -253,6 +257,19 @@ export function ArticleEditor({
     }));
   }
 
+  /** Apply an accepted tidy: replace content, apply proposed taxonomy. */
+  function applyTidy(result: TidyResult) {
+    const generated = parsedToDraft(result.draft);
+    setDraft((current) => ({
+      ...current,
+      title: generated.title,
+      summary: generated.summary,
+      sections: generated.sections,
+      categorySlug: result.categorySlug ?? current.categorySlug,
+      tagSlugs: result.tagSlugs.length > 0 ? result.tagSlugs : current.tagSlugs,
+    }));
+  }
+
   // Empty editor => a fresh/blank draft, so applying the copilot replaces nothing.
   const editorHasContent = draft.title.trim() !== "" || missingSections(draft).length < 5;
 
@@ -387,6 +404,17 @@ export function ArticleEditor({
               Draft with Copilot
             </Button>
           ) : null}
+          {can(role, "article.create") && editorHasContent ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setTidyOpen(true)}
+            >
+              <Wand2 size={14} className="text-accent" aria-hidden />
+              Tidy
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -418,6 +446,18 @@ export function ArticleEditor({
         )}
         onOpenChange={setCopilotOpen}
         onApply={applyGeneratedDraft}
+      />
+
+      <TidyReviewDialog
+        open={tidyOpen}
+        content={editorDraftToText(draft)}
+        authorName={authorName}
+        categories={categories}
+        tags={tags}
+        currentCategorySlug={draft.categorySlug}
+        currentTagSlugs={draft.tagSlugs}
+        onOpenChange={setTidyOpen}
+        onApply={applyTidy}
       />
 
       <PreviewDialog

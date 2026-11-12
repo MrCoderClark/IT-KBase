@@ -27,7 +27,14 @@ from backend.assistant.answerer import (
     Turn,
     get_answerer,
 )
-from backend.assistant.drafter import DraftError, DraftMode, DraftRequest, get_drafter
+from backend.assistant.drafter import (
+    DraftError,
+    DraftMode,
+    DraftRequest,
+    TaxonomyOption,
+    TidyRequest,
+    get_drafter,
+)
 from backend.assistant.embeddings import EmbeddingError, get_embedder
 from backend.parse.models import ParsedDraft
 from backend.policy import can, require_capability
@@ -77,6 +84,23 @@ class DraftBody(BaseModel):
 
 class DraftResult(BaseModel):
     draft: ParsedDraft
+
+
+class TaxonomyOpt(BaseModel):
+    slug: str
+    name: str
+
+
+class TidyBody(BaseModel):
+    content: Annotated[str, Field(min_length=1, max_length=24_000)]
+    categories: Annotated[list[TaxonomyOpt], Field(max_length=200)] = []
+    tags: Annotated[list[TaxonomyOpt], Field(max_length=500)] = []
+
+
+class TidyResponse(BaseModel):
+    draft: ParsedDraft
+    categorySlug: str | None = None
+    tagSlugs: list[str] = []
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -153,6 +177,35 @@ def build_assistant_router(dependency) -> APIRouter:
 
         log.info("assistant.draft", mode=body.mode, steps=len(result.steps), caller=principal.kind)
         return DraftResult(draft=result)
+
+    @router.post("/assistant/tidy", response_model=TidyResponse)
+    async def tidy(body: TidyBody, principal: Principal = get_principal) -> TidyResponse:
+        if principal.kind != "service":
+            require_capability(principal, "article.create")
+        drafter = get_drafter()
+        if drafter is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        tidy_request = TidyRequest(
+            content=body.content,
+            categories=[TaxonomyOption(slug=opt.slug, name=opt.name) for opt in body.categories],
+            tags=[TaxonomyOption(slug=opt.slug, name=opt.name) for opt in body.tags],
+        )
+        with get_tracer().start_as_current_span("assistant.tidy") as span:
+            try:
+                result = await asyncio.to_thread(drafter.tidy, tidy_request)
+            except DraftError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.tidy.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.steps", len(result.draft.steps))
+
+        log.info("assistant.tidy", steps=len(result.draft.steps), caller=principal.kind)
+        return TidyResponse(
+            draft=result.draft,
+            categorySlug=result.category_slug,
+            tagSlugs=result.tag_slugs,
+        )
 
     return router
 
