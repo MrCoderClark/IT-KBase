@@ -49,7 +49,13 @@ export function SectionDocument({
     const serialized = JSON.stringify(value);
     if (serialized === emitted.current) return;
     emitted.current = serialized;
-    editor.commands.setContent(value, { emitUpdate: false });
+    // setContent dispatches a ProseMirror transaction that can flushSync; React
+    // forbids that during the commit phase (it fires when a parent replaces every
+    // section's value at once, e.g. applying a copilot draft). Run it after commit.
+    queueMicrotask(() => {
+      if (editor.isDestroyed) return;
+      editor.commands.setContent(value, { emitUpdate: false });
+    });
   }, [editor, value]);
 
   return (
