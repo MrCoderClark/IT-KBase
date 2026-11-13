@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/feedback-digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Feedback Digest */
+        post: operations["feedback_digest_assistant_feedback_digest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assistant/tidy": {
         parameters: {
             query?: never;
@@ -393,6 +410,34 @@ export interface components {
             model: string;
             /** Prompttokens */
             promptTokens: number;
+        };
+        /** FeedbackDigestBody */
+        FeedbackDigestBody: {
+            /**
+             * Comments
+             * @default []
+             */
+            comments: string[];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** FeedbackDigestResponse */
+        FeedbackDigestResponse: {
+            /**
+             * Suggestions
+             * @default []
+             */
+            suggestions: string[];
+            /** Summary */
+            summary: string;
+            /**
+             * Themes
+             * @default []
+             */
+            themes: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -745,6 +790,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmbedResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_digest_assistant_feedback_digest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackDigestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackDigestResponse"];
                 };
             };
             /** @description Validation Error */

@@ -39,6 +39,7 @@ from backend.assistant.embeddings import EmbeddingError, get_embedder
 from backend.assistant.review import (
     DiffStatus,
     DiffSummaryRequest,
+    FeedbackDigestRequest,
     ReviewError,
     SectionChange,
     get_reviewer,
@@ -127,6 +128,17 @@ class DiffSummaryBody(BaseModel):
 class DiffSummaryResponse(BaseModel):
     summary: str
     changes: list[str] = []
+
+
+class FeedbackDigestBody(BaseModel):
+    title: Annotated[str, Field(max_length=300)] = ""
+    comments: Annotated[list[Annotated[str, Field(max_length=1_000)]], Field(max_length=200)] = []
+
+
+class FeedbackDigestResponse(BaseModel):
+    summary: str
+    themes: list[str] = []
+    suggestions: list[str] = []
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -277,6 +289,40 @@ def build_assistant_router(dependency) -> APIRouter:
             caller=principal.kind,
         )
         return DiffSummaryResponse(summary=result.summary, changes=result.changes)
+
+    @router.post("/assistant/feedback-digest", response_model=FeedbackDigestResponse)
+    async def feedback_digest(
+        body: FeedbackDigestBody, principal: Principal = get_principal
+    ) -> FeedbackDigestResponse:
+        # Feedback review is reviewer+ (spec 20 §3.3 / canReviewArticleFeedback); the
+        # service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "article.publish")
+        reviewer = get_reviewer()
+        if reviewer is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        digest_request = FeedbackDigestRequest(title=body.title, comments=list(body.comments))
+        with get_tracer().start_as_current_span(
+            "assistant.feedback_digest", attributes={"tb.comments": len(body.comments)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(reviewer.digest_feedback, digest_request)
+            except ReviewError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.feedback_digest.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.themes", len(result.themes))
+
+        log.info(
+            "assistant.feedback_digest",
+            comments=len(body.comments),
+            themes=len(result.themes),
+            caller=principal.kind,
+        )
+        return FeedbackDigestResponse(
+            summary=result.summary, themes=result.themes, suggestions=result.suggestions
+        )
 
     return router
 
