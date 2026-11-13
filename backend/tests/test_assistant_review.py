@@ -13,6 +13,7 @@ from backend.app import create_app
 from backend.assistant.review import (
     DiffSummaryRequest,
     FakeReviewer,
+    FeedbackDigestRequest,
     OpenAICompatibleReviewer,
     ReviewError,
     SectionChange,
@@ -153,6 +154,73 @@ def test_fake_reviewer_names_changed_sections() -> None:
     assert any("Troubleshooting" in bullet for bullet in result.changes)
 
 
+# --- feedback digest -------------------------------------------------------
+
+COMMENTS = ["Step 3 is wrong on Windows 11.", "The command in step 3 fails.", "Missing the reboot."]
+
+
+def _digest_request(comments: list[str] | None = None) -> FeedbackDigestRequest:
+    return FeedbackDigestRequest(
+        title="Reset the admin password",
+        comments=COMMENTS if comments is None else comments,
+    )
+
+
+def test_digests_feedback_into_themes_and_suggestions() -> None:
+    written = {
+        "summary": "Readers report step 3 is broken on Windows 11.",
+        "themes": ["Step 3 command fails", "No reboot step"],
+        "suggestions": ["Fix the step 3 command for Windows 11", "Add the reboot step"],
+    }
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.digest_feedback(_digest_request())
+    assert result.themes == ["Step 3 command fails", "No reboot step"]
+    assert len(result.suggestions) == 2
+
+
+def test_digest_grounds_the_model_in_the_comments() -> None:
+    seen: dict[str, str] = {}
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        seen["user"] = messages[-1]["content"]
+        return json.dumps({"summary": "ok", "themes": [], "suggestions": []})
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    reviewer.digest_feedback(_digest_request())
+    assert "Missing the reboot." in seen["user"]
+
+
+def test_digest_no_comments_short_circuits_without_a_model_call() -> None:
+    def complete(_messages: list[dict[str, str]]) -> str:
+        raise AssertionError("the model must not be called with no comments")
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.digest_feedback(_digest_request(comments=["", "   "]))
+    assert result.themes == []
+    assert "No written not-helpful feedback" in result.summary
+
+
+def test_digest_one_repair_then_success() -> None:
+    calls: list[object] = []
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        calls.append(messages)
+        return "nope" if len(calls) == 1 else json.dumps({"summary": "ok", "themes": ["t"], "suggestions": []})
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.digest_feedback(_digest_request())
+    assert result.themes == ["t"]
+    assert len(calls) == 2
+
+
+def test_fake_reviewer_digests_feedback() -> None:
+    result = FakeReviewer().digest_feedback(_digest_request())
+    assert "3 not-helpful comments" in result.summary
+    assert len(result.themes) == 1
+
+
 # --- endpoint --------------------------------------------------------------
 
 
@@ -207,5 +275,49 @@ def test_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch)
     _use_reviewer(monkeypatch, None)
     response = api.post(
         "/assistant/diff-summary", json=_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 503
+
+
+# --- feedback-digest endpoint ----------------------------------------------
+
+
+def _digest_body() -> dict[str, object]:
+    return {"title": "Reset the admin password", "comments": COMMENTS}
+
+
+def test_reviewer_digests_feedback(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/feedback-digest", json=_digest_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "3 not-helpful comments" in data["summary"]
+    assert len(data["themes"]) == 1
+
+
+def test_digest_requires_reviewer(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/feedback-digest", json=_digest_body(), headers=_user(monkeypatch, "author")
+    )
+    assert response.status_code == 403
+
+
+def test_digest_service_token_is_allowed(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/feedback-digest",
+        json=_digest_body(),
+        headers={"Authorization": f"Bearer {SERVICE_TOKEN}"},
+    )
+    assert response.status_code == 200
+
+
+def test_digest_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, None)
+    response = api.post(
+        "/assistant/feedback-digest", json=_digest_body(), headers=_user(monkeypatch, "reviewer")
     )
     assert response.status_code == 503

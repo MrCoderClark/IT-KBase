@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ArticleFeedbackNotes } from "@/components/kb/article-feedback";
+import { FeedbackDigestCard } from "@/components/kb/feedback-digest-card";
 import { can, canEditArticle, canOpenArticle, canReadArticleAnalytics, canReadArticleHistory, canReviewArticleFeedback } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { passesPageGate } from "@/lib/kb/page-access";
@@ -132,6 +133,7 @@ export async function ArticleView({
             <details className="mt-2 rounded-xl border border-border bg-canvas px-4 py-3">
               <summary className="cursor-pointer text-[13px] font-semibold text-fg">Feedback notes</summary>
               <div className="mt-3">
+                <FeedbackDigestCard articleId={article.id} />
                 <ArticleFeedbackNotes articleId={article.id} />
               </div>
             </details>

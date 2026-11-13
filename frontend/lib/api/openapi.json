@@ -310,6 +310,57 @@
         "title": "EmbedResult",
         "type": "object"
       },
+      "FeedbackDigestBody": {
+        "properties": {
+          "comments": {
+            "default": [],
+            "items": {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Comments",
+            "type": "array"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "FeedbackDigestBody",
+        "type": "object"
+      },
+      "FeedbackDigestResponse": {
+        "properties": {
+          "suggestions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "themes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Themes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "title": "FeedbackDigestResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -969,6 +1020,47 @@
           }
         },
         "summary": "Embed",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/feedback-digest": {
+      "post": {
+        "operationId": "feedback_digest_assistant_feedback_digest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackDigestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackDigestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Feedback Digest",
         "tags": [
           "assistant"
         ]
