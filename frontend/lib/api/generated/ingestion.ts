@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/update-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update Draft */
+        post: operations["update_draft_assistant_update_draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -649,6 +666,16 @@ export interface components {
              */
             role: "user" | "assistant";
         };
+        /** UpdateDraftBody */
+        UpdateDraftBody: {
+            /** Content */
+            content: string;
+            /**
+             * Outdated
+             * @default []
+             */
+            outdated: string[];
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -856,6 +883,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TidyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_draft_assistant_update_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDraftBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResult"];
                 };
             };
             /** @description Validation Error */

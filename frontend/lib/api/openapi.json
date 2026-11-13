@@ -814,6 +814,31 @@
         "title": "Turn",
         "type": "object"
       },
+      "UpdateDraftBody": {
+        "properties": {
+          "content": {
+            "maxLength": 24000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "outdated": {
+            "default": [],
+            "items": {
+              "maxLength": 240,
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Outdated",
+            "type": "array"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "UpdateDraftBody",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1102,6 +1127,47 @@
           }
         },
         "summary": "Tidy",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/update-draft": {
+      "post": {
+        "operationId": "update_draft_assistant_update_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Draft",
         "tags": [
           "assistant"
         ]

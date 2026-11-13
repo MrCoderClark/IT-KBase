@@ -33,6 +33,7 @@ from backend.assistant.drafter import (
     DraftRequest,
     TaxonomyOption,
     TidyRequest,
+    UpdateRequest,
     get_drafter,
 )
 from backend.assistant.embeddings import EmbeddingError, get_embedder
@@ -109,6 +110,11 @@ class TidyResponse(BaseModel):
     draft: ParsedDraft
     categorySlug: str | None = None
     tagSlugs: list[str] = []
+
+
+class UpdateDraftBody(BaseModel):
+    content: Annotated[str, Field(min_length=1, max_length=24_000)]
+    outdated: Annotated[list[Annotated[str, Field(max_length=240)]], Field(max_length=50)] = []
 
 
 class DiffChange(BaseModel):
@@ -244,6 +250,38 @@ def build_assistant_router(dependency) -> APIRouter:
             categorySlug=result.category_slug,
             tagSlugs=result.tag_slugs,
         )
+
+    @router.post("/assistant/update-draft", response_model=DraftResult)
+    async def update_draft(
+        body: UpdateDraftBody, principal: Principal = get_principal
+    ) -> DraftResult:
+        # Refreshing an article into a draft is author+ like the other drafters
+        # (spec 20 §3.2/§3.3); the service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "article.create")
+        drafter = get_drafter()
+        if drafter is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        update_request = UpdateRequest(content=body.content, outdated=list(body.outdated))
+        with get_tracer().start_as_current_span(
+            "assistant.update_draft", attributes={"tb.flags": len(body.outdated)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(drafter.update, update_request)
+            except DraftError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.update_draft.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.steps", len(result.steps))
+
+        log.info(
+            "assistant.update_draft",
+            flags=len(body.outdated),
+            steps=len(result.steps),
+            caller=principal.kind,
+        )
+        return DraftResult(draft=result)
 
     @router.post("/assistant/diff-summary", response_model=DiffSummaryResponse)
     async def diff_summary(
