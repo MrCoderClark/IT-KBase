@@ -9,7 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, CloudOff, Eye, Loader2, Plus, Sparkles, Wand2 } from "lucide-react";
+import { Check, CloudOff, Eye, Loader2, Plus, RefreshCw, Sparkles, Wand2 } from "lucide-react";
 import { articleSaveError, can, type Role } from "@/lib/auth/policy";
 import type { ArticleStatus } from "@/lib/types/article";
 import { missingSections } from "@/lib/assistant/copilot-checks";
@@ -35,6 +35,7 @@ import { CopilotPanel } from "@/components/kb/editor/copilot-panel";
 import { DuplicateCheck } from "@/components/kb/editor/duplicate-check";
 import { PreviewDialog } from "@/components/kb/editor/preview-dialog";
 import { TidyReviewDialog } from "@/components/kb/editor/tidy-review-dialog";
+import { UpdateReviewDialog } from "@/components/kb/editor/update-review-dialog";
 import { editorDraftToText } from "@/lib/assistant/draft-text";
 import type { TidyResult } from "@/lib/assistant/tidy-client";
 import { PublishDialog } from "@/components/kb/editor/publish-dialog";
@@ -102,6 +103,7 @@ export function ArticleEditor({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [tidyOpen, setTidyOpen] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
   const [issues, setIssues] = useState<DraftIssue[]>([]);
   const [pending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -415,6 +417,17 @@ export function ArticleEditor({
               Tidy
             </Button>
           ) : null}
+          {can(role, "article.create") && editorHasContent ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setUpdateOpen(true)}
+            >
+              <RefreshCw size={14} className="text-accent" aria-hidden />
+              Update
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -458,6 +471,18 @@ export function ArticleEditor({
         currentTagSlugs={draft.tagSlugs}
         onOpenChange={setTidyOpen}
         onApply={applyTidy}
+      />
+
+      <UpdateReviewDialog
+        open={updateOpen}
+        content={editorDraftToText(draft)}
+        authorName={authorName}
+        categories={categories}
+        tags={tags}
+        currentCategorySlug={draft.categorySlug}
+        currentTagSlugs={draft.tagSlugs}
+        onOpenChange={setUpdateOpen}
+        onApply={applyGeneratedDraft}
       />
 
       <PreviewDialog

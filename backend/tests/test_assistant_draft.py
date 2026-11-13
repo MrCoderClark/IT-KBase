@@ -17,6 +17,7 @@ from backend.assistant.drafter import (
     OpenAICompatibleDrafter,
     TaxonomyOption,
     TidyRequest,
+    UpdateRequest,
 )
 from backend.config import get_settings
 
@@ -187,6 +188,39 @@ def test_tidy_empty_content_raises() -> None:
         drafter.tidy(TidyRequest(content="   "))
 
 
+# --- update ----------------------------------------------------------------
+
+
+def test_update_refreshes_and_passes_flags_to_the_model() -> None:
+    seen: dict[str, str] = {}
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        seen["user"] = messages[-1]["content"]
+        return json.dumps({"title": "Reset the admin password", "steps": []})
+
+    drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=complete)
+    draft = drafter.update(
+        UpdateRequest(
+            content="Reset the admin password\nUse Azure AD on Windows 10.",
+            outdated=["Azure AD: Rename to Microsoft Entra ID."],
+        )
+    )
+    assert draft.title == "Reset the admin password"
+    assert "Azure AD" in seen["user"]  # the article text reaches the model
+    assert "Microsoft Entra ID" in seen["user"]  # the flagged suggestion reaches it too
+
+
+def test_update_empty_content_raises() -> None:
+    drafter = OpenAICompatibleDrafter(api_key="k", model="m", base_url="u", complete=lambda _m: "{}")
+    with pytest.raises(DraftError):
+        drafter.update(UpdateRequest(content="   "))
+
+
+def test_fake_drafter_updates_from_content() -> None:
+    draft = FakeDrafter().update(UpdateRequest(content="Reset the admin password\nmore detail"))
+    assert draft.title == "Reset the admin password"
+
+
 def test_author_tidies_a_draft(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     _use_drafter(monkeypatch, FakeDrafter())
     response = api.post(
@@ -278,5 +312,43 @@ def test_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch)
     _use_drafter(monkeypatch, None)
     response = api.post(
         "/assistant/draft", json={"notes": "x"}, headers=_user(monkeypatch, "author")
+    )
+    assert response.status_code == 503
+
+
+# --- update-draft endpoint -------------------------------------------------
+
+
+def test_author_updates_a_draft(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/update-draft",
+        json={"content": "Reset the admin password\nUse Azure AD.", "outdated": ["Azure AD: use Entra ID."]},
+        headers=_user(monkeypatch, "author"),
+    )
+    assert response.status_code == 200
+    assert response.json()["draft"]["title"] == "Reset the admin password"
+
+
+def test_update_requires_author(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/update-draft", json={"content": "x"}, headers=_user(monkeypatch, "reader")
+    )
+    assert response.status_code == 403
+
+
+def test_update_empty_content_is_422(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, FakeDrafter())
+    response = api.post(
+        "/assistant/update-draft", json={"content": ""}, headers=_user(monkeypatch, "author")
+    )
+    assert response.status_code == 422
+
+
+def test_update_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_drafter(monkeypatch, None)
+    response = api.post(
+        "/assistant/update-draft", json={"content": "x"}, headers=_user(monkeypatch, "author")
     )
     assert response.status_code == 503
