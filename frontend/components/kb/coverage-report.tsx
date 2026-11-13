@@ -7,6 +7,7 @@
 
 import { HelpCircle } from "lucide-react";
 import { coverageStats, ACTIVE_WINDOW_DAYS, type GapRow } from "@/lib/assistant/coverage";
+import { GapClusters } from "@/components/kb/gap-clusters";
 
 function askedWhen(lastAskedAt: string): string {
   const date = new Date(lastAskedAt);
@@ -38,6 +39,7 @@ export function CoverageReport({ gaps, now }: { gaps: GapRow[]; now: Date }) {
             {stats.totalAsks === 1 ? "ask" : "asks"} · {stats.activeThisMonth} active in the last{" "}
             {ACTIVE_WINDOW_DAYS} days
           </p>
+          {gaps.length >= 2 ? <GapClusters /> : null}
           <ol className="mt-3 flex flex-col gap-2">
             {gaps.map((gap) => (
               <li
