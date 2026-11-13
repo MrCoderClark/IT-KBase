@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/miscategorized": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Miscategorized */
+        post: operations["miscategorized_assistant_miscategorized_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assistant/tidy": {
         parameters: {
             query?: never;
@@ -314,6 +331,36 @@ export interface components {
             /** Question */
             question: string;
         };
+        /** ArticleReviewBody */
+        ArticleReviewBody: {
+            /**
+             * Currentcategory
+             * @default
+             */
+            currentCategory: string;
+            /**
+             * Currentslug
+             * @default
+             */
+            currentSlug: string;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
         /** Body_parse_docx_route_v1_parse_docx_post */
         Body_parse_docx_route_v1_parse_docx_post: {
             /** File */
@@ -339,6 +386,16 @@ export interface components {
             sectionTitle: string;
             /** Text */
             text: string;
+        };
+        /** CategoryOptBody */
+        CategoryOptBody: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Slug */
+            slug: string;
         };
         /** ClusterGapsBody */
         ClusterGapsBody: {
@@ -551,6 +608,44 @@ export interface components {
             sizeBytes: number;
             /** Sourcekind */
             sourceKind: string;
+        };
+        /** MiscategorizedBody */
+        MiscategorizedBody: {
+            /**
+             * Articles
+             * @default []
+             */
+            articles: components["schemas"]["ArticleReviewBody"][];
+            /**
+             * Categories
+             * @default []
+             */
+            categories: components["schemas"]["CategoryOptBody"][];
+        };
+        /** MiscategorizedFlagInfo */
+        MiscategorizedFlagInfo: {
+            /** Articleid */
+            articleId: string;
+            /**
+             * Confidence
+             * @default low
+             */
+            confidence: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** Suggested */
+            suggested: string;
+        };
+        /** MiscategorizedResponse */
+        MiscategorizedResponse: {
+            /**
+             * Flags
+             * @default []
+             */
+            flags: components["schemas"]["MiscategorizedFlagInfo"][];
         };
         /** ParsedCallout */
         ParsedCallout: {
@@ -941,6 +1036,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedbackDigestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    miscategorized_assistant_miscategorized_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiscategorizedBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiscategorizedResponse"];
                 };
             };
             /** @description Validation Error */
