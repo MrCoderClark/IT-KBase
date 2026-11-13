@@ -6,7 +6,8 @@
  * highest-use member as the canonical to merge into. Suggestions only — an admin
  * applies a merge; the assistant never edits taxonomy.
  *
- * Miscategorized-article detection is a later (LLM) slice.
+ * Miscategorized-article detection (the LLM half of C6) shipped separately as
+ * `review.py` `find_miscategorized` → `MiscategorizedReview` on this same page.
  */
 
 export interface TagUsage {

@@ -44,6 +44,50 @@
         "title": "AnswerBody",
         "type": "object"
       },
+      "ArticleReviewBody": {
+        "properties": {
+          "currentCategory": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Currentcategory",
+            "type": "string"
+          },
+          "currentSlug": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Currentslug",
+            "type": "string"
+          },
+          "excerpt": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 40,
+            "title": "Id",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ArticleReviewBody",
+        "type": "object"
+      },
       "Body_parse_docx_route_v1_parse_docx_post": {
         "properties": {
           "file": {
@@ -107,6 +151,26 @@
           "text"
         ],
         "title": "BundleChunk",
+        "type": "object"
+      },
+      "CategoryOptBody": {
+        "properties": {
+          "name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 120,
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug"
+        ],
+        "title": "CategoryOptBody",
         "type": "object"
       },
       "ClusterGapsBody": {
@@ -528,6 +592,72 @@
           "sizeBytes"
         ],
         "title": "IngestBody",
+        "type": "object"
+      },
+      "MiscategorizedBody": {
+        "properties": {
+          "articles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ArticleReviewBody"
+            },
+            "maxItems": 60,
+            "title": "Articles",
+            "type": "array"
+          },
+          "categories": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CategoryOptBody"
+            },
+            "maxItems": 60,
+            "title": "Categories",
+            "type": "array"
+          }
+        },
+        "title": "MiscategorizedBody",
+        "type": "object"
+      },
+      "MiscategorizedFlagInfo": {
+        "properties": {
+          "articleId": {
+            "title": "Articleid",
+            "type": "string"
+          },
+          "confidence": {
+            "default": "low",
+            "title": "Confidence",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested": {
+            "title": "Suggested",
+            "type": "string"
+          }
+        },
+        "required": [
+          "articleId",
+          "suggested"
+        ],
+        "title": "MiscategorizedFlagInfo",
+        "type": "object"
+      },
+      "MiscategorizedResponse": {
+        "properties": {
+          "flags": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MiscategorizedFlagInfo"
+            },
+            "title": "Flags",
+            "type": "array"
+          }
+        },
+        "title": "MiscategorizedResponse",
         "type": "object"
       },
       "ParsedCallout": {
@@ -1202,6 +1332,47 @@
           }
         },
         "summary": "Feedback Digest",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/miscategorized": {
+      "post": {
+        "operationId": "miscategorized_assistant_miscategorized_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MiscategorizedBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiscategorizedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Miscategorized",
         "tags": [
           "assistant"
         ]

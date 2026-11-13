@@ -38,11 +38,14 @@ from backend.assistant.drafter import (
 )
 from backend.assistant.embeddings import EmbeddingError, get_embedder
 from backend.assistant.review import (
+    ArticleForReview,
+    CategoryOption,
     DiffStatus,
     DiffSummaryRequest,
     FeedbackDigestRequest,
     GapClusteringRequest,
     GapItem,
+    MiscategorizedRequest,
     ReviewError,
     SectionChange,
     get_reviewer,
@@ -166,6 +169,36 @@ class GapClusterInfo(BaseModel):
 
 class ClusterGapsResponse(BaseModel):
     clusters: list[GapClusterInfo] = []
+
+
+class CategoryOptBody(BaseModel):
+    slug: Annotated[str, Field(max_length=120)]
+    name: Annotated[str, Field(max_length=120)] = ""
+
+
+class ArticleReviewBody(BaseModel):
+    id: Annotated[str, Field(max_length=40)]
+    title: Annotated[str, Field(max_length=300)] = ""
+    summary: Annotated[str, Field(max_length=2_000)] = ""
+    currentCategory: Annotated[str, Field(max_length=120)] = ""
+    currentSlug: Annotated[str, Field(max_length=120)] = ""
+    excerpt: Annotated[str, Field(max_length=2_000)] = ""
+
+
+class MiscategorizedBody(BaseModel):
+    articles: Annotated[list[ArticleReviewBody], Field(max_length=60)] = []
+    categories: Annotated[list[CategoryOptBody], Field(max_length=60)] = []
+
+
+class MiscategorizedFlagInfo(BaseModel):
+    articleId: str
+    suggested: str
+    reason: str = ""
+    confidence: str = "low"
+
+
+class MiscategorizedResponse(BaseModel):
+    flags: list[MiscategorizedFlagInfo] = []
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -419,6 +452,61 @@ def build_assistant_router(dependency) -> APIRouter:
             clusters=[
                 GapClusterInfo(label=cluster.label, theme=cluster.theme, gapIds=cluster.gap_ids)
                 for cluster in result.clusters
+            ]
+        )
+
+    @router.post("/assistant/miscategorized", response_model=MiscategorizedResponse)
+    async def miscategorized(
+        body: MiscategorizedBody, principal: Principal = get_principal
+    ) -> MiscategorizedResponse:
+        # Taxonomy health is an admin task (spec 20 §3.3 C6 / admin.manage); the
+        # service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "admin.manage")
+        reviewer = get_reviewer()
+        if reviewer is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        miscat_request = MiscategorizedRequest(
+            articles=[
+                ArticleForReview(
+                    id=article.id,
+                    title=article.title,
+                    summary=article.summary,
+                    current_category=article.currentCategory,
+                    current_slug=article.currentSlug,
+                    excerpt=article.excerpt,
+                )
+                for article in body.articles
+            ],
+            categories=[CategoryOption(slug=cat.slug, name=cat.name) for cat in body.categories],
+        )
+        with get_tracer().start_as_current_span(
+            "assistant.miscategorized", attributes={"tb.articles": len(body.articles)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(reviewer.find_miscategorized, miscat_request)
+            except ReviewError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.miscategorized.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.flags", len(result.flags))
+
+        log.info(
+            "assistant.miscategorized",
+            articles=len(body.articles),
+            flags=len(result.flags),
+            caller=principal.kind,
+        )
+        return MiscategorizedResponse(
+            flags=[
+                MiscategorizedFlagInfo(
+                    articleId=flag.article_id,
+                    suggested=flag.suggested_slug,
+                    reason=flag.reason,
+                    confidence=flag.confidence,
+                )
+                for flag in result.flags
             ]
         )
 

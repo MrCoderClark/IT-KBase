@@ -11,11 +11,14 @@ from fastapi.testclient import TestClient
 from auth_py.assertion import AssertionClaims, mint_assertion
 from backend.app import create_app
 from backend.assistant.review import (
+    ArticleForReview,
+    CategoryOption,
     DiffSummaryRequest,
     FakeReviewer,
     FeedbackDigestRequest,
     GapClusteringRequest,
     GapItem,
+    MiscategorizedRequest,
     OpenAICompatibleReviewer,
     ReviewError,
     SectionChange,
@@ -452,5 +455,185 @@ def test_cluster_not_configured_is_503(api: TestClient, monkeypatch: pytest.Monk
     _use_reviewer(monkeypatch, None)
     response = api.post(
         "/assistant/cluster-gaps", json=_cluster_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 503
+
+
+# --- miscategorized detection ----------------------------------------------
+
+CATEGORIES = [
+    CategoryOption(slug="windows", name="Windows"),
+    CategoryOption(slug="networking", name="Networking"),
+    CategoryOption(slug="security", name="Security"),
+]
+
+ARTICLES = [
+    ArticleForReview(
+        id="a1",
+        title="Configure a site-to-site VPN tunnel",
+        summary="IPsec tunnel between two offices.",
+        current_category="Windows",
+        current_slug="windows",
+        excerpt="Set up IKEv2 on the edge firewall and define the phase-2 selectors.",
+    ),
+    ArticleForReview(
+        id="a2",
+        title="Reset a local Windows admin password",
+        summary="",
+        current_category="Windows",
+        current_slug="windows",
+        excerpt="Boot to recovery and use net user.",
+    ),
+]
+
+
+def _miscat_request(
+    articles: list[ArticleForReview] | None = None,
+    categories: list[CategoryOption] | None = None,
+) -> MiscategorizedRequest:
+    return MiscategorizedRequest(
+        articles=ARTICLES if articles is None else articles,
+        categories=CATEGORIES if categories is None else categories,
+    )
+
+
+def test_flags_a_miscategorized_article() -> None:
+    written = {
+        "flags": [
+            {"id": "a1", "suggested": "networking", "reason": "It's a VPN tunnel.", "confidence": "high"}
+        ]
+    }
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.find_miscategorized(_miscat_request())
+    assert len(result.flags) == 1
+    assert result.flags[0].article_id == "a1"
+    assert result.flags[0].suggested_slug == "networking"
+    assert result.flags[0].confidence == "high"
+
+
+def test_miscat_drops_unknown_ids_unlisted_slugs_and_no_ops() -> None:
+    written = {
+        "flags": [
+            {"id": "ghost", "suggested": "networking", "reason": "", "confidence": "high"},  # bad id
+            {"id": "a1", "suggested": "linux", "reason": "", "confidence": "high"},  # unlisted slug
+            {"id": "a2", "suggested": "windows", "reason": "", "confidence": "high"},  # same as current
+        ]
+    }
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.find_miscategorized(_miscat_request())
+    assert result.flags == []
+
+
+def test_miscat_normalizes_unknown_confidence_to_low() -> None:
+    written = {"flags": [{"id": "a1", "suggested": "networking", "reason": "x", "confidence": "certain"}]}
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.find_miscategorized(_miscat_request())
+    assert result.flags[0].confidence == "low"
+
+
+def test_miscat_grounds_the_model_in_articles_and_categories() -> None:
+    seen: dict[str, str] = {}
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        seen["user"] = messages[-1]["content"]
+        return json.dumps({"flags": []})
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    reviewer.find_miscategorized(_miscat_request())
+    assert "networking — Networking" in seen["user"]
+    assert "[a1] current category: Windows (windows)" in seen["user"]
+    assert "site-to-site VPN" in seen["user"]
+
+
+def test_miscat_short_circuits_without_two_categories() -> None:
+    def complete(_messages: list[dict[str, str]]) -> str:
+        raise AssertionError("the model must not be called without an alternative category")
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.find_miscategorized(_miscat_request(categories=[CATEGORIES[0]]))
+    assert result.flags == []
+
+
+def test_miscat_one_repair_then_success() -> None:
+    calls: list[object] = []
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        calls.append(messages)
+        return "nope" if len(calls) == 1 else json.dumps(
+            {"flags": [{"id": "a1", "suggested": "networking", "reason": "", "confidence": "low"}]}
+        )
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.find_miscategorized(_miscat_request())
+    assert result.flags[0].suggested_slug == "networking"
+    assert len(calls) == 2
+
+
+def test_fake_reviewer_flags_first_article() -> None:
+    result = FakeReviewer().find_miscategorized(_miscat_request())
+    assert len(result.flags) == 1
+    assert result.flags[0].article_id == "a1"
+    assert result.flags[0].suggested_slug == "networking"  # first category != current
+
+
+# --- miscategorized endpoint -----------------------------------------------
+
+
+def _miscat_body() -> dict[str, object]:
+    return {
+        "articles": [
+            {
+                "id": art.id,
+                "title": art.title,
+                "summary": art.summary,
+                "currentCategory": art.current_category,
+                "currentSlug": art.current_slug,
+                "excerpt": art.excerpt,
+            }
+            for art in ARTICLES
+        ],
+        "categories": [{"slug": cat.slug, "name": cat.name} for cat in CATEGORIES],
+    }
+
+
+def test_admin_finds_miscategorized(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/miscategorized", json=_miscat_body(), headers=_user(monkeypatch, "admin")
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["flags"][0]["articleId"] == "a1"
+    assert data["flags"][0]["suggested"] == "networking"
+
+
+def test_miscat_requires_admin(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/miscategorized", json=_miscat_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 403
+
+
+def test_miscat_service_token_is_allowed(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/miscategorized",
+        json=_miscat_body(),
+        headers={"Authorization": f"Bearer {SERVICE_TOKEN}"},
+    )
+    assert response.status_code == 200
+
+
+def test_miscat_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, None)
+    response = api.post(
+        "/assistant/miscategorized", json=_miscat_body(), headers=_user(monkeypatch, "admin")
     )
     assert response.status_code == 503

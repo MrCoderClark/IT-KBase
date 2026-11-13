@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { TaxonomyHygiene } from "@/components/kb/taxonomy-hygiene";
+import { MiscategorizedReview } from "@/components/kb/miscategorized-review";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
 import { tagMergeSuggestions } from "@/lib/assistant/taxonomy";
@@ -39,6 +40,7 @@ async function TaxonomyPanel() {
       showCreate={false}
     >
       <TaxonomyHygiene suggestions={suggestions} />
+      <MiscategorizedReview />
     </ArticleListShell>
   );
 }
