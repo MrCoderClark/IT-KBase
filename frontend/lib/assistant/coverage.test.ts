@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { coverageStats, withinDays, type GapRow } from "./coverage";
+import { buildGapClusters, coverageStats, withinDays, type GapRow } from "./coverage";
 
 const NOW = new Date("2026-11-13T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString();
@@ -36,5 +36,48 @@ describe("coverageStats", () => {
       totalAsks: 0,
       activeThisMonth: 0,
     });
+  });
+});
+
+function gapQ(question: string, askCount: number, days: number): GapRow {
+  return { normalized: question.toLowerCase(), sampleQuestion: question, askCount, lastAskedAt: daysAgo(days) };
+}
+
+describe("buildGapClusters", () => {
+  const gaps = [
+    gapQ("How do I re-register MFA?", 10, 2),
+    gapQ("Reset my authenticator app", 4, 5),
+    gapQ("VPN won't connect from home", 6, 1),
+  ];
+
+  it("sums demand per cluster, ranks by demand, and keeps the latest ask", () => {
+    const clusters = buildGapClusters(gaps, [
+      { label: "VPN", theme: "Home VPN.", gapIds: ["2"] },
+      { label: "MFA", theme: "Resetting MFA.", gapIds: ["0", "1"] },
+    ]);
+    // MFA (10+4=14) outranks VPN (6) despite being listed second.
+    assert.deepEqual(
+      clusters.map((c) => [c.label, c.askCount, c.gapCount]),
+      [
+        ["MFA", 14, 2],
+        ["VPN", 6, 1],
+      ],
+    );
+    assert.equal(clusters[0].lastAskedAt, daysAgo(2)); // most recent of the two
+    assert.deepEqual(clusters[0].questions, ["How do I re-register MFA?", "Reset my authenticator app"]);
+  });
+
+  it("claims each gap once (first cluster wins) and ignores bad ids", () => {
+    const clusters = buildGapClusters(gaps, [
+      { label: "A", theme: "", gapIds: ["0", "1", "99", "0"] },
+      { label: "B", theme: "", gapIds: ["1", "2"] }, // 1 already claimed by A
+    ]);
+    assert.equal(clusters.find((c) => c.label === "A")?.gapCount, 2); // 0 and 1
+    assert.equal(clusters.find((c) => c.label === "B")?.gapCount, 1); // only 2
+  });
+
+  it("drops clusters with no valid members", () => {
+    const clusters = buildGapClusters(gaps, [{ label: "Ghost", theme: "", gapIds: ["42"] }]);
+    assert.deepEqual(clusters, []);
   });
 });

@@ -14,6 +14,8 @@ from backend.assistant.review import (
     DiffSummaryRequest,
     FakeReviewer,
     FeedbackDigestRequest,
+    GapClusteringRequest,
+    GapItem,
     OpenAICompatibleReviewer,
     ReviewError,
     SectionChange,
@@ -319,5 +321,136 @@ def test_digest_not_configured_is_503(api: TestClient, monkeypatch: pytest.Monke
     _use_reviewer(monkeypatch, None)
     response = api.post(
         "/assistant/feedback-digest", json=_digest_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 503
+
+
+# --- gap clustering --------------------------------------------------------
+
+GAPS = [
+    GapItem(id="0", question="How do I re-register MFA?"),
+    GapItem(id="1", question="Reset my authenticator app"),
+    GapItem(id="2", question="VPN won't connect from home"),
+]
+
+
+def _cluster_request(gaps: list[GapItem] | None = None) -> GapClusteringRequest:
+    return GapClusteringRequest(gaps=GAPS if gaps is None else gaps)
+
+
+def test_clusters_gaps_into_labelled_themes() -> None:
+    written = {
+        "clusters": [
+            {"label": "MFA re-registration", "theme": "Resetting MFA.", "members": ["0", "1"]},
+            {"label": "VPN", "theme": "Home VPN issues.", "members": ["2"]},
+        ]
+    }
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.cluster_gaps(_cluster_request())
+    assert [c.label for c in result.clusters] == ["MFA re-registration", "VPN"]
+    assert result.clusters[0].gap_ids == ["0", "1"]
+
+
+def test_cluster_drops_unlisted_ids_and_empty_clusters() -> None:
+    written = {
+        "clusters": [
+            {"label": "MFA", "theme": "", "members": ["0", "99", "0"]},  # dedup + drop 99
+            {"label": "Ghost", "theme": "", "members": ["42"]},  # all invalid → dropped
+            {"label": "", "theme": "x", "members": ["2"]},  # no label → dropped
+        ]
+    }
+    reviewer = OpenAICompatibleReviewer(
+        api_key="k", model="m", base_url="u", complete=lambda _m: json.dumps(written)
+    )
+    result = reviewer.cluster_gaps(_cluster_request())
+    assert len(result.clusters) == 1
+    assert result.clusters[0].gap_ids == ["0"]
+
+
+def test_cluster_grounds_the_model_in_the_questions() -> None:
+    seen: dict[str, str] = {}
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        seen["user"] = messages[-1]["content"]
+        return json.dumps({"clusters": []})
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    reviewer.cluster_gaps(_cluster_request())
+    assert "[0] How do I re-register MFA?" in seen["user"]
+    assert "[2] VPN won't connect from home" in seen["user"]
+
+
+def test_cluster_under_two_gaps_short_circuits_without_a_model_call() -> None:
+    def complete(_messages: list[dict[str, str]]) -> str:
+        raise AssertionError("the model must not be called with fewer than two gaps")
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.cluster_gaps(_cluster_request(gaps=[GapItem(id="0", question="only one")]))
+    assert result.clusters == []
+
+
+def test_cluster_one_repair_then_success() -> None:
+    calls: list[object] = []
+
+    def complete(messages: list[dict[str, str]]) -> str:
+        calls.append(messages)
+        return "nope" if len(calls) == 1 else json.dumps(
+            {"clusters": [{"label": "MFA", "theme": "", "members": ["0", "1"]}]}
+        )
+
+    reviewer = OpenAICompatibleReviewer(api_key="k", model="m", base_url="u", complete=complete)
+    result = reviewer.cluster_gaps(_cluster_request())
+    assert result.clusters[0].label == "MFA"
+    assert len(calls) == 2
+
+
+def test_fake_reviewer_clusters_all_gaps() -> None:
+    result = FakeReviewer().cluster_gaps(_cluster_request())
+    assert len(result.clusters) == 1
+    assert result.clusters[0].gap_ids == ["0", "1", "2"]
+
+
+# --- cluster-gaps endpoint -------------------------------------------------
+
+
+def _cluster_body() -> dict[str, object]:
+    return {"gaps": [{"id": gap.id, "question": gap.question} for gap in GAPS]}
+
+
+def test_reviewer_clusters_gaps(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/cluster-gaps", json=_cluster_body(), headers=_user(monkeypatch, "reviewer")
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["clusters"]) == 1
+    assert data["clusters"][0]["gapIds"] == ["0", "1", "2"]
+
+
+def test_cluster_requires_reviewer(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/cluster-gaps", json=_cluster_body(), headers=_user(monkeypatch, "author")
+    )
+    assert response.status_code == 403
+
+
+def test_cluster_service_token_is_allowed(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, FakeReviewer())
+    response = api.post(
+        "/assistant/cluster-gaps",
+        json=_cluster_body(),
+        headers={"Authorization": f"Bearer {SERVICE_TOKEN}"},
+    )
+    assert response.status_code == 200
+
+
+def test_cluster_not_configured_is_503(api: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    _use_reviewer(monkeypatch, None)
+    response = api.post(
+        "/assistant/cluster-gaps", json=_cluster_body(), headers=_user(monkeypatch, "reviewer")
     )
     assert response.status_code == 503

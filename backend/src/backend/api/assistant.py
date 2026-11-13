@@ -41,6 +41,8 @@ from backend.assistant.review import (
     DiffStatus,
     DiffSummaryRequest,
     FeedbackDigestRequest,
+    GapClusteringRequest,
+    GapItem,
     ReviewError,
     SectionChange,
     get_reviewer,
@@ -145,6 +147,25 @@ class FeedbackDigestResponse(BaseModel):
     summary: str
     themes: list[str] = []
     suggestions: list[str] = []
+
+
+class GapItemBody(BaseModel):
+    id: Annotated[str, Field(max_length=40)]
+    question: Annotated[str, Field(max_length=300)] = ""
+
+
+class ClusterGapsBody(BaseModel):
+    gaps: Annotated[list[GapItemBody], Field(max_length=200)] = []
+
+
+class GapClusterInfo(BaseModel):
+    label: str
+    theme: str = ""
+    gapIds: list[str] = []
+
+
+class ClusterGapsResponse(BaseModel):
+    clusters: list[GapClusterInfo] = []
 
 
 def build_assistant_router(dependency) -> APIRouter:
@@ -360,6 +381,45 @@ def build_assistant_router(dependency) -> APIRouter:
         )
         return FeedbackDigestResponse(
             summary=result.summary, themes=result.themes, suggestions=result.suggestions
+        )
+
+    @router.post("/assistant/cluster-gaps", response_model=ClusterGapsResponse)
+    async def cluster_gaps(
+        body: ClusterGapsBody, principal: Principal = get_principal
+    ) -> ClusterGapsResponse:
+        # Coverage report is reviewer+ analytics (spec 20 §3.3 C5 / canReadArticleAnalytics);
+        # the service token may call it too.
+        if principal.kind != "service":
+            require_capability(principal, "article.publish")
+        reviewer = get_reviewer()
+        if reviewer is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        cluster_request = GapClusteringRequest(
+            gaps=[GapItem(id=gap.id, question=gap.question) for gap in body.gaps]
+        )
+        with get_tracer().start_as_current_span(
+            "assistant.cluster_gaps", attributes={"tb.gaps": len(body.gaps)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(reviewer.cluster_gaps, cluster_request)
+            except ReviewError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.cluster_gaps.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.clusters", len(result.clusters))
+
+        log.info(
+            "assistant.cluster_gaps",
+            gaps=len(body.gaps),
+            clusters=len(result.clusters),
+            caller=principal.kind,
+        )
+        return ClusterGapsResponse(
+            clusters=[
+                GapClusterInfo(label=cluster.label, theme=cluster.theme, gapIds=cluster.gap_ids)
+                for cluster in result.clusters
+            ]
         )
 
     return router

@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/assistant/cluster-gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cluster Gaps */
+        post: operations["cluster_gaps_assistant_cluster_gaps_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/assistant/diff-summary": {
         parameters: {
             query?: never;
@@ -323,6 +340,22 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** ClusterGapsBody */
+        ClusterGapsBody: {
+            /**
+             * Gaps
+             * @default []
+             */
+            gaps: components["schemas"]["GapItemBody"][];
+        };
+        /** ClusterGapsResponse */
+        ClusterGapsResponse: {
+            /**
+             * Clusters
+             * @default []
+             */
+            clusters: components["schemas"]["GapClusterInfo"][];
+        };
         /** DiffChange */
         DiffChange: {
             /**
@@ -455,6 +488,31 @@ export interface components {
              * @default []
              */
             themes: string[];
+        };
+        /** GapClusterInfo */
+        GapClusterInfo: {
+            /**
+             * Gapids
+             * @default []
+             */
+            gapIds: string[];
+            /** Label */
+            label: string;
+            /**
+             * Theme
+             * @default
+             */
+            theme: string;
+        };
+        /** GapItemBody */
+        GapItemBody: {
+            /** Id */
+            id: string;
+            /**
+             * Question
+             * @default
+             */
+            question: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -718,6 +776,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cluster_gaps_assistant_cluster_gaps_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClusterGapsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClusterGapsResponse"];
                 };
             };
             /** @description Validation Error */

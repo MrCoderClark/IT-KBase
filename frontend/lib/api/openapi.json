@@ -109,6 +109,35 @@
         "title": "BundleChunk",
         "type": "object"
       },
+      "ClusterGapsBody": {
+        "properties": {
+          "gaps": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GapItemBody"
+            },
+            "maxItems": 200,
+            "title": "Gaps",
+            "type": "array"
+          }
+        },
+        "title": "ClusterGapsBody",
+        "type": "object"
+      },
+      "ClusterGapsResponse": {
+        "properties": {
+          "clusters": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GapClusterInfo"
+            },
+            "title": "Clusters",
+            "type": "array"
+          }
+        },
+        "title": "ClusterGapsResponse",
+        "type": "object"
+      },
       "DiffChange": {
         "properties": {
           "after": {
@@ -359,6 +388,52 @@
           "summary"
         ],
         "title": "FeedbackDigestResponse",
+        "type": "object"
+      },
+      "GapClusterInfo": {
+        "properties": {
+          "gapIds": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Gapids",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "theme": {
+            "default": "",
+            "title": "Theme",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "GapClusterInfo",
+        "type": "object"
+      },
+      "GapItemBody": {
+        "properties": {
+          "id": {
+            "maxLength": 40,
+            "title": "Id",
+            "type": "string"
+          },
+          "question": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "GapItemBody",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -922,6 +997,47 @@
           }
         },
         "summary": "Answer",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/cluster-gaps": {
+      "post": {
+        "operationId": "cluster_gaps_assistant_cluster_gaps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClusterGapsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterGapsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cluster Gaps",
         "tags": [
           "assistant"
         ]
