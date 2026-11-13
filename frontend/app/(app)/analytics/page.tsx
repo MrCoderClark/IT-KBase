@@ -4,11 +4,13 @@ import { AnalyticsDashboardView } from "@/components/kb/analytics-dashboard";
 import { FeedbackNotes } from "@/components/kb/article-feedback";
 import { ArticleListShell } from "@/components/kb/article-list-shell";
 import { StalenessTriage } from "@/components/kb/staleness-triage";
+import { CoverageReport } from "@/components/kb/coverage-report";
 import { canReadArticleAnalytics } from "@/lib/auth/policy";
 import { getSession, requestTime } from "@/lib/auth/session";
 import { getAnalyticsDashboard } from "@/lib/queries/dashboard";
 import { listRecentFeedback } from "@/lib/queries/feedback";
 import { getStaleArticles } from "@/lib/queries/staleness";
+import { getCoverageGaps } from "@/lib/queries/coverage";
 
 export default function AnalyticsPage() {
   return (
@@ -29,10 +31,11 @@ async function AnalyticsPanel() {
     );
   }
   const now = await requestTime();
-  const [dashboard, notes, stale] = await Promise.all([
+  const [dashboard, notes, stale, gaps] = await Promise.all([
     getAnalyticsDashboard(now),
     listRecentFeedback(),
     getStaleArticles(now),
+    getCoverageGaps(),
   ]);
   return (
     <ArticleListShell
@@ -42,6 +45,7 @@ async function AnalyticsPanel() {
     >
       <AnalyticsDashboardView dashboard={dashboard} />
       <StalenessTriage articles={stale} />
+      <CoverageReport gaps={gaps} now={now} />
       <h2 className="mt-6 text-[13px] font-semibold text-fg">Recent votes</h2>
       <div className="mt-2">
         <FeedbackNotes notes={notes} showArticle />
