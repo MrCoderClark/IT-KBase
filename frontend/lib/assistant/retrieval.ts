@@ -21,6 +21,7 @@ import type { AppSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { filterOpenArticleIds } from "@/lib/queries/page-access";
 import { EmbedError, embedTexts } from "./embed-client";
+import { rerankChunks } from "./rerank";
 import { extractExactTokens } from "./tokens";
 
 /** Per-list candidate pool before fusion. */
@@ -132,7 +133,9 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
     )`,
   );
 
-  const overfetch = role === "admin" ? limit : Math.min(POOL, Math.max(limit * 3, limit));
+  // Overfetch beyond `limit` so both the per-page access gate and the reranker
+  // have candidates to work with, capped at the per-list pool.
+  const overfetch = Math.min(POOL, Math.max(limit * 3, limit));
   const rows = await prisma.$queryRaw<RetrievedChunk[]>(Prisma.sql`
     WITH ${Prisma.join(ctes, ", ")}
     SELECT
@@ -164,14 +167,16 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
     [...new Set(rows.map((row) => row.articleId))],
   );
 
-  const chunks: RetrievedChunk[] = [];
-  for (const row of rows) {
-    if (!open.has(row.articleId)) continue;
-    chunks.push(row);
-    if (chunks.length >= limit) break;
-  }
+  // Access-gated candidates stay in fused order, so the first one carries the top
+  // fused score — grounding keys off that, independent of how the rerank reorders.
+  const candidates = rows.filter((row) => open.has(row.articleId));
+  const bestFusedScore = candidates.length > 0 ? candidates[0].score : 0;
 
-  const grounded = chunks.length > 0 && chunks[0].score >= GROUNDED_MIN_SCORE;
+  // Rerank the fused candidates on lexical/structural signals, then cap to the
+  // final top-k (§12 AI-5). The fused `score` on each chunk is left untouched.
+  const chunks = rerankChunks(question, tokens, candidates).slice(0, limit);
+
+  const grounded = candidates.length > 0 && bestFusedScore >= GROUNDED_MIN_SCORE;
   return { chunks, grounded, mode, tokens, nearest: nearestArticles(chunks) };
 }
 
