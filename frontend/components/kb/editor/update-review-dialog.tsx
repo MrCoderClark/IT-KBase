@@ -8,8 +8,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Check, Loader2, RefreshCw } from "lucide-react";
 import { ArticleContent } from "@/components/kb/article-content";
+import type { OutdatedMatch } from "@/lib/assistant/staleness";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,6 +46,7 @@ export function UpdateReviewDialog({
   onApply: (draft: ParsedDraft) => void;
 }) {
   const [draft, setDraft] = useState<ParsedDraft | null>(null);
+  const [outdated, setOutdated] = useState<OutdatedMatch[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -52,6 +54,7 @@ export function UpdateReviewDialog({
     if (!open) {
       // Reset so reopening re-runs against the (possibly edited) draft.
       setDraft(null);
+      setOutdated([]);
       setError(null);
       setBusy(false);
       return;
@@ -66,13 +69,18 @@ export function UpdateReviewDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content }),
         });
-        const data = (await response.json()) as { draft?: ParsedDraft; error?: string };
+        const data = (await response.json()) as {
+          draft?: ParsedDraft;
+          outdated?: OutdatedMatch[];
+          error?: string;
+        };
         if (!active) return;
         if (!response.ok || !data.draft) {
           setError(data.error ?? "The assistant could not draft an update.");
           return;
         }
         setDraft(data.draft);
+        setOutdated(data.outdated ?? []);
       } catch {
         if (active) setError("The assistant is unreachable. Try again.");
       } finally {
@@ -128,6 +136,22 @@ export function UpdateReviewDialog({
             </p>
           ) : draft && previewArticle ? (
             <>
+              {outdated.length > 0 ? (
+                <div className="mb-4 rounded-lg border border-accent/25 bg-accent-soft px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 text-[12px] font-semibold text-fg">
+                    <Check size={13} className="text-accent" aria-hidden />
+                    Addressed {outdated.length} dated{" "}
+                    {outdated.length === 1 ? "reference" : "references"}
+                  </p>
+                  <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[12px] leading-5 text-fg-muted">
+                    {outdated.map((match) => (
+                      <li key={match.id}>
+                        <span className="font-medium text-fg">{match.label}:</span> {match.suggest}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {draft.summary ? (
                 <div className="mb-4 rounded-lg border border-accent/25 bg-accent-soft px-3 py-2.5">
                   <p className="text-[12px] leading-4 text-fg">
