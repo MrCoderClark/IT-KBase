@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "This draft is too long to update." }, { status: 400 });
   }
 
-  const outdated = outdatedReferences(content).map((match) => `${match.label}: ${match.suggest}`);
+  const outdated = outdatedReferences(content);
 
   const rate = await checkAssistantRate(session.userId);
   if (!rate.ok) {
@@ -54,8 +54,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const draft = await requestUpdateDraft({ content, outdated, assertion });
-    return Response.json({ draft });
+    const draft = await requestUpdateDraft({
+      content,
+      outdated: outdated.map((match) => `${match.label}: ${match.suggest}`),
+      assertion,
+    });
+    // Return the matches too, so the review dialog can show the author exactly
+    // which dated references the refresh was steered to address.
+    return Response.json({ draft, outdated });
   } catch (err) {
     const message =
       err instanceof UpdateDraftError ? err.message : "The assistant could not draft an update.";
