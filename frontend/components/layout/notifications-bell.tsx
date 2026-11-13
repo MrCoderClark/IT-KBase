@@ -46,13 +46,15 @@ export function NotificationsBell({
       >
         <Bell size={18} aria-hidden />
         {unreadCount > 0 ? (
+          // The count renders via a CSS pseudo-element (not a DOM text node) so it
+          // is not the button's "visible label": the accessible name stays the
+          // aria-label above and axe's label-content-name-mismatch no longer fires.
           <span
             aria-hidden
-            className="absolute -top-0.5 -right-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-white ring-2"
+            data-count={unreadCount > 9 ? "9+" : String(unreadCount)}
+            className="absolute -top-0.5 -right-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-white ring-2 after:content-[attr(data-count)]"
             style={{ boxShadow: "0 0 0 2px #0F172A" }}
-          >
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+          />
         ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-[340px] p-0">
