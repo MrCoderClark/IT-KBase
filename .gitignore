@@ -93,3 +93,5 @@ docker-compose.override.yml
 scratch/
 notes.local.md
 TODO.local.md
+commit-message.txt
+commit-message.*.txt

@@ -91,6 +91,13 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
   const tokens = extractExactTokens(question);
 
   const { literal: vectorLiteral, mode } = await embedQuestion(question, session);
+  if (mode === "keyword" && opts.rerank === "llm") {
+    // Strict LLM mode can't silently be a keyword-only result either — if the
+    // embedder is down the production path falls back; eval refuses.
+    throw new CrossEncoderError(
+      "Strict LLM rerank requires the embedder; it fell back to keyword-only.",
+    );
+  }
 
   const visibility = searchVisibility(role, session.userId);
   const scope =
