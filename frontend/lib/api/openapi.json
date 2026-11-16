@@ -915,6 +915,73 @@
         "title": "PrincipalResponse",
         "type": "object"
       },
+      "RerankBody": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RerankCandidateBody"
+            },
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "candidates"
+        ],
+        "title": "RerankBody",
+        "type": "object"
+      },
+      "RerankCandidateBody": {
+        "properties": {
+          "id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "RerankCandidateBody",
+        "type": "object"
+      },
+      "RerankResponse": {
+        "properties": {
+          "scores": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "default": {},
+            "title": "Scores",
+            "type": "object"
+          }
+        },
+        "title": "RerankResponse",
+        "type": "object"
+      },
       "TaxonomyOpt": {
         "properties": {
           "name": {
@@ -1373,6 +1440,47 @@
           }
         },
         "summary": "Miscategorized",
+        "tags": [
+          "assistant"
+        ]
+      }
+    },
+    "/assistant/rerank": {
+      "post": {
+        "operationId": "rerank_assistant_rerank_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RerankResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rerank",
         "tags": [
           "assistant"
         ]

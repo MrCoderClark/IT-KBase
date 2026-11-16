@@ -1,0 +1,5 @@
+﻿  docs(claude): always hand over the ready-to-run git command + message
+
+  Section 0.4 formalizes an expectation the agent kept dropping: whenever
+  a commit, PR, push, merge or rebase is next, include the full command
+  block and the complete message text, not just "ready to commit?".

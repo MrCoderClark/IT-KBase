@@ -20,6 +20,7 @@ import { can, type Role } from "@/lib/auth/policy";
 import type { AppSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { filterOpenArticleIds } from "@/lib/queries/page-access";
+import { applyLlmScores, CrossEncoderError, rerankViaLLM } from "./cross-encoder";
 import { EmbedError, embedTexts } from "./embed-client";
 import { rerankChunks } from "./rerank";
 import { extractExactTokens } from "./tokens";
@@ -172,12 +173,55 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
   const candidates = rows.filter((row) => open.has(row.articleId));
   const bestFusedScore = candidates.length > 0 ? candidates[0].score : 0;
 
-  // Rerank the fused candidates on lexical/structural signals, then cap to the
-  // final top-k (§12 AI-5). The fused `score` on each chunk is left untouched.
-  const chunks = rerankChunks(question, tokens, candidates).slice(0, limit);
+  // Reorder before the top-k cap (§12 AI-5). Slice 1 (deterministic, always on)
+  // reorders by fused score × lexical/structural signal boost. Slice 2 (flag-
+  // gated LLM reranker) overrides that ordering when it returns scores; on any
+  // failure we fall through to the deterministic order, so the fused order is
+  // always a safe floor. The fused `score` on each chunk is left untouched.
+  const reranked = await maybeLlmRerank(question, candidates, session);
+  const ordered = reranked ?? rerankChunks(question, tokens, candidates);
+  const chunks = ordered.slice(0, limit);
 
   const grounded = candidates.length > 0 && bestFusedScore >= GROUNDED_MIN_SCORE;
   return { chunks, grounded, mode, tokens, nearest: nearestArticles(chunks) };
+}
+
+/**
+ * Score the fused candidates with the FastAPI listwise reranker and reorder by
+ * (llm score, fused score, incoming index). Returns `null` when the LLM rerank
+ * is off, when there is nothing to reorder, or when the call fails — in each
+ * case the caller falls back to the deterministic `rerankChunks`.
+ */
+async function maybeLlmRerank(
+  question: string,
+  candidates: RetrievedChunk[],
+  session: AppSession,
+): Promise<RetrievedChunk[] | null> {
+  if (process.env.ASSISTANT_LLM_RERANK !== "1") return null;
+  if (candidates.length < 2) return null;
+  const assertion = await mintIngestionAssertion(session, new Date());
+  if (!assertion) return null;
+
+  const payload = candidates.map((chunk) => ({
+    id: chunk.chunkId,
+    title: `${chunk.articleTitle} — ${chunk.sectionTitle}`,
+    text: chunk.text,
+  }));
+  let scores: Record<string, number>;
+  try {
+    const result = await rerankViaLLM(question, payload, assertion);
+    scores = result.scores;
+  } catch (err) {
+    if (err instanceof CrossEncoderError) {
+      console.warn(
+        JSON.stringify({ event: "assistant.retrieve.rerank_fallback", error: err.message }),
+      );
+      return null;
+    }
+    throw err;
+  }
+  if (Object.keys(scores).length === 0) return null;
+  return applyLlmScores(candidates, scores);
 }
 
 /**

@@ -102,6 +102,11 @@ class AssistantSettings(BaseSettings):
     # either needs a migration and a full re-embed.
     embedding_model: str = "openai/text-embedding-3-small"
     embedding_dimensions: int = Field(default=1536, ge=1)
+    # LLM cross-encoder rerank (spec 20 §12 AI-5 slice 2). Off by default so
+    # the deterministic rerank stays the only always-on reorder; turn on with
+    # `ASSISTANT_RERANK_ENABLED=1`. `rerank_model` falls back to `chat_model`.
+    rerank_enabled: bool = False
+    rerank_model: str = ""
 
     @property
     def enabled(self) -> bool:
