@@ -1,0 +1,106 @@
+[
+  {
+    "id": "q001",
+    "question": "How do I reset the local administrator password on Windows 11?",
+    "expected": ["windows-11-resetting-local-administrator-password"],
+    "note": "Keyword-heavy, matches title closely."
+  },
+  {
+    "id": "q002",
+    "question": "I forgot the admin password on my laptop and can't sign in",
+    "expected": ["windows-11-resetting-local-administrator-password"],
+    "note": "Paraphrased; exercises the vector path."
+  },
+  {
+    "id": "q003",
+    "question": "BitLocker recovery key retrieval process on Windows 11",
+    "expected": ["windows-11-bitlocker-recovery-process"]
+  },
+  {
+    "id": "q004",
+    "question": "VPN split tunnel configuration for remote workers",
+    "expected": ["vpn-split-tunnel-configuration"]
+  },
+  {
+    "id": "q005",
+    "question": "VPN keeps dropping when a user works from home — what should I configure?",
+    "expected": ["vpn-split-tunnel-configuration"],
+    "note": "Paraphrase, no exact title tokens."
+  },
+  {
+    "id": "q006",
+    "question": "Rotate SSH keys on Linux servers",
+    "expected": ["linux-ssh-key-rotation-policy"]
+  },
+  {
+    "id": "q007",
+    "question": "Linux server out of disk space, what are the recovery steps?",
+    "expected": ["linux-disk-space-recovery-procedures"]
+  },
+  {
+    "id": "q008",
+    "question": "Group Policy settings are not applying on a workstation",
+    "expected": ["active-directory-group-policy-troubleshooting"]
+  },
+  {
+    "id": "q009",
+    "question": "Managing antivirus exclusions through Intune for Windows Defender",
+    "expected": ["windows-defender-exclusion-management"]
+  },
+  {
+    "id": "q010",
+    "question": "How do I set up a Teams meeting room device?",
+    "expected": ["teams-meeting-room-device-setup"]
+  },
+  {
+    "id": "q011",
+    "question": "Users are getting DHCP errors and new leases aren't being issued",
+    "expected": ["dhcp-scope-exhaustion-resolution"],
+    "note": "Problem symptom → remediation runbook."
+  },
+  {
+    "id": "q012",
+    "question": "ServiceNow incident integration with Teams alerts",
+    "expected": ["servicenow-incident-integration"]
+  },
+  {
+    "id": "q013",
+    "question": "Entra Conditional Access is blocking a user's sign-in",
+    "expected": ["entra-conditional-access-blocked-sign-in"]
+  },
+  {
+    "id": "q014",
+    "question": "Intune Windows Update ring is stuck and not rolling out updates",
+    "expected": ["intune-windows-update-ring-stuck"]
+  },
+  {
+    "id": "q015",
+    "question": "Renew the internal TLS certificate on IIS",
+    "expected": ["iis-internal-tls-certificate-renewal"]
+  },
+  {
+    "id": "q016",
+    "question": "Grant permissions on an Exchange Online shared mailbox",
+    "expected": ["exchange-online-shared-mailbox-permissions"]
+  },
+  {
+    "id": "q017",
+    "question": "DNS client cache and scavenging checks on Windows",
+    "expected": ["dns-client-cache-and-scavenging-checks"]
+  },
+  {
+    "id": "q018",
+    "question": "Break-glass sudo access on a Linux host",
+    "expected": ["linux-sudoers-break-glass-access"]
+  },
+  {
+    "id": "q019",
+    "question": "Clear stuck jobs from the print server queue",
+    "expected": ["print-server-clearing-stuck-jobs"]
+  },
+  {
+    "id": "q020",
+    "question": "Clean up stale AD computer objects",
+    "expected": ["ad-computer-object-cleanup"]
+  }
+]

@@ -62,12 +62,26 @@ export type RetrievalResult = {
   nearest: { slug: string; title: string }[];
 };
 
+/**
+ * Which rerank path runs after fusion + access gate.
+ *
+ * - `undefined` (production default): deterministic always; LLM on top when
+ *   `ASSISTANT_LLM_RERANK=1`, falling through to deterministic on any failure.
+ * - `"none"`: no reorder — the fused SQL order wins. Eval baseline.
+ * - `"det"`: force the deterministic rerank, skip the LLM even if the env flag is on.
+ * - `"llm"`: force the LLM rerank; a failure throws instead of falling through,
+ *   so an eval run can't silently mislabel a fallback as an LLM result.
+ */
+export type RetrievalRerank = "none" | "det" | "llm";
+
 export type RetrieveOptions = {
   question: string;
   session: AppSession;
   limit?: number;
   /** Restrict to these articles (A2: the open article + its related set). Library-wide when omitted/empty. */
   articleIds?: string[];
+  /** Override the rerank path. Production callers leave this undefined. */
+  rerank?: RetrievalRerank;
 };
 
 export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalResult> {
@@ -178,8 +192,7 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
   // gated LLM reranker) overrides that ordering when it returns scores; on any
   // failure we fall through to the deterministic order, so the fused order is
   // always a safe floor. The fused `score` on each chunk is left untouched.
-  const reranked = await maybeLlmRerank(question, candidates, session);
-  const ordered = reranked ?? rerankChunks(question, tokens, candidates);
+  const ordered = await orderCandidates(question, tokens, candidates, session, opts.rerank);
   const chunks = ordered.slice(0, limit);
 
   const grounded = candidates.length > 0 && bestFusedScore >= GROUNDED_MIN_SCORE;
@@ -187,32 +200,61 @@ export async function retrieveChunks(opts: RetrieveOptions): Promise<RetrievalRe
 }
 
 /**
- * Score the fused candidates with the FastAPI listwise reranker and reorder by
- * (llm score, fused score, incoming index). Returns `null` when the LLM rerank
- * is off, when there is nothing to reorder, or when the call fails — in each
- * case the caller falls back to the deterministic `rerankChunks`.
+ * Pick a rerank path and apply it. `override` takes precedence; without one we
+ * use today's flag-driven production behavior (LLM when `ASSISTANT_LLM_RERANK=1`,
+ * deterministic otherwise). An explicit `"llm"` throws on any failure so an eval
+ * run can't silently mislabel a fallback as an LLM result.
  */
-async function maybeLlmRerank(
+async function orderCandidates(
+  question: string,
+  tokens: string[],
+  candidates: RetrievedChunk[],
+  session: AppSession,
+  override: RetrievalRerank | undefined,
+): Promise<RetrievedChunk[]> {
+  if (override === "none") return candidates;
+  if (override === "det") return rerankChunks(question, tokens, candidates);
+  if (override === "llm") {
+    const scores = await llmScores(question, candidates, session, /*strict*/ true);
+    return scores ? applyLlmScores(candidates, scores) : candidates;
+  }
+  // Production default: try LLM when the flag is on, fall through otherwise.
+  if (process.env.ASSISTANT_LLM_RERANK === "1") {
+    const scores = await llmScores(question, candidates, session, /*strict*/ false);
+    if (scores && Object.keys(scores).length > 0) return applyLlmScores(candidates, scores);
+  }
+  return rerankChunks(question, tokens, candidates);
+}
+
+/**
+ * Score the fused candidates with the FastAPI listwise reranker. Returns `null`
+ * when there is nothing to reorder, no assertion can be minted, or the call
+ * failed in `strict=false` mode. In strict mode a `CrossEncoderError` is
+ * re-thrown so eval numbers are honest about which path ran.
+ */
+async function llmScores(
   question: string,
   candidates: RetrievedChunk[],
   session: AppSession,
-): Promise<RetrievedChunk[] | null> {
-  if (process.env.ASSISTANT_LLM_RERANK !== "1") return null;
+  strict: boolean,
+): Promise<Record<string, number> | null> {
   if (candidates.length < 2) return null;
   const assertion = await mintIngestionAssertion(session, new Date());
-  if (!assertion) return null;
-
+  if (!assertion) {
+    if (strict) throw new CrossEncoderError("The caller has no assertion key to call the reranker.");
+    return null;
+  }
   const payload = candidates.map((chunk) => ({
     id: chunk.chunkId,
     title: `${chunk.articleTitle} — ${chunk.sectionTitle}`,
     text: chunk.text,
   }));
-  let scores: Record<string, number>;
   try {
     const result = await rerankViaLLM(question, payload, assertion);
-    scores = result.scores;
+    return result.scores;
   } catch (err) {
     if (err instanceof CrossEncoderError) {
+      if (strict) throw err;
       console.warn(
         JSON.stringify({ event: "assistant.retrieve.rerank_fallback", error: err.message }),
       );
@@ -220,8 +262,6 @@ async function maybeLlmRerank(
     }
     throw err;
   }
-  if (Object.keys(scores).length === 0) return null;
-  return applyLlmScores(candidates, scores);
 }
 
 /**
