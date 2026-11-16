@@ -37,6 +37,12 @@ from backend.assistant.drafter import (
     get_drafter,
 )
 from backend.assistant.embeddings import EmbeddingError, get_embedder
+from backend.assistant.reranker import (
+    RerankCandidate,
+    RerankError,
+    RerankRequest,
+    get_reranker,
+)
 from backend.assistant.review import (
     ArticleForReview,
     CategoryOption,
@@ -201,6 +207,21 @@ class MiscategorizedResponse(BaseModel):
     flags: list[MiscategorizedFlagInfo] = []
 
 
+class RerankCandidateBody(BaseModel):
+    id: Annotated[str, Field(min_length=1, max_length=120)]
+    title: Annotated[str, Field(max_length=300)] = ""
+    text: Annotated[str, Field(min_length=1, max_length=4_000)]
+
+
+class RerankBody(BaseModel):
+    question: Annotated[str, Field(min_length=1, max_length=2_000)]
+    candidates: Annotated[list[RerankCandidateBody], Field(min_length=1, max_length=24)]
+
+
+class RerankResponse(BaseModel):
+    scores: dict[str, float] = {}
+
+
 def build_assistant_router(dependency) -> APIRouter:
     router = APIRouter(tags=["assistant"])
     get_principal = Depends(dependency)
@@ -237,6 +258,41 @@ def build_assistant_router(dependency) -> APIRouter:
             embeddings=result.vectors,
             promptTokens=result.prompt_tokens,
         )
+
+    @router.post("/assistant/rerank", response_model=RerankResponse)
+    async def rerank(body: RerankBody, principal: Principal = get_principal) -> RerankResponse:
+        # Same caller surface as /assistant/embed: the BFF calls it per retrieval
+        # with the user's role so the service never sees text they could not read.
+        _require_reader_or_service(principal)
+        reranker = get_reranker()
+        if reranker is None:
+            raise HTTPException(status_code=503, detail="The AI Assistant is not configured.")
+
+        rerank_request = RerankRequest(
+            question=body.question,
+            candidates=[
+                RerankCandidate(id=cand.id, title=cand.title, text=cand.text)
+                for cand in body.candidates
+            ],
+        )
+        with get_tracer().start_as_current_span(
+            "assistant.rerank", attributes={"tb.candidates": len(body.candidates)}
+        ) as span:
+            try:
+                result = await asyncio.to_thread(reranker.rerank, rerank_request)
+            except RerankError as exc:
+                span.set_status(Status(StatusCode.ERROR, str(exc)))
+                log.warning("assistant.rerank.failed", error=str(exc))
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            span.set_attribute("tb.scored", len(result.scores))
+
+        log.info(
+            "assistant.rerank",
+            candidates=len(body.candidates),
+            scored=len(result.scores),
+            caller=principal.kind,
+        )
+        return RerankResponse(scores=result.scores)
 
     @router.post("/assistant/answer")
     async def answer(body: AnswerBody, principal: Principal = get_principal) -> StreamingResponse:
