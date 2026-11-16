@@ -48,3 +48,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# retrieval eval reports (spec 20 §12 AI-5) — fixtures are checked in,
+# report runs are per-DB and would churn the repo on every invocation.
+/scripts/retrieval-eval/reports/

@@ -21,6 +21,7 @@
     "worker:assistant-index": "tsx --tsconfig tsconfig.json scripts/assistant-index-worker.ts",
     "assistant:backfill": "tsx --tsconfig tsconfig.json scripts/assistant-backfill.ts",
     "assistant:query": "tsx --tsconfig tsconfig.json scripts/assistant-query.ts",
+    "eval:retrieval": "tsx --tsconfig tsconfig.json scripts/retrieval-eval/run.ts",
     "gen:types": "openapi-typescript lib/api/openapi.json -o lib/api/generated/ingestion.ts"
   },
   "dependencies": {
