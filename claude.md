@@ -72,6 +72,17 @@ Do **not**:
 
 Custom composite components built *on top of* the primitives (e.g. `SectionHeader`, `StepBadge`, `Callout`, `CodeBlock`) are hand-authored and live outside `components/ui/` — those are fair game.
 
+### 0.4 Always hand over the ready-to-run command and message
+
+Whenever the next step is git — commit, pull, push, branch, merge, rebase, tag, PR open/update — give the user the full PowerShell block they can copy, with the **complete commit/PR title and body text** already written out. Never stop at "ready to commit?" or "I'll draft the message when you're ready." Always include:
+
+- The exact command (per rule 0.1, PowerShell syntax, one per line).
+- For commits: the full subject line and body, passed via a HEREDOC. Style follows the Devin git rules — concise, "why" over "what", conventional-commits prefix matching recent history (`feat(scope):`, `fix(scope):`, `chore(scope):`, `docs(scope):`). End with the attribution trailer named in the active system-reminder when one is present.
+- For PRs: the full `--title` and the full `--body` (summary bullets + test plan checklist), also via HEREDOC. End with the attribution trailer named in the active system-reminder when one is present.
+- A one-line note on what the message captures and what directory to run from.
+
+If several commits are needed (e.g. a feature + an unrelated docs tidy rolled into the same branch per rule 0.2), hand over each one's message separately — don't lump unrelated changes into one commit just to save a round-trip. If uncertain which files belong in which commit, say so and ask before writing the messages.
+
 ---
 
 ## 1. What this product is
