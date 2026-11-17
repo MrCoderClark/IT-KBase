@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { RetentionSubmit } from "./_components/retention-submit";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
-import { runVersionRetentionNow, saveSiteSettings } from "@/lib/settings/actions";
+import {
+  runConversationRetentionNow,
+  runVersionRetentionNow,
+  saveSiteSettings,
+} from "@/lib/settings/actions";
 import { readSiteSettings } from "@/lib/settings/store";
 
 const fieldClass =
@@ -18,7 +22,11 @@ export default function SettingsPage({
   return (
     <Suspense
       fallback={
-        <ArticleListShell title="Settings" description="Loading settings…" showCreate={false}>
+        <ArticleListShell
+          title="Settings"
+          description="Loading settings…"
+          showCreate={false}
+        >
           <div />
         </ArticleListShell>
       }
@@ -36,18 +44,33 @@ async function SettingsPanel({
   const session = await getSession();
   if (!session || !can(session.role, "admin.manage")) {
     return (
-      <ArticleListShell title="Settings" description="Only an admin can open this page." showCreate={false}>
-        <p className="text-[13px] text-fg-muted">You do not have permission to change settings.</p>
+      <ArticleListShell
+        title="Settings"
+        description="Only an admin can open this page."
+        showCreate={false}
+      >
+        <p className="text-[13px] text-fg-muted">
+          You do not have permission to change settings.
+        </p>
       </ArticleListShell>
     );
   }
 
-  const [params, settings] = await Promise.all([searchParams, readSiteSettings()]);
+  const [params, settings] = await Promise.all([
+    searchParams,
+    readSiteSettings(),
+  ]);
   const deletedCount = Number.parseInt(params.deleted ?? "", 10);
-  const retentionDone = params.notice === "retention";
-  const retentionMessage = retentionDone
+  const versionRetentionDone = params.notice === "retention";
+  const versionRetentionMessage = versionRetentionDone
     ? Number.isFinite(deletedCount)
       ? `Retention run finished. Removed ${deletedCount} expired version${deletedCount === 1 ? "" : "s"}. Current and draft versions were kept.`
+      : "Retention run finished."
+    : null;
+  const conversationRetentionDone = params.notice === "convretention";
+  const conversationRetentionMessage = conversationRetentionDone
+    ? Number.isFinite(deletedCount)
+      ? `Retention run finished. Removed ${deletedCount} expired conversation${deletedCount === 1 ? "" : "s"}.`
       : "Retention run finished."
     : null;
   const message =
@@ -57,26 +80,36 @@ async function SettingsPanel({
         ? "Logo must be an http or https address, or left blank."
         : params.e === "retention"
           ? "Version retention must be between 30 and 3650 days."
-          : params.e === "domains"
-            ? "Each allowed domain must look like contoso.com."
-            : params.notice === "saved"
-              ? "Settings saved."
-              : null;
+          : params.e === "convretention"
+            ? "Conversation retention must be between 1 and 365 days."
+            : params.e === "domains"
+              ? "Each allowed domain must look like contoso.com."
+              : params.notice === "saved"
+                ? "Settings saved."
+                : null;
 
   return (
     <ArticleListShell
       title="Settings"
-      description="Branding, how long article versions are kept, and which email domains may sign in later."
+      description="Branding, how long article versions and AI Assistant conversations are kept, and which email domains may sign in later."
       showCreate={false}
     >
       {message ? (
-        <p role="status" className={`mb-4 text-[13px] font-medium ${params.e ? "text-danger" : "text-fg"}`}>
+        <p
+          role="status"
+          className={`mb-4 text-[13px] font-medium ${params.e ? "text-danger" : "text-fg"}`}
+        >
           {message}
         </p>
       ) : null}
-      <form action={saveSiteSettings} className="max-w-xl space-y-6 rounded-xl border border-border bg-surface p-5">
+      <form
+        action={saveSiteSettings}
+        className="max-w-xl space-y-6 rounded-xl border border-border bg-surface p-5"
+      >
         <fieldset className="space-y-3">
-          <legend className="text-[13px] font-semibold text-fg">Branding</legend>
+          <legend className="text-[13px] font-semibold text-fg">
+            Branding
+          </legend>
           <div className="flex items-center gap-3">
             <label className="text-[13px] text-fg-muted" htmlFor="accent">
               Accent
@@ -101,12 +134,18 @@ async function SettingsPanel({
               placeholder="https://"
               className={fieldClass}
             />
-            <p className="text-[12px] text-fg-muted">Leave blank to keep the TechBase mark. Buttons and links use the accent.</p>
+            <p className="text-[12px] text-fg-muted">
+              Leave blank to keep the TechBase mark. Buttons and links use the
+              accent.
+            </p>
           </div>
         </fieldset>
 
         <div className="space-y-1">
-          <label className="text-[13px] font-semibold text-fg" htmlFor="versionRetentionDays">
+          <label
+            className="text-[13px] font-semibold text-fg"
+            htmlFor="versionRetentionDays"
+          >
             Keep article versions (days)
           </label>
           <input
@@ -119,13 +158,39 @@ async function SettingsPanel({
             className={fieldClass}
           />
           <p className="text-[12px] text-fg-muted">
-            Versions older than this are removed by the daily job. The current and draft versions of each article are
-            never deleted.
+            Versions older than this are removed by the daily job. The current
+            and draft versions of each article are never deleted.
           </p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[13px] font-semibold text-fg" htmlFor="allowedEmailDomains">
+          <label
+            className="text-[13px] font-semibold text-fg"
+            htmlFor="conversationRetentionDays"
+          >
+            Keep AI Assistant conversations (days)
+          </label>
+          <input
+            id="conversationRetentionDays"
+            name="conversationRetentionDays"
+            type="number"
+            min={1}
+            max={365}
+            defaultValue={settings.conversationRetentionDays}
+            className={fieldClass}
+          />
+          <p className="text-[12px] text-fg-muted">
+            Each user&apos;s assistant conversations are purged after this many
+            days of no activity. Soft-deleted conversations are hard-deleted on
+            the next daily run.
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <label
+            className="text-[13px] font-semibold text-fg"
+            htmlFor="allowedEmailDomains"
+          >
             Allowed email domains
           </label>
           <textarea
@@ -137,7 +202,8 @@ async function SettingsPanel({
             className={fieldClass}
           />
           <p className="text-[12px] text-fg-muted">
-            One domain per line. Used when an identity provider is added. Password and passkey sign-in stay open.
+            One domain per line. Used when an identity provider is added.
+            Password and passkey sign-in stay open.
           </p>
         </div>
 
@@ -151,15 +217,38 @@ async function SettingsPanel({
       >
         <h2 className="text-[13px] font-semibold text-fg">Version retention</h2>
         <p className="mt-1 text-[12px] text-fg-muted">
-          Run the same purge the daily cron uses. Safe to run anytime — only expired non-current, non-draft rows are
-          removed.
+          Run the same purge the daily cron uses. Safe to run anytime — only
+          expired non-current, non-draft rows are removed.
         </p>
-        {retentionMessage ? (
+        {versionRetentionMessage ? (
           <p
             role="status"
             className="mt-3 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-[13px] font-medium text-fg"
           >
-            {retentionMessage}
+            {versionRetentionMessage}
+          </p>
+        ) : null}
+        <RetentionSubmit />
+      </form>
+
+      <form
+        id="conversation-retention"
+        action={runConversationRetentionNow}
+        className="mt-4 max-w-xl scroll-mt-6 rounded-xl border border-border bg-surface p-5"
+      >
+        <h2 className="text-[13px] font-semibold text-fg">
+          Conversation retention
+        </h2>
+        <p className="mt-1 text-[12px] text-fg-muted">
+          Run the same purge the daily cron uses. Safe to run anytime —
+          soft-deleted and stale assistant conversations are hard-deleted.
+        </p>
+        {conversationRetentionMessage ? (
+          <p
+            role="status"
+            className="mt-3 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-[13px] font-medium text-fg"
+          >
+            {conversationRetentionMessage}
           </p>
         ) : null}
         <RetentionSubmit />

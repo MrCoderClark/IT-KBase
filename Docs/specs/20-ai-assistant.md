@@ -372,7 +372,7 @@ Spans (extend `19-observability.md` and the Grafana dashboard):
 | # | Question | Default if undecided |
 |---|----------|----------------------|
 | Q1 | The sidebar currently shows **AI Assistant only to roles that can create** (`sidebar.tsx` → `canCreate`). Readers — Sam, helpdesk L1 — are the biggest beneficiaries of A1–A7. Open the assistant to readers? | **Decided 2026-11-02: yes.** A1–A7 for every signed-in role; authoring (B) and health (C) features stay author+/reviewer+. One-line sidebar change in AI-1. |
-| Q2 | Conversation retention: 30 days, 7 days, or no storage (stateless)? | 30 days, admin-configurable. |
+| Q2 | Conversation retention: 30 days, 7 days, or no storage (stateless)? | **Decided 2026-11-17: 30 days, admin-configurable (1–365).** `SiteSetting.conversationRetentionDays` default 30; `/api/cron/purge-conversations` runs daily and hard-deletes soft-deleted + stale `AssistantConversation` rows (messages cascade). Unblocks D2. |
 | Q3 | Assistant model: same as ingestion (`AI_MODEL`) or a separate one? | **Decided 2026-11-02: fully separate.** `ASSISTANT_*` settings (base URL, key, chat model, embedding model). No fallback to ingestion `AI_*`. |
 | Q4 | Include authors' own drafts in answers by default? | Off; per-message toggle. |
 | Q5 | Pull embeddings (D1) forward into A-phase if FTS recall is poor on the eval set? | **Decided 2026-11-02: hybrid in AI-1** (ADR 0004). The eval set still measures keyword-only vs hybrid recall. |

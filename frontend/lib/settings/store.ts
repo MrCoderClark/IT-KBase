@@ -8,6 +8,7 @@ export async function readSiteSettings(): Promise<SiteSettings> {
       accentHex: true,
       logoUrl: true,
       versionRetentionDays: true,
+      conversationRetentionDays: true,
       allowedEmailDomains: true,
     },
   });

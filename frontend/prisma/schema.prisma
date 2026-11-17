@@ -480,6 +480,7 @@ model SiteSetting {
   accentHex            String   @default("#1A5AE0")
   logoUrl              String?
   versionRetentionDays Int      @default(365)
+  conversationRetentionDays Int @default(30)
   allowedEmailDomains  String[] @default([])
   updatedAt            DateTime @updatedAt
 
