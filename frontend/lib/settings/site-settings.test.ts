@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseAccent, parseEmailDomains, parseLogoUrl, parseRetentionDays } from "./site-settings";
+import {
+  parseAccent,
+  parseConversationRetentionDays,
+  parseEmailDomains,
+  parseLogoUrl,
+  parseRetentionDays,
+} from "./site-settings";
 
 describe("site settings", () => {
   it("accepts a 6-digit accent and rejects anything else", () => {
@@ -13,6 +19,16 @@ describe("site settings", () => {
     assert.equal(parseRetentionDays("365"), 365);
     assert.equal(parseRetentionDays("29"), null);
     assert.equal(parseRetentionDays("3651"), null);
+  });
+
+  it("keeps conversation retention between 1 and 365 days", () => {
+    assert.equal(parseConversationRetentionDays("30"), 30);
+    assert.equal(parseConversationRetentionDays("1"), 1);
+    assert.equal(parseConversationRetentionDays("365"), 365);
+    assert.equal(parseConversationRetentionDays("0"), null);
+    assert.equal(parseConversationRetentionDays("366"), null);
+    assert.equal(parseConversationRetentionDays("-5"), null);
+    assert.equal(parseConversationRetentionDays("thirty"), null);
   });
 
   it("accepts an http logo URL and a blank field", () => {

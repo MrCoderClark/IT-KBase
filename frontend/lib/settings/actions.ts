@@ -4,8 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { can } from "@/lib/auth/policy";
 import { getSession } from "@/lib/auth/session";
+import { purgeExpiredConversations } from "@/lib/assistant/purge-conversations";
 import { purgeExpiredVersions } from "@/lib/versions/purge-expired";
-import { parseAccent, parseEmailDomains, parseLogoUrl, parseRetentionDays } from "./site-settings";
+import {
+  parseAccent,
+  parseConversationRetentionDays,
+  parseEmailDomains,
+  parseLogoUrl,
+  parseRetentionDays,
+} from "./site-settings";
 import { writeSiteSettings } from "./store";
 
 export async function saveSiteSettings(formData: FormData): Promise<void> {
@@ -21,6 +28,11 @@ export async function saveSiteSettings(formData: FormData): Promise<void> {
   const versionRetentionDays = parseRetentionDays(String(formData.get("versionRetentionDays") ?? ""));
   if (versionRetentionDays === null) redirect("/admin/settings?e=retention");
 
+  const conversationRetentionDays = parseConversationRetentionDays(
+    String(formData.get("conversationRetentionDays") ?? ""),
+  );
+  if (conversationRetentionDays === null) redirect("/admin/settings?e=convretention");
+
   const domains = parseEmailDomains(String(formData.get("allowedEmailDomains") ?? ""));
   if (!domains.ok) redirect("/admin/settings?e=domains");
 
@@ -28,6 +40,7 @@ export async function saveSiteSettings(formData: FormData): Promise<void> {
     accentHex,
     logoUrl: logo.logoUrl,
     versionRetentionDays,
+    conversationRetentionDays,
     allowedEmailDomains: domains.domains,
   });
   revalidatePath("/", "layout");
@@ -42,4 +55,16 @@ export async function runVersionRetentionNow(): Promise<void> {
   const result = await purgeExpiredVersions();
   revalidatePath("/admin/settings");
   redirect(`/admin/settings?notice=retention&deleted=${result.deleted}#version-retention`);
+}
+
+/** Admin-triggered conversation purge (same rules as the cron job). */
+export async function runConversationRetentionNow(): Promise<void> {
+  const session = await getSession();
+  if (!session || !can(session.role, "admin.manage")) redirect("/");
+
+  const result = await purgeExpiredConversations();
+  revalidatePath("/admin/settings");
+  redirect(
+    `/admin/settings?notice=convretention&deleted=${result.deleted}#conversation-retention`,
+  );
 }

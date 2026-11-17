@@ -1,6 +1,8 @@
 /** Cobalt tuned for WCAG AA 4.5:1 on --canvas (#F6F8FB) at 13px. */
 export const DEFAULT_ACCENT = "#1A5AE0";
 export const DEFAULT_VERSION_RETENTION_DAYS = 365;
+/** Spec 20 Q2 decision 2026-11-17: 30 days, admin-configurable (1–365). */
+export const DEFAULT_CONVERSATION_RETENTION_DAYS = 30;
 export const SITE_SETTING_ID = "default";
 
 const ACCENT = /^#[0-9A-Fa-f]{6}$/;
@@ -10,6 +12,7 @@ export type SiteSettings = {
   accentHex: string;
   logoUrl: string | null;
   versionRetentionDays: number;
+  conversationRetentionDays: number;
   allowedEmailDomains: string[];
 };
 
@@ -17,6 +20,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   accentHex: DEFAULT_ACCENT,
   logoUrl: null,
   versionRetentionDays: DEFAULT_VERSION_RETENTION_DAYS,
+  conversationRetentionDays: DEFAULT_CONVERSATION_RETENTION_DAYS,
   allowedEmailDomains: [],
 };
 
@@ -30,6 +34,17 @@ export function parseRetentionDays(raw: string): number | null {
   if (!/^\d+$/.test(raw.trim())) return null;
   const days = Number(raw);
   if (days < 30 || days > 3650) return null;
+  return days;
+}
+
+/**
+ * Conversation retention range (spec 20 Q2). Narrower than version retention
+ * because conversations are personal-ish history, not audit records.
+ */
+export function parseConversationRetentionDays(raw: string): number | null {
+  if (!/^\d+$/.test(raw.trim())) return null;
+  const days = Number(raw);
+  if (days < 1 || days > 365) return null;
   return days;
 }
 
