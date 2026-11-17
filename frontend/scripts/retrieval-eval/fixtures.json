@@ -102,5 +102,65 @@
     "id": "q020",
     "question": "Clean up stale AD computer objects",
     "expected": ["ad-computer-object-cleanup"]
+  },
+  {
+    "id": "h001",
+    "question": "Our build server lost its local admin account — what's the reset procedure?",
+    "expected": ["reset-local-admin-password"],
+    "note": "Hard: confusable with the Win-11-specific article; 'build server' should prefer the generic runbook."
+  },
+  {
+    "id": "h002",
+    "question": "Password reset on a newly imaged Windows 11 Pro laptop that never joined the domain",
+    "expected": ["windows-11-resetting-local-administrator-password"],
+    "note": "Hard: verbose/generic verbs, only 'Windows 11' wedge separates it from the generic reset article."
+  },
+  {
+    "id": "h003",
+    "question": "Laptop is at a blue encryption screen after a hard reboot and nobody has the key",
+    "expected": ["windows-11-bitlocker-recovery-process"],
+    "note": "Hard: no 'BitLocker' token; 'encryption screen' + 'key' is the semantic link."
+  },
+  {
+    "id": "h004",
+    "question": "Need alerts flowing from an existing ServiceNow–Teams channel for a new category of incidents",
+    "expected": ["servicenow-incident-integration"],
+    "note": "Hard: 'incidents' also matches Jira bridge; no 'Teams alerts' token in Q."
+  },
+  {
+    "id": "h005",
+    "question": "Our devs want Jira tickets to raise ServiceNow incidents automatically",
+    "expected": ["jira-servicenow-webhook-bridge"],
+    "note": "Hard: 'ServiceNow incidents' heavily pulls the SN article."
+  },
+  {
+    "id": "h006",
+    "question": "Users working from a coffee shop say internal SharePoint is unreachable",
+    "expected": ["vpn-split-tunnel-configuration"],
+    "note": "Hard: no 'VPN' token; 'SharePoint' may pull M365 articles."
+  },
+  {
+    "id": "h007",
+    "question": "Marketing wants a shared inbox where the whole team can send from the same address",
+    "expected": ["exchange-online-shared-mailbox-permissions"],
+    "note": "Hard: 'team' could pull Teams room article; needs semantic 'shared mailbox'."
+  },
+  {
+    "id": "h008",
+    "question": "A specific OU of workstations isn't picking up the mapped drives we pushed yesterday",
+    "expected": ["active-directory-group-policy-troubleshooting"],
+    "note": "Hard: no 'GPO' token; 'OU' + 'mapped drives' competes with AD cleanup."
+  },
+  {
+    "id": "h009",
+    "question": "Service account on the jump host still lets anyone with the old key in",
+    "expected": ["linux-ssh-key-rotation-policy"],
+    "note": "Hard: 'service account' + 'old key' → rotation; break-glass sudo competes on 'account/access'."
+  },
+  {
+    "id": "h010",
+    "question": "The whole floor's documents are stuck in queue and nothing's reaching the printer",
+    "expected": ["print-server-clearing-stuck-jobs"],
+    "note": "Hard: no 'print server' in Q, just symptoms."
   }
 ]
